@@ -114,7 +114,7 @@ Vier Bausteine, ein Datenmodell:
 }
 ```
 
-Slide-Inhalte befüllen ist damit reine Datenpflege (kein Codeänderung) und ein **separater,
+Slide-Inhalte befüllen ist damit reine Datenpflege (keine Codeänderung) und ein **separater,
 späterer Arbeitsschritt**, der erst nach Bereitstellung der Quelldateien erfolgt.
 
 ## 6. Steuerung
