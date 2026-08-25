@@ -88,9 +88,10 @@ Vier Bausteine, ein Datenmodell:
      Leiste immer sichtbar. Diagramme als Inline-SVG (Unterscheidung über Linienstärke/
      Strichelung/Form). Mindestlesbarkeit: 24-pt-Äquivalent bei 1080p.
    - Beim Ankommen: Szene dimmt leicht, Panel blendet in ~300 ms ein; Belegpunkte einzeln.
-4. **Demo-Video** (ein `<video>`-Element, stumm, MP4/H.264, Start nach erstem Tastendruck).
-   - 720p-Fassung als `VideoTexture` (sRGB) auf dem Terminal-Monitor; 1080p-Fassung als
-     DOM-Großansicht (Taste V), Pause per Taste. Beide synchron aus einem Element.
+4. **Demo-Video** (stumm, MP4/H.264, Start erst nach Tastendruck — Nutzergeste).
+   - Zwei Dateifassungen, zwei `<video>`-Elemente: 720p-Fassung als `VideoTexture` (sRGB,
+     geloopt) auf dem Terminal-Monitor; 1080p-Fassung als DOM-Großansicht (Taste V),
+     Pause per Leertaste bei offener Großansicht.
    - Aufnahme mit OBS: 2–3 Fragen aus dem Fragenkatalog inkl. eines Zurückweisungsfalls,
      Schnitt auf ≤ 90 s, Hinweis „Aufzeichnung, [Datum]" eingeblendet.
 
