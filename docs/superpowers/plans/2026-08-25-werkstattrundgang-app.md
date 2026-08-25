@@ -153,7 +153,8 @@ Hinweis: `druck.html` existiert erst ab Task 12. Damit `npm run build` bis dahin
     <h1>Eine Kennzahl — von der Werkstatthalle bis in die Planungsrunde</h1>
     <p>[PLATZHALTER: Untertitel/Name/Datum]</p>
   </div>
-  <aside id="panel" hidden></aside>
+  <div id="dimmer"></div>
+  <aside id="panel"></aside>
   <div id="video-overlay" hidden>
     <video id="video-gross" src="./video/demo_1080.mp4" muted playsinline preload="auto"></video>
   </div>
@@ -209,29 +210,34 @@ html, body {
   padding: 1.2rem 1.6rem;
 }
 .titel h1 { font-size: clamp(1.2rem, 2.6vw, 2.2rem); }
-.titel p { margin-top: 0.5rem; font-size: clamp(0.9rem, 1.6vw, 1.3rem); color: var(--grau-60); }
+.titel p { margin-top: 0.5rem; font-size: clamp(1.1rem, 1.8vw, 2.2rem); color: var(--grau-60); }
 
+/* Spec §10: kein Panel-Text unter 24-pt-Äquivalent bei 1080p (24 pt = 32 px CSS). */
 #panel {
   position: fixed;
   top: 12vh; right: 3vw; bottom: 10vh;
   z-index: 20;
-  width: min(34vw, 560px);
+  width: min(34vw, 660px);
   overflow: hidden;
   background: rgba(244, 244, 244, var(--panel-deckkraft));
   border: 1px solid var(--grau-20);
   padding: 1.2rem 1.4rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s; /* Spec §5: Panel blendet in ~300 ms ein */
 }
+#panel.sichtbar { opacity: 1; pointer-events: auto; }
 #panel .stationsnummer {
-  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-size: clamp(1rem, 1.7vw, 2.1rem);
   color: var(--grau-60);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-#panel h2 { font-size: clamp(1.1rem, 2.2vw, 1.8rem); margin: 0.3rem 0 0.8rem; }
-#panel .kernaussage { font-size: clamp(1rem, 1.9vw, 1.5rem); font-weight: bold; margin-bottom: 1rem; }
+#panel h2 { font-size: clamp(1.4rem, 2.4vw, 3rem); margin: 0.3rem 0 0.8rem; }
+#panel .kernaussage { font-size: clamp(1.2rem, 2vw, 2.5rem); font-weight: bold; margin-bottom: 1rem; }
 #panel ul { list-style: none; }
 #panel li {
-  font-size: clamp(0.95rem, 1.7vw, 1.35rem);
+  font-size: clamp(1.1rem, 1.8vw, 2.25rem);
   padding: 0.45rem 0 0.45rem 1.2rem;
   position: relative;
 }
@@ -239,9 +245,19 @@ html, body {
 #panel .kapitel {
   position: absolute;
   bottom: 0.8rem; right: 1.4rem;
-  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  font-size: clamp(1rem, 1.7vw, 2.1rem);
   color: var(--grau-60);
 }
+
+#dimmer {
+  position: fixed; inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.25); /* Spec §5: Szene dimmt beim Ankommen leicht ab */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+#dimmer.aktiv { opacity: 1; }
 
 #video-overlay {
   position: fixed; inset: 0;
@@ -486,7 +502,8 @@ describe('Zustandsmaschine', () => {
     z.weiter(); // fahrt meisterbuero (index 1)
     expect(z.springeZuStation('besprechung')).toEqual({ typ: 'sprung', stationId: 'besprechung' });
     expect(z.index).toBe(1); // linearer Stand unverändert
-    expect(z.weiter()).toEqual({ typ: 'belegpunkt', stationId: 'meisterbuero', index: 0 });
+    // weiter() räumt nur den Sprung ab und kehrt zum linearen Stand (schritte[1]) zurück
+    expect(z.weiter()).toEqual({ typ: 'fahrt', stationId: 'meisterbuero' });
   });
 
   it('springeZurTotale() zeigt die Totale, ohne den Stand zu verlieren', () => {
@@ -744,7 +761,7 @@ export class Kamerafahrt {
 - [ ] **Step 4: Test laufen lassen — muss bestehen**
 
 Run (in `app/`): `npm test -- tests/kamera.test.js`
-Expected: PASS (5 Tests).
+Expected: PASS (6 Tests).
 
 - [ ] **Step 5: Commit**
 
@@ -989,17 +1006,18 @@ git commit -m "feat(app): sessionStorage-Persistenz des Vortragsstands"
 
 ```js
 import { describe, it, expect, beforeEach } from 'vitest';
-import { zeigePanel, versteckePanel, schalteSchwarzbild, zeigeTitel } from '../src/overlays.js';
+import { zeigePanel, versteckePanel, schalteSchwarzbild, zeigeTitel, schalteDimmer } from '../src/overlays.js';
 import daten from '../src/stationen.json';
 
-let panel, schwarz, titel;
+let panel, schwarz, titel, dimmer;
 
 beforeEach(() => {
   document.body.innerHTML =
-    '<div id="titel" hidden></div><aside id="panel" hidden></aside><div id="schwarzbild" hidden></div>';
+    '<div id="titel" hidden></div><div id="dimmer"></div><aside id="panel"></aside><div id="schwarzbild" hidden></div>';
   panel = document.getElementById('panel');
   schwarz = document.getElementById('schwarzbild');
   titel = document.getElementById('titel');
+  dimmer = document.getElementById('dimmer');
 });
 
 describe('zeigePanel', () => {
@@ -1007,7 +1025,7 @@ describe('zeigePanel', () => {
 
   it('rendert Nummer, Titel, Kernaussage und nur die sichtbaren Belegpunkte', () => {
     zeigePanel(panel, station, 2);
-    expect(panel.hidden).toBe(false);
+    expect(panel.classList.contains('sichtbar')).toBe(true);
     expect(panel.querySelector('.stationsnummer').textContent).toBe('Station 3');
     expect(panel.querySelector('h2').textContent).toBe('Fragen statt Formeln');
     expect(panel.querySelector('.kernaussage').textContent).toContain('PLATZHALTER');
@@ -1026,11 +1044,11 @@ describe('zeigePanel', () => {
   });
 });
 
-describe('versteckePanel / zeigeTitel / schalteSchwarzbild', () => {
-  it('versteckt das Panel', () => {
-    panel.hidden = false;
+describe('versteckePanel / zeigeTitel / schalteSchwarzbild / schalteDimmer', () => {
+  it('versteckt das Panel über die Sichtbarkeitsklasse', () => {
+    panel.classList.add('sichtbar');
     versteckePanel(panel);
-    expect(panel.hidden).toBe(true);
+    expect(panel.classList.contains('sichtbar')).toBe(false);
   });
 
   it('zeigt und versteckt den Titel', () => {
@@ -1045,6 +1063,13 @@ describe('versteckePanel / zeigeTitel / schalteSchwarzbild', () => {
     expect(schwarz.hidden).toBe(false);
     expect(schalteSchwarzbild(schwarz)).toBe(false);
     expect(schwarz.hidden).toBe(true);
+  });
+
+  it('schaltet den Dimmer über die aktiv-Klasse', () => {
+    schalteDimmer(dimmer, true);
+    expect(dimmer.classList.contains('aktiv')).toBe(true);
+    schalteDimmer(dimmer, false);
+    expect(dimmer.classList.contains('aktiv')).toBe(false);
   });
 });
 ```
@@ -1089,11 +1114,16 @@ export function zeigePanel(panelEl, station, anzahlBelegpunkte) {
   kapitel.textContent = station.kapitel;
   panelEl.append(kapitel);
 
-  panelEl.hidden = false;
+  panelEl.classList.add('sichtbar'); // CSS blendet über opacity in ~300 ms ein (Spec §5)
 }
 
 export function versteckePanel(panelEl) {
-  panelEl.hidden = true;
+  panelEl.classList.remove('sichtbar');
+}
+
+// Dimmt die Szene an Stationen leicht ab (Spec §5); Element: #dimmer.
+export function schalteDimmer(dimmerEl, aktiv) {
+  dimmerEl.classList.toggle('aktiv', aktiv);
 }
 
 export function zeigeTitel(titelEl, sichtbar) {
@@ -1121,7 +1151,7 @@ export function schalteVideoGross(overlayEl, videoEl) {
 - [ ] **Step 4: Test laufen lassen — muss bestehen**
 
 Run (in `app/`): `npm test -- tests/overlays.test.js`
-Expected: PASS (6 Tests).
+Expected: PASS (7 Tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1190,6 +1220,11 @@ export function bauePlatzhalter(szene, daten) {
     new THREE.MeshBasicMaterial({ color: 0x222222 }),
   );
   monitor.position.set(terminal.kamera.blickziel[0], 1.5, terminal.kamera.blickziel[2] + 1.05);
+  // UVs auf glTF-Konvention spiegeln, damit die Videotextur (flipY=false, Task 10)
+  // auf Platzhalter und Blender-Export identisch orientiert ist.
+  const uv = monitor.geometry.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+  uv.needsUpdate = true;
   monitor.name = 'Monitor_Bildschirm';
   gruppe.add(monitor);
 
@@ -1229,13 +1264,14 @@ import { Zustandsmaschine, leiteAnsichtAb } from './zustand.js';
 import { Kamerafahrt } from './kamera.js';
 import { tasteZuAktion, Eingabesperre } from './steuerung.js';
 import { speichereStand, ladeStand } from './speicher.js';
-import { zeigePanel, versteckePanel, zeigeTitel, schalteSchwarzbild, schalteVideoGross } from './overlays.js';
+import { zeigePanel, versteckePanel, zeigeTitel, schalteSchwarzbild, schalteVideoGross, schalteDimmer } from './overlays.js';
 import { erzeugeRenderer, erzeugeSzene, bauePlatzhalter, ladeModell, base64ZuArrayBuffer } from './szene.js';
 
 const canvas = document.getElementById('buehne');
 const panelEl = document.getElementById('panel');
 const titelEl = document.getElementById('titel');
 const schwarzEl = document.getElementById('schwarzbild');
+const dimmerEl = document.getElementById('dimmer');
 const videoOverlayEl = document.getElementById('video-overlay');
 const videoGrossEl = document.getElementById('video-gross');
 
@@ -1264,7 +1300,6 @@ function setzeKamera(pose) {
 // sofort=true (Reload-Wiederherstellung): keine Fahrt, direkt Zielpose.
 function wendeAnsichtAn(sofort = false) {
   const ansicht = leiteAnsichtAb(zustand.aktuell, daten.stationen);
-  zeigeTitel(titelEl, ansicht.ort === 'totale');
 
   if (ansicht.ort !== aktuellerOrt) {
     const von = {
@@ -1274,6 +1309,8 @@ function wendeAnsichtAn(sofort = false) {
     const nach = poseFuerOrt(ansicht.ort);
     aktuellerOrt = ansicht.ort;
     versteckePanel(panelEl);
+    zeigeTitel(titelEl, false); // Spec §4: während der Fahrt kein neuer Text
+    schalteDimmer(dimmerEl, false);
     if (sofort) {
       aktuelleFahrt = null;
       setzeKamera(nach);
@@ -1290,6 +1327,8 @@ function wendeAnsichtAn(sofort = false) {
 }
 
 function zeigeAnkunft(ansicht) {
+  zeigeTitel(titelEl, ansicht.ort === 'totale'); // Titel erst bei Ankunft (Spec §4)
+  schalteDimmer(dimmerEl, ansicht.ort !== 'totale');
   if (ansicht.ort === 'totale') {
     versteckePanel(panelEl);
     return;
@@ -1310,11 +1349,7 @@ function fuehreAktionAus(aktion) {
         beendeFahrt();
       }
       break;
-    case 'video':
-      if (videoOverlayEl.hidden === false || aktuellerOrt === 'terminal') {
-        schalteVideoGross(videoOverlayEl, videoGrossEl);
-      }
-      break;
+    case 'video': schalteVideoGross(videoOverlayEl, videoGrossEl); break; // V wirkt global (Spec §6)
     case 'schwarz': schalteSchwarzbild(schwarzEl); break;
   }
 }
@@ -1394,7 +1429,7 @@ Expected: PASS — alle Tests aus Task 1–7 weiterhin grün.
 
 Run (in `app/`): `npm run dev` — `http://localhost:5173` öffnen und prüfen:
 1. Totale sichtbar (grauer Boden, 6 Boxen), Titel-Panel unten links, Kopfzeile oben.
-2. Pfeil rechts → Kamera fliegt ~6 s weich zur ersten Box, danach erscheint das Panel „Station 1 / Wo die Zahl entsteht" mit 0 Belegpunkten.
+2. Pfeil rechts → Titel verschwindet, Kamera fliegt ~6 s weich zur ersten Box; bei Ankunft dunkelt die Szene leicht ab und das Panel „Station 1 / Wo die Zahl entsteht" blendet weich ein (0 Belegpunkte).
 3. Dreimal Pfeil rechts → Belegpunkte erscheinen einzeln (PLATZHALTER-Texte).
 4. Taste 6 → Fahrt zur Besprechungs-Box, Panel mit allen 3 Belegpunkten; Pfeil rechts → zurück im linearen Ablauf.
 5. Taste 0 → Totale; B → Schwarzbild an/aus; S während einer Fahrt → harter Sprung ans Ziel.
@@ -1414,6 +1449,7 @@ git commit -m "feat(app): Three.js-Buehne, Platzhalterszene und Integrations-Loo
 
 **Files:**
 - Create: `app/src/waypoint-werkzeug.js`
+- Create: `app/public/standbilder/HINWEIS.md`
 - Modify: `app/src/main.js` (Import + Aktivierung am Ende von `start()`)
 
 - [ ] **Step 1: waypoint-werkzeug.js anlegen**
@@ -1421,9 +1457,10 @@ git commit -m "feat(app): Three.js-Buehne, Platzhalterszene und Integrations-Loo
 ```js
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// Nur im Dev-Modus mit ?werkzeug=1: freie Kamera; Taste W gibt die Pose als JSON aus,
-// zum direkten Einfügen in stationen.json (Spec §5, Dev-Werkzeug).
-export function aktiviereWaypointWerkzeug(kamera, renderer) {
+// Nur im Dev-Modus mit ?werkzeug=1: freie Kamera. Taste W gibt die Pose als JSON aus
+// (zum direkten Einfügen in stationen.json, Spec §5); Taste P lädt das aktuelle Bild
+// als PNG herunter — Standbilder für die Druckansicht (Spec §7, Szenen-Thumbnail).
+export function aktiviereWaypointWerkzeug(kamera, renderer, szene) {
   if (!import.meta.env.DEV) return null;
   if (new URLSearchParams(window.location.search).get('werkzeug') !== '1') return null;
 
@@ -1431,56 +1468,84 @@ export function aktiviereWaypointWerkzeug(kamera, renderer) {
   orbit.target.set(0, 1, 0);
 
   window.addEventListener('keydown', (ereignis) => {
-    if (ereignis.key !== 'w' && ereignis.key !== 'W') return;
-    const p = kamera.position;
-    const z = orbit.target;
-    const runden = (n) => Number(n.toFixed(2));
-    console.log(JSON.stringify({
-      position: [runden(p.x), runden(p.y), runden(p.z)],
-      blickziel: [runden(z.x), runden(z.y), runden(z.z)],
-      dauer_s: 5,
-    }));
+    if (ereignis.key === 'w' || ereignis.key === 'W') {
+      const p = kamera.position;
+      const z = orbit.target;
+      const runden = (n) => Number(n.toFixed(2));
+      console.log(JSON.stringify({
+        position: [runden(p.x), runden(p.y), runden(p.z)],
+        blickziel: [runden(z.x), runden(z.y), runden(z.z)],
+        dauer_s: 5,
+      }));
+    }
+    if (ereignis.key === 'p' || ereignis.key === 'P') {
+      renderer.render(szene, kamera); // direkt vor toDataURL rendern (kein preserveDrawingBuffer)
+      const link = document.createElement('a');
+      link.href = renderer.domElement.toDataURL('image/png');
+      link.download = 'standbild.png';
+      link.click();
+    }
   });
 
-  console.info('[Waypoint-Werkzeug] aktiv: Maus = Kamera, W = Pose ausgeben');
+  console.info('[Waypoint-Werkzeug] aktiv: Maus = Kamera, W = Pose ausgeben, P = Standbild speichern');
   return orbit;
 }
 ```
 
-- [ ] **Step 2: In main.js einbinden** — Import ergänzen und in `start()` direkt vor `schleife();` einfügen:
+- [ ] **Step 2: In main.js einbinden** — genau vier Änderungen, in dieser Reihenfolge:
+
+1. Import bei den übrigen Imports ergänzen:
 
 ```js
 import { aktiviereWaypointWerkzeug } from './waypoint-werkzeug.js';
 ```
 
+2. Oberhalb von `async function start()` die Modul-Variable deklarieren:
+
 ```js
-  const orbit = aktiviereWaypointWerkzeug(kamera, renderer);
-  if (orbit) aktuelleFahrt = null; // Werkzeugmodus: keine automatischen Fahrten
+let orbitAktiv = null;
 ```
 
-Zusätzlich in der `schleife()`-Funktion die OrbitControls aktualisieren — die Zeile `renderer.render(szene, kamera);` bleibt, davor ergänzen:
+3. In `start()` direkt vor `schleife();` einfügen:
+
+```js
+  orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
+```
+
+4. In `schleife()` unmittelbar vor `renderer.render(szene, kamera);` einfügen:
 
 ```js
   if (orbitAktiv) orbitAktiv.update();
 ```
 
-Dafür `const orbit …` in eine Modul-Variable heben: oberhalb von `start()` `let orbitAktiv = null;` deklarieren und in `start()` `orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer);` setzen (die `if (orbit) …`-Zeile entfällt dann; im Werkzeugmodus stören Fahrten nicht, weil keine Tasteneingaben nötig sind).
+(Im Werkzeugmodus stören die automatischen Fahrten nicht, weil dort keine Vortrags-Tasten gedrückt werden.)
 
-- [ ] **Step 3: Prüfen**
+- [ ] **Step 3: Standbilder-Ablage anlegen** — `app/public/standbilder/HINWEIS.md`:
+
+```markdown
+# Standbilder für die Druckansicht
+
+Pro Station ein PNG, Dateiname exakt `<stations-id>.png` (z. B. `terminal.png`).
+Erzeugung: Dev-Server mit `?werkzeug=1` öffnen, Kamera passend zur Stationspose
+einrichten, Taste P → Download, Datei hierher verschieben und umbenennen.
+Fehlende Bilder blendet die Druckansicht automatisch aus (onerror).
+```
+
+- [ ] **Step 4: Prüfen**
 
 Run (in `app/`): `npm run dev` — `http://localhost:5173/?werkzeug=1` öffnen.
-Expected: Kamera per Maus frei drehbar/zoombar; Taste W schreibt eine JSON-Zeile mit `position`, `blickziel`, `dauer_s` in die Browser-Konsole. Ohne `?werkzeug=1` verhält sich die App wie in Task 8.
+Expected: Kamera per Maus frei drehbar/zoombar; Taste W schreibt eine JSON-Zeile mit `position`, `blickziel`, `dauer_s` in die Browser-Konsole; Taste P lädt ein PNG des aktuellen Bilds herunter. Ohne `?werkzeug=1` verhält sich die App wie in Task 8.
 
-- [ ] **Step 4: Alle Tests laufen lassen**
+- [ ] **Step 5: Alle Tests laufen lassen**
 
 Run (in `app/`): `npm test`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add app/src/waypoint-werkzeug.js app/src/main.js
-git commit -m "feat(app): Dev-Waypoint-Werkzeug fuer Kameraposen"
+git add app/src/waypoint-werkzeug.js app/src/main.js app/public/standbilder/HINWEIS.md
+git commit -m "feat(app): Dev-Waypoint-Werkzeug fuer Kameraposen und Standbilder"
 ```
 
 ---
@@ -1504,6 +1569,7 @@ export function verbindeVideoTextur(szene, videoEl) {
   if (!ziel) return false;
   const textur = new THREE.VideoTexture(videoEl);
   textur.colorSpace = THREE.SRGBColorSpace; // Spec §5: sonst ausgewaschen
+  textur.flipY = false; // glTF-UV-Konvention (V-Ursprung oben) — sonst steht das Video ab Task 11 kopf
   ziel.material = new THREE.MeshBasicMaterial({ map: textur });
   return true;
 }
@@ -1666,9 +1732,20 @@ quader("Station_4_anzeigetafel", (3.2, 0.15, 1.8), pos(9, 2, 5.8), m_dunkel)
 quader("Station_5_pruefstand", (2.8, 1.4, 1.0), pos(2, 0.5, 6), m_objekt)
 quader("Station_6_besprechung_tisch", (2.4, 1.2, 0.75), pos(-9, 0.4, 6), m_objekt)
 
-# ---- Stationsschilder (Nummern-Wuerfel ueber jeder Station) -----------------
+# ---- Stationsschilder: dunkler Wuerfel + helle Ziffer (Spec §4 Startbild) ---
 for nr, (x, z) in {1: (-10, -5), 2: (-3, -6), 3: (7, -5), 4: (9, 5), 5: (2, 6), 6: (-9, 6)}.items():
     quader(f"Schild_{nr}", (0.5, 0.5, 0.5), pos(x, 3.4, z), m_dunkel)
+    bpy.ops.object.text_add(location=pos(x, 3.4, z + 0.28))
+    ziffer = bpy.context.active_object
+    ziffer.name = f"Schild_{nr}_ziffer"
+    ziffer.data.body = str(nr)
+    ziffer.data.size = 0.35
+    ziffer.data.extrude = 0.02
+    ziffer.data.align_x = "CENTER"
+    ziffer.data.align_y = "CENTER"
+    ziffer.rotation_euler = (1.5708, 0, 0)  # aufrecht, Front nach Sueden (Three +z)
+    ziffer.data.materials.append(m_wand)
+    bpy.ops.object.convert(target="MESH")  # glTF exportiert Text-Objekte nicht zuverlaessig
 
 # ---- Export -----------------------------------------------------------------
 os.makedirs(os.path.dirname(ZIEL), exist_ok=True)
@@ -1790,10 +1867,15 @@ for (const st of daten.stationen) {
       li.textContent = punkt;
       liste.append(li);
     }
+    const bild = document.createElement('img');
+    bild.className = 'thumbnail';
+    bild.src = `./standbilder/${st.id}.png`; // Spec §7: Szenen-Thumbnail (Taste P, Task 9)
+    bild.alt = '';
+    bild.onerror = () => bild.remove(); // solange das Standbild fehlt: ausblenden
     const fuss = document.createElement('div');
     fuss.className = 'kapitel';
     fuss.textContent = `${st.kapitel} · Anschauungsobjekt: ${st.anschauungsobjekt}`;
-    s.append(nummer, h2, kern, liste, fuss);
+    s.append(nummer, h2, kern, liste, bild, fuss);
   });
 }
 ```
@@ -1838,6 +1920,7 @@ body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; background: #f
 .seite ul { list-style: none; }
 .seite li { font-size: 15pt; padding: 2.5mm 0 2.5mm 8mm; position: relative; }
 .seite li::before { content: "—"; position: absolute; left: 0; color: #5a5a5a; }
+.thumbnail { position: absolute; bottom: 10mm; left: 18mm; width: 60mm; border: 0.3mm solid #d0d0d0; }
 .kapitel { position: absolute; bottom: 10mm; right: 18mm; font-size: 10pt; color: #5a5a5a; }
 ```
 
@@ -1852,7 +1935,7 @@ Den auskommentierten Eintrag aus Task 1 Step 3 ersetzen durch:
 - [ ] **Step 5: Prüfen**
 
 Run (in `app/`): `npm run dev` — `http://localhost:5173/druck.html` öffnen.
-Expected: Deckblatt + 6 Stationsseiten (Station 6 mit Zusatz „(Reserve)"), Kopfzeile auf jeder Seite. Strg+P → Druckvorschau zeigt 7 Querformat-Seiten ohne abgeschnittene Inhalte.
+Expected: Deckblatt + 6 Stationsseiten (Station 6 mit Zusatz „(Reserve)"), Kopfzeile auf jeder Seite; solange keine Standbilder in `public/standbilder/` liegen, erscheinen die Thumbnails nicht (onerror blendet sie aus — kein Fehler). Strg+P → Druckvorschau zeigt 7 Querformat-Seiten ohne abgeschnittene Inhalte.
 Danach: `npm run build` — Expected: Build läuft fehlerfrei durch und `dist/druck.html` existiert.
 
 - [ ] **Step 6: Commit**
@@ -1976,7 +2059,7 @@ start "rundgang-server" cmd /c "npm run preview"
 timeout /t 3 /nobreak >nul
 rem Edge ist auf Windows 11 immer vorhanden und per App-Pfad startbar.
 rem Fuer Chrome stattdessen die auskommentierte Zeile verwenden.
-start "" msedge --kiosk http://localhost:4173
+start "" msedge --kiosk http://localhost:4173 --edge-kiosk-type=fullscreen --no-first-run
 rem start "" chrome --kiosk http://localhost:4173
 ```
 
@@ -2039,6 +2122,6 @@ git commit -m "feat: Kiosk-Start und Pruefungstag-Checkliste"
 | Fahrten enden deterministisch in identischer Pose | Task 4 (Tests), Task 8 |
 | Panels lesbar, relative Einheiten | Task 1 (clamp()-CSS); Projektionstest bleibt Teil der Generalprobe (separater Schritt) |
 | Reload landet am selben Schritt | Task 6 + Task 8 (Step 4.6) |
-| PDF aus stationen.json, eigenständig vortragsfähig | Task 12 |
+| PDF aus stationen.json, eigenständig vortragsfähig | Task 12 (Szenen-Thumbnails via Taste P aus Task 9) |
 | Kein präsentierbarer [PLATZHALTER] | spätere Inhalte-Phase; Checkliste Task 14 erinnert daran |
 | Stoppuhr ≤ 13:00 | Generalprobe (nicht Teil dieses Plans, Spec §9 Phase 6) |
