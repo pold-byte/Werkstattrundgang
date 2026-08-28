@@ -11,10 +11,15 @@ export function erzeugeRenderer(canvas) {
 export function erzeugeSzene() {
   const szene = new THREE.Scene();
   szene.background = new THREE.Color(0xdfe3e6);
-  szene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  szene.add(new THREE.AmbientLight(0xffffff, 0.75));
   const sonne = new THREE.DirectionalLight(0xffffff, 1.6);
   sonne.position.set(12, 20, 8);
   szene.add(sonne);
+  // Fuelllicht von der Gegenseite: zeichnet die sonnenabgewandten Flaechen,
+  // damit Wandrelief und Kanten ohne Umrandungen plastisch bleiben.
+  const fuelllicht = new THREE.DirectionalLight(0xdfe8ff, 0.55);
+  fuelllicht.position.set(-14, 10, -10);
+  szene.add(fuelllicht);
   return szene;
 }
 

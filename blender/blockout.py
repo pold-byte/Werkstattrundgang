@@ -8,9 +8,9 @@ Laufkatzen, Rollgerueste, Service-/Werkstattwagen, Oelfaesser auf Auffangwanne,
 orange Schraffur-Zone, Signalsaeulen, Kabeltrassen. Farbakzente in entsaettigtem
 Blau/Orange/Sicherheitsgelb; alle Toene bleiben graustufentauglich.
 
-Konturen: ausgewaehlte Objekte bekommen eine Inverted-Hull-Silhouette (Duplikat mit
-umgedrehten Normalen, schwarz, backface-culled) — ergibt den illustrierten Look der
-Referenz und funktioniert ohne Shader in Three.js (Material exportiert single-sided).
+Konturen entstehen ueber Geometrie statt schwarzer Umrandungen: Sockelleisten,
+Pilaster, Gesims-/Attikabaender und Fensterblenden gliedern die Waende; Bodenfugen,
+Kantenprofile und Zweiton-Abstufungen geben den Objekten Plastizitaet.
 
 Koordinaten-Vertrag: Three.js ist Y-up, Blender Z-up; der glTF-Exporter konvertiert
 automatisch (+Y up). pos() nimmt Three.js-Koordinaten (x, y, z wie in stationen.json)
@@ -18,7 +18,6 @@ und uebersetzt nach Blender (x, -z, y); kasten() nimmt (breite_x, tiefe_z, hoehe
 Objektnamen folgen dem Vertrag Station_<nr>_<id> bzw. Monitor_Bildschirm.
 """
 import bpy
-import bmesh
 import os
 
 ZIEL = os.path.join(os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd(),
@@ -51,28 +50,21 @@ def quader(name, groesse, position, mat, drehung=None):
     return obj
 
 
-def zeichne_kontur(obj):
-    """Inverted-Hull-Silhouette: groesseres Duplikat, Normalen umgedreht, schwarz."""
-    bpy.ops.mesh.primitive_cube_add(size=1, location=obj.location)
-    k = bpy.context.active_object
-    k.name = obj.name + "_kontur"
-    k.scale = tuple(s + 2 * KONTUR_DICKE for s in obj.scale)
-    k.rotation_euler = obj.rotation_euler
-    bm = bmesh.new()
-    bm.from_mesh(k.data)
-    for f in bm.faces:
-        f.normal_flip()
-    bm.to_mesh(k.data)
-    bm.free()
-    k.data.materials.append(m_kontur)
-    return k
-
-
 def kasten(name, dx, dz, dy, x, y, z, mat, drehung=None, kontur=False):
-    """quader in Three.js-Achsen: Groesse (dx, dz, dy), Mittelpunkt (x, y, z)."""
-    obj = quader(name, (dx, dz, dy), pos(x, y, z), mat, drehung)
-    if kontur:
-        zeichne_kontur(obj)
+    """quader in Three.js-Achsen: Groesse (dx, dz, dy), Mittelpunkt (x, y, z).
+
+    kontur wird ignoriert (schwarze Inverted-Hull-Umrandungen wurden entfernt;
+    Plastizitaet kommt jetzt aus Geometrie-Gliederung und Zweiton-Abstufung)."""
+    return quader(name, (dx, dz, dy), pos(x, y, z), mat, drehung)
+
+
+def kegel(name, radius, hoehe, x, y, z, mat):
+    """Kegel (Achse senkrecht, weite Oeffnung unten) — fuer Haengelampen."""
+    bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=radius, radius2=0.05,
+                                    depth=hoehe, location=pos(x, y, z))
+    obj = bpy.context.active_object
+    obj.name = name
+    obj.data.materials.append(mat)
     return obj
 
 
@@ -80,22 +72,22 @@ def kasten(name, dx, dz, dy, x, y, z, mat, drehung=None, kontur=False):
 bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete()
 
-GRAU_BODEN = (0.55, 0.58, 0.60)
-GRAU_GLEISZONE = (0.40, 0.43, 0.46)
-GRAU_WAND = (0.78, 0.80, 0.82)
-GRAU_OBJEKT = (0.62, 0.66, 0.69)
-GRAU_DUNKEL = (0.28, 0.30, 0.33)
-STAHL = (0.46, 0.51, 0.56)
-FENSTER = (0.72, 0.84, 0.95)
+GRAU_BODEN = (0.53, 0.58, 0.54)    # gruenlich-grauer Betonboden (Referenz-Interieur)
+GRAU_GLEISZONE = (0.41, 0.45, 0.42)
+GRAU_WAND = (0.82, 0.79, 0.71)     # warmes Creme fuer Waende und Decke
+GRAU_OBJEKT = (0.66, 0.64, 0.58)
+GRAU_DUNKEL = (0.30, 0.29, 0.27)
+STAHL = (0.62, 0.60, 0.54)
+FENSTER = (0.93, 0.93, 0.87)       # Oberlichter/Fensterpaneele, warmweiss
 BLAU = (0.28, 0.44, 0.66)        # Leitstand/Regal/Rohre (Referenz)
 ORANGE = (0.80, 0.42, 0.12)      # Sicherheits-Akzente (Referenz)
 MARKIERUNG = (0.88, 0.75, 0.15)  # Sicherheits-Gelb (Markierung, Warnstreifen)
-STAHL_HELL = (0.80, 0.83, 0.86)  # weisser Stahlbau der Dacharbeitsbuehnen (ICE-Werk-Foto)
+STAHL_HELL = (0.80, 0.78, 0.71)  # heller Stahlbau/Rohre — cremefarben wie die Referenz
 GRUEN = (0.30, 0.55, 0.32)       # Signal-/Rettungszeichen-Gruen
-GRUBE = (0.15, 0.16, 0.18)       # Untersuchungsgrube
+GRUBE = (0.15, 0.16, 0.15)       # Untersuchungsgrube
 ROT_ZUG = (0.70, 0.12, 0.16)     # Verkehrsrot-Streifen am Triebzug
 WEISS_ZUG = (0.88, 0.89, 0.90)
-KONTUR = (0.05, 0.05, 0.07)
+WAND_RELIEF = (0.72, 0.69, 0.61) # Pilaster/Traeger — eine Stufe dunkler als die Wand
 
 m_boden = material("Boden", GRAU_BODEN)
 m_gleiszone = material("Gleiszone", GRAU_GLEISZONE)
@@ -112,8 +104,7 @@ m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.5)
 m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.6)
 m_gruen = material("Gruen", GRUEN)
 m_grube = material("Grube", GRUBE)
-m_kontur = material("Kontur", KONTUR, rauheit=1.0)
-m_kontur.use_backface_culling = True  # exportiert single-sided — Pflicht fuer Inverted Hull
+m_relief = material("WandRelief", WAND_RELIEF)
 
 # ---- Halle: Boden, Gleiszone, Markierungen ----------------------------------
 kasten("Halle_Boden", 34, 20, 0.2, 0, -0.1, 0, m_boden)
@@ -138,16 +129,53 @@ for i, fz in enumerate(range(-8, 9, 4)):
     kasten(f"Wand_West_Sprosse_{i}", 0.3, 0.15, 1.8, -17, 4.4, fz, m_stahl)
 kasten("Wand_West_Quersprosse", 0.24, 20, 0.08, -17, 4.4, 0, m_stahl)
 
-# ---- Suedwand: niedriger Sockel (Cutaway fuer die Totale) -------------------
-kasten("Wand_Sued_Sockel", 34, 0.3, 1.0, 0, 0.5, 10, m_wand)
+# ---- Suedwand mit Fensterband (Halle ist jetzt geschlossen; Totale liegt innen) ----
+kasten("Wand_Sued_Unten", 34, 0.3, 3.5, 0, 1.75, 10, m_wand)
+kasten("Wand_Sued_Fenster", 34, 0.1, 1.8, 0, 4.4, 10.08, m_fenster)
+kasten("Wand_Sued_Oben", 34, 0.3, 0.7, 0, 5.65, 10, m_wand)
+for i, fx in enumerate(range(-16, 17, 4)):
+    kasten(f"Wand_Sued_Sprosse_{i}", 0.15, 0.3, 1.8, fx, 4.4, 10, m_stahl)
+kasten("Wand_Sued_Quersprosse", 34, 0.24, 0.08, 0, 4.4, 10, m_stahl)
 
 # ---- Ostwand mit Tor, Gleis fuehrt hinaus -----------------------------------
 kasten("Wand_Ost_Nord", 0.3, 8.2, 6, 17, 3, -5.9, m_wand)
 kasten("Wand_Ost_Sued", 0.3, 8.2, 6, 17, 3, 5.9, m_wand)
 kasten("Wand_Ost_Sturz", 0.3, 3.6, 1.8, 17, 5.1, 0, m_wand)
-kasten("Tor_Pfosten_Nord", 0.25, 0.25, 4.4, 16.8, 2.2, -1.9, m_orange, kontur=True)
-kasten("Tor_Pfosten_Sued", 0.25, 0.25, 4.4, 16.8, 2.2, 1.9, m_orange, kontur=True)
-kasten("Tor_Balken", 0.25, 4.3, 0.25, 16.8, 4.35, 0, m_orange, kontur=True)
+kasten("Tor_Pfosten_Nord", 0.25, 0.25, 4.4, 16.8, 2.2, -1.9, m_orange)
+kasten("Tor_Pfosten_Sued", 0.25, 0.25, 4.4, 16.8, 2.2, 1.9, m_orange)
+kasten("Tor_Balken", 0.25, 4.3, 0.25, 16.8, 4.35, 0, m_orange)
+
+# ---- Wandrelief: Sockel, Pilaster, Gesims, Attika (Konturen ohne Umrandung) ----
+# Nordwand
+kasten("Relief_Nord_Sockel", 34, 0.08, 0.4, 0, 0.2, -9.8, m_relief)
+kasten("Relief_Nord_Traeger", 34, 0.26, 0.55, 0, 3.55, -9.75, m_relief)
+kasten("Relief_Nord_Attika", 34, 0.14, 0.22, 0, 5.9, -9.85, m_relief)
+for i, px in enumerate(range(-15, 16, 3)):
+    kasten(f"Relief_Nord_Pilaster_{i}", 0.28, 0.14, 3.3, px, 1.75, -9.8, m_relief)
+# Westwand
+kasten("Relief_West_Sockel", 0.08, 20, 0.4, -16.8, 0.2, 0, m_relief)
+kasten("Relief_West_Traeger", 0.26, 20, 0.55, -16.75, 3.55, 0, m_relief)
+kasten("Relief_West_Attika", 0.14, 20, 0.22, -16.85, 5.9, 0, m_relief)
+for i, pz in enumerate(range(-8, 9, 4)):
+    kasten(f"Relief_West_Pilaster_{i}", 0.14, 0.28, 3.3, -16.8, 1.75, pz, m_relief)
+# Ostwand (Pilaster sparen das Tor aus)
+kasten("Relief_Ost_Sockel_Nord", 0.08, 8.2, 0.4, 16.8, 0.2, -5.9, m_relief)
+kasten("Relief_Ost_Sockel_Sued", 0.08, 8.2, 0.4, 16.8, 0.2, 5.9, m_relief)
+kasten("Relief_Ost_Traeger_Nord", 0.26, 8.2, 0.55, 16.75, 3.55, -5.9, m_relief)
+kasten("Relief_Ost_Traeger_Sued", 0.26, 8.2, 0.55, 16.75, 3.55, 5.9, m_relief)
+kasten("Relief_Ost_Attika", 0.14, 20, 0.22, 16.85, 5.9, 0, m_relief)
+for i, pz in enumerate((-9, -6, -3.2, 3.2, 6, 9)):
+    kasten(f"Relief_Ost_Pilaster_{i}", 0.14, 0.28, 3.3, 16.8, 1.75, pz, m_relief)
+# Suedwand: gleiche Gliederung wie Nord
+kasten("Relief_Sued_Sockel", 34, 0.08, 0.4, 0, 0.2, 9.8, m_relief)
+kasten("Relief_Sued_Traeger", 34, 0.26, 0.55, 0, 3.55, 9.75, m_relief)
+kasten("Relief_Sued_Attika", 34, 0.14, 0.22, 0, 5.9, 9.85, m_relief)
+for i, px in enumerate(range(-15, 16, 3)):
+    kasten(f"Relief_Sued_Pilaster_{i}", 0.28, 0.14, 3.3, px, 1.75, 9.8, m_relief)
+# Bodenfugen (Drainage-/Dehnungsfugen gliedern die grosse Flaeche)
+for i, fx in enumerate((-8.5, 0, 8.5)):
+    kasten(f"Relief_Bodenfuge_{i}", 0.06, 19.4, 0.015, fx, 0.012, 0, m_gleiszone)
+kasten("Relief_Bodenfuge_Laengs", 33.4, 0.06, 0.015, 0, 0.012, -6.5, m_gleiszone)
 
 # ---- Stahlbau: Stuetzen, Binder, Teildach, Rohre, Leuchten ------------------
 for i, sx in enumerate((-13.6, -6.8, 0, 6.8, 13.6)):
@@ -157,17 +185,24 @@ for i, sz in enumerate((-6.7, 0, 6.7)):
 for i, tx in enumerate((-12, -6, 0, 6, 12)):
     kasten(f"Dachbinder_{i}", 0.22, 19.4, 0.28, tx, 5.7, 0, m_stahl)
     kasten(f"Stuetze_Sued_{i}", 0.25, 0.25, 5.7, tx, 2.85, 9.55, m_stahl)
-# Teildach ueber der Nordhaelfte: Cutaway wie in der Referenz
-kasten("Dach_Nord", 34, 3.5, 0.12, 0, 5.95, -8.2, m_stahl)
-for i, px in enumerate((-15, -9, -3, 3, 9, 15)):
-    kasten(f"Dach_Pfette_{i}", 0.14, 3.5, 0.18, px, 5.82, -8.2, m_dunkel)
+# Volle Rippendecke mit Oberlichtern (Referenz-Interieur)
+kasten("Dach_Decke", 34, 20, 0.12, 0, 6.26, 0, m_wand)
+for i in range(11):
+    kasten(f"Dach_Rippe_{i}", 34, 0.12, 0.22, 0, 6.08, -9 + i * 1.8, m_relief)
+for i, (ox, oz) in enumerate(((-12, -4.6), (-4, -4.6), (4, -4.6), (12, -4.6),
+                              (-12, 4.4), (-4, 4.4), (4, 4.4), (12, 4.4))):
+    kasten(f"Dach_Oberlicht_{i}", 2.4, 1.5, 0.06, ox, 6.18, oz, m_fenster)
+    kasten(f"Dach_Oberlicht_{i}_rahmen", 2.6, 1.7, 0.04, ox, 6.23, oz, m_relief)
 kasten("Rohr_Blau", 33, 0.18, 0.18, 0, 5.1, -9.3, m_blau)
 kasten("Rohr_Grau", 33, 0.16, 0.16, 0, 4.8, -9.0, m_stahl)
 kasten("Rohr_Orange", 33, 0.12, 0.12, 0, 4.55, -9.15, m_orange)
-for i, lx in enumerate((-10, -4.5, 1, 6.5, 12)):
-    kasten(f"Leuchte_{i}_schirm", 0.95, 0.4, 0.1, lx, 4.62, 0, m_dunkel)
-    kasten(f"Leuchte_{i}", 0.85, 0.32, 0.06, lx, 4.56, 0, m_fenster)
-    kasten(f"Leuchte_{i}_seil", 0.03, 0.03, 1.0, lx, 5.2, 0, m_dunkel)
+# Kegel-Haengelampen wie im Referenz-Interieur
+for i, (lx, lz) in enumerate(((-12, 0), (-6, 0), (0, 0), (6, 0), (12, 0),
+                              (-9, -6.5), (-1, -6.5), (7, -6.5),
+                              (-8, 5.2), (1, 5.2), (10, 5.2))):
+    kegel(f"Lampe_{i}_schirm", 0.38, 0.45, lx, 4.85, lz, m_stahlhell)
+    kasten(f"Lampe_{i}_glut", 0.3, 0.3, 0.06, lx, 4.62, lz, m_fenster)
+    kasten(f"Lampe_{i}_seil", 0.03, 0.03, 1.2, lx, 5.65, lz, m_dunkel)
 
 # ---- Empore an der Westwand mit Treppe (Referenz: Galerie links oben) -------
 kasten("Empore_Plattform", 3.0, 10, 0.15, -15.5, 3.05, -5, m_objekt, kontur=True)
@@ -295,12 +330,46 @@ kasten("Kabel_Abgang_1", 0.1, 0.1, 2.2, 2.5, 3.6, -9.15, m_dunkel)
 kasten("Kabel_Abgang_2", 0.1, 0.1, 2.2, 7, 3.6, -9.15, m_dunkel)
 kasten("Kabel_Trommel", 0.5, 0.5, 0.5, 0.2, 0.25, -8.3, m_blau, kontur=True)
 kasten("Kabel_Trommel_Kern", 0.2, 0.56, 0.2, 0.2, 0.25, -8.3, m_dunkel)
-for i, lx in enumerate((-7, -1, 5, 11)):  # zweite Leuchtenreihe (Foto: dichte Decke)
-    kasten(f"Leuchte_Sued_{i}", 0.7, 0.28, 0.06, lx, 4.5, 3.2, m_fenster)
-    kasten(f"Leuchte_Sued_{i}_seil", 0.03, 0.03, 1.1, lx, 5.1, 3.2, m_dunkel)
+# Rohrlaeufe mit Boegen an der Nordwand (Referenz: Leitungen mit runden Ecken)
+kasten("Rohrlauf_Nord_Horizontal", 10, 0.12, 0.12, -11, 3.0, -9.7, m_stahlhell)
+kasten("Rohrlauf_Nord_Bogen_West", 0.2, 0.2, 0.2, -16, 3.0, -9.7, m_stahlhell)
+kasten("Rohrlauf_Nord_Bogen_Ost", 0.2, 0.2, 0.2, -6, 3.0, -9.7, m_stahlhell)
+kasten("Rohrlauf_Nord_Fall_West", 0.12, 0.12, 2.4, -16, 1.7, -9.7, m_stahlhell)
+kasten("Rohrlauf_Nord_Fall_Ost", 0.12, 0.12, 2.4, -6, 1.7, -9.7, m_stahlhell)
+kasten("Rohrlauf_Ost_Horizontal", 0.12, 5, 0.12, 16.7, 2.6, -6, m_stahlhell)
+kasten("Rohrlauf_Ost_Bogen", 0.2, 0.2, 0.2, 16.7, 2.6, -3.4, m_stahlhell)
+kasten("Rohrlauf_Ost_Fall", 0.12, 0.12, 2.0, 16.7, 1.5, -3.4, m_stahlhell)
+# Lueftungskanal mit S-Schwung von der Decke (Referenz-Bildmitte)
+kasten("Lueftung_Fall_Oben", 0.55, 0.55, 1.4, -1.5, 5.5, -7.2, m_stahlhell)
+kasten("Lueftung_Schwung", 0.5, 0.5, 1.3, -1.5, 4.35, -6.8, m_stahlhell, drehung=(0.6, 0, 0))
+kasten("Lueftung_Fall_Unten", 0.5, 0.5, 1.2, -1.5, 3.3, -6.45, m_stahlhell)
+kasten("Lueftung_Auslass", 0.75, 0.75, 0.25, -1.5, 2.6, -6.45, m_stahl)
+# Wandkonsolen (kleine Ablagen wie im Referenzbild)
+kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell)
+kasten("Konsole_1_winkel", 0.06, 0.3, 0.4, -13.5, 1.95, -9.75, m_stahlhell)
+kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell)
+kasten("Konsole_2_winkel", 0.06, 0.3, 0.4, 9.5, 2.15, -9.75, m_stahlhell)
 # Rettungszeichen am Tor und an der Westwand
 kasten("Rettungszeichen_Tor", 0.5, 0.05, 0.3, 15.8, 3.0, -1.6, m_gruen)
 kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.8, 3.0, -4, m_gruen)
+
+# ---- Kantenprofile an Objekten (Ersatz fuer die entfernten Umrandungen) -----
+# Anzeigetafel: umlaufender heller Rahmen
+kasten("Station_4_rahmen_oben", 3.3, 0.18, 0.08, 9, 2.92, 5.8, m_stahlhell)
+kasten("Station_4_rahmen_unten", 3.3, 0.18, 0.08, 9, 1.08, 5.8, m_stahlhell)
+kasten("Station_4_rahmen_west", 0.08, 0.18, 1.92, 7.36, 2, 5.8, m_stahlhell)
+kasten("Station_4_rahmen_ost", 0.08, 0.18, 1.92, 10.64, 2, 5.8, m_stahlhell)
+# Dacharbeitsbuehnen: gelbe Fussleisten an den Plattformkanten
+kasten("Buehne_Fussleiste_Nord", 11.5, 0.05, 0.12, -1.25, 3.36, -3.1, m_markierung)
+kasten("Buehne_Fussleiste_Sued", 11.5, 0.05, 0.12, -1.25, 3.36, 3.1, m_markierung)
+# Regal: Kopfblende
+kasten("Station_2_kopfblende", 2.56, 1.04, 0.1, -3, 2.25, -6, m_dunkel)
+# Meisterbuero: Eckleisten und Sockel
+kasten("Relief_Buero_Sockel", 4.1, 3.1, 0.18, -10.5, 0.09, -7.5, m_relief)
+kasten("Relief_Buero_Ecke_West", 0.14, 0.14, 2.6, -12.5, 1.3, -6.0, m_relief)
+kasten("Relief_Buero_Ecke_Ost", 0.14, 0.14, 2.6, -8.5, 1.3, -6.0, m_relief)
+# Empore: Stirnblende an der Plattformkante
+kasten("Empore_Blende", 0.06, 10, 0.22, -14.02, 3.05, -5, m_relief)
 
 # ---- Absperrpfosten und Muelleimer (Referenz: orange Akzente) ---------------
 for i, (ax, az) in enumerate(((-10, 2.4), (-3, 2.4), (4, 2.4), (11, 2.4))):
