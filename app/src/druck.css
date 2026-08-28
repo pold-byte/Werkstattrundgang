@@ -1,0 +1,39 @@
+@page { size: A4 landscape; margin: 0; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; background: #fff; }
+
+.druckhinweis { padding: 0.5rem 1rem; background: #f4f4f4; font-size: 0.9rem; }
+@media print { .druckhinweis { display: none; } }
+
+.seite {
+  width: 297mm;
+  height: 209mm;
+  padding: 14mm 18mm;
+  page-break-after: always;
+  position: relative;
+  border-bottom: 1px dashed #d0d0d0; /* nur Bildschirm; Druck bricht ohnehin um */
+}
+@media print { .seite { border-bottom: none; } }
+
+.seite header {
+  position: absolute;
+  top: 6mm; left: 18mm; right: 18mm;
+  font-size: 10pt;
+  color: #5a5a5a;
+  border-bottom: 0.3mm solid #d0d0d0;
+  padding-bottom: 2mm;
+}
+
+.seite h1 { font-size: 28pt; margin-top: 40mm; max-width: 220mm; }
+.untertitel { font-size: 16pt; color: #5a5a5a; margin-top: 8mm; }
+
+.stationsnummer { margin-top: 14mm; font-size: 12pt; color: #5a5a5a; text-transform: uppercase; letter-spacing: 0.06em; }
+.seite h2 { font-size: 26pt; margin: 4mm 0 8mm; }
+.kernaussage { font-size: 18pt; font-weight: bold; margin-bottom: 8mm; max-width: 230mm; }
+.seite ul { list-style: none; }
+.seite li { font-size: 15pt; padding: 2.5mm 0 2.5mm 8mm; position: relative; }
+.seite li::before { content: "—"; position: absolute; left: 0; color: #5a5a5a; }
+.thumbnail { position: absolute; bottom: 10mm; left: 18mm; width: 60mm; border: 0.3mm solid #d0d0d0; }
+.kapitel { position: absolute; bottom: 10mm; right: 18mm; font-size: 10pt; color: #5a5a5a; }
