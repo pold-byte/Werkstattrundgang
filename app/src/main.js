@@ -176,7 +176,7 @@ async function start() {
   wendeAnsichtAn(true);
   bereit = true;
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
-  if (import.meta.env.DEV) window.__szene = szene; // Dev-Inspektion (im Build entfernt)
+  if (import.meta.env.DEV) Object.assign(window, { __szene: szene, __renderer: renderer, __kamera: kamera }); // Dev-Inspektion (im Build entfernt)
   schleife();
 }
 
