@@ -69,6 +69,7 @@ PRUEFUNGSTAG.md              — Checkliste (Task 14)
 - Create: `app/package.json`
 - Create: `app/vite.config.js`
 - Create: `app/index.html`
+- Create: `app/src/main.js` (Stub, wird in Task 8 ersetzt)
 - Create: `app/src/stil.css`
 - Create: `app/src/generiert/szene-glb.js`
 - Create: `app/tests/rauchtest.test.js`
@@ -81,6 +82,7 @@ PRUEFUNGSTAG.md              — Checkliste (Task 14)
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": { "node": ">=20.19" },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -107,7 +109,7 @@ Expected: `node_modules/` entsteht, Exit-Code 0. Sollte eine der exakt gepinnten
 - [ ] **Step 3: vite.config.js anlegen**
 
 ```js
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
@@ -165,7 +167,15 @@ Hinweis: `druck.html` existiert erst ab Task 12. Damit `npm run build` bis dahin
 </html>
 ```
 
-- [ ] **Step 5: src/stil.css anlegen**
+- [ ] **Step 5: main.js-Stub anlegen** — `app/src/main.js`
+
+index.html referenziert `./src/main.js`; ohne die Datei bricht `vite build` ab. Bis zur echten Integrationsschicht (Task 8) genügt ein Stub:
+
+```js
+// Integrationsschicht — wird in Task 8 implementiert.
+```
+
+- [ ] **Step 6: src/stil.css anlegen**
 
 ```css
 :root {
@@ -209,7 +219,7 @@ html, body {
   border: 1px solid var(--grau-20);
   padding: 1.2rem 1.6rem;
 }
-.titel h1 { font-size: clamp(1.2rem, 2.6vw, 2.2rem); }
+.titel h1 { font-size: clamp(1.2rem, 2.6vw, 2.9rem); }
 .titel p { margin-top: 0.5rem; font-size: clamp(1.1rem, 1.8vw, 2.2rem); color: var(--grau-60); }
 
 /* Spec §10: kein Panel-Text unter 24-pt-Äquivalent bei 1080p (24 pt = 32 px CSS). */
@@ -272,14 +282,14 @@ html, body {
 [hidden] { display: none !important; }
 ```
 
-- [ ] **Step 6: Stub für den Notfall-Build anlegen** — `app/src/generiert/szene-glb.js`
+- [ ] **Step 7: Stub für den Notfall-Build anlegen** — `app/src/generiert/szene-glb.js`
 
 ```js
 // Wird nur vom Notfall-Build (tools/baue-notfall.mjs) mit echten Daten überschrieben.
 export const szeneGlbBase64 = '';
 ```
 
-- [ ] **Step 7: Rauchtest schreiben** — `app/tests/rauchtest.test.js`
+- [ ] **Step 8: Rauchtest schreiben** — `app/tests/rauchtest.test.js`
 
 ```js
 import { describe, it, expect } from 'vitest';
@@ -288,23 +298,27 @@ describe('Werkzeugkette', () => {
   it('führt Tests aus', () => {
     expect(1 + 1).toBe(2);
   });
+
+  it('stellt die happy-dom-Umgebung bereit', () => {
+    expect(typeof document).toBe('object');
+  });
 });
 ```
 
-- [ ] **Step 8: Testlauf**
+- [ ] **Step 9: Testlauf**
 
 Run (in `app/`): `npm test`
-Expected: `1 passed`.
+Expected: `2 passed`.
 
-- [ ] **Step 9: Dev-Server-Probe**
+- [ ] **Step 10: Dev-Server-Probe**
 
 Run (in `app/`): `npm run dev` — im Browser `http://localhost:5173` öffnen.
-Expected: schwarze Seite mit grauer Kopfzeile „DB Intern / DB internal" und Titel-Panel (Konsole zeigt einen 404 für `main.js` noch nicht — die Datei folgt in Task 8; bis dahin ist ein Fehler „Failed to load … main.js" im Netzwerk-Tab akzeptiert). Server danach beenden (Strg+C).
+Expected: schwarze Seite mit grauer Kopfzeile „DB Intern / DB internal" und Titel-Panel. Server danach beenden (Strg+C).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add app/package.json app/package-lock.json app/vite.config.js app/index.html app/src/stil.css app/src/generiert/szene-glb.js app/tests/rauchtest.test.js
+git add app/package.json app/package-lock.json app/vite.config.js app/index.html app/src/main.js app/src/stil.css app/src/generiert/szene-glb.js app/tests/rauchtest.test.js
 git commit -m "feat(app): Projektgeruest mit Vite, Vitest und Grundlayout"
 ```
 
@@ -1166,7 +1180,7 @@ git commit -m "feat(app): DOM-Overlays fuer Panel, Titel, Schwarzbild und Video"
 
 **Files:**
 - Create: `app/src/szene.js`
-- Create: `app/src/main.js`
+- Modify: `app/src/main.js` (Stub aus Task 1 wird vollständig ersetzt)
 
 - [ ] **Step 1: szene.js anlegen**
 
