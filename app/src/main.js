@@ -7,6 +7,8 @@ import { tasteZuAktion, Eingabesperre } from './steuerung.js';
 import { speichereStand, ladeStand } from './speicher.js';
 import { zeigePanel, versteckePanel, zeigeTitel, schalteSchwarzbild, schalteVideoGross, schalteDimmer } from './overlays.js';
 import { erzeugeRenderer, erzeugeSzene, bauePlatzhalter, ladeModell, base64ZuArrayBuffer } from './szene.js';
+import { aktiviereWaypointWerkzeug } from './waypoint-werkzeug.js';
+import { verbindeVideoTextur } from './videotextur.js';
 
 const canvas = document.getElementById('buehne');
 const panelEl = document.getElementById('panel');
@@ -15,6 +17,7 @@ const schwarzEl = document.getElementById('schwarzbild');
 const dimmerEl = document.getElementById('dimmer');
 const videoOverlayEl = document.getElementById('video-overlay');
 const videoGrossEl = document.getElementById('video-gross');
+const videoTexturEl = document.getElementById('video-textur');
 
 const renderer = erzeugeRenderer(canvas);
 const szene = erzeugeSzene();
@@ -105,6 +108,7 @@ function beendeFahrt() {
 window.addEventListener('keydown', (ereignis) => {
   // Prüfungsraum-Härtung (Spec §6): F5/Scroll-Tasten neutralisieren.
   if (ereignis.key === 'F5') { ereignis.preventDefault(); return; }
+  if (videoTexturEl.paused) videoTexturEl.play().catch(() => {}); // Autoplay erst nach Nutzergeste (Spec §5)
   // Leertaste bei offener Großansicht = Pause/Weiter des Videos.
   if (ereignis.key === ' ' && !videoOverlayEl.hidden) {
     ereignis.preventDefault();
@@ -127,12 +131,14 @@ window.addEventListener('resize', () => {
 });
 
 const uhr = new THREE.Clock();
+let orbitAktiv = null;
 function schleife() {
   const delta = uhr.getDelta();
   if (aktuelleFahrt) {
     setzeKamera(aktuelleFahrt.fortschritt(delta));
     if (aktuelleFahrt.fertig) beendeFahrt();
   }
+  if (orbitAktiv) orbitAktiv.update();
   renderer.render(szene, kamera);
   requestAnimationFrame(schleife);
 }
@@ -150,11 +156,14 @@ async function start() {
     }
   }
 
+  verbindeVideoTextur(szene, videoTexturEl);
+
   const gespeichert = ladeStand(sessionStorage);
   if (gespeichert) zustand.setzeStand(gespeichert);
   setzeKamera(poseFuerOrt(leiteAnsichtAb(zustand.aktuell, daten.stationen).ort));
   aktuellerOrt = leiteAnsichtAb(zustand.aktuell, daten.stationen).ort;
   wendeAnsichtAn(true);
+  orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
   schleife();
 }
 
