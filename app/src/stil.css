@@ -68,7 +68,9 @@ html, body {
 #panel ul { list-style: none; }
 #panel li {
   font-size: clamp(1.1rem, 1.8vw, 2.25rem);
-  padding: 0.45rem 0 0.45rem 1.2rem;
+  /* Einzug in em: skaliert mit der Schrift, sonst uebermalt der Gedankenstrich
+     (Breite 1 em) bei grossen Viewports den Textanfang. */
+  padding: 0.45rem 0 0.45rem 1.4em;
   position: relative;
 }
 #panel li::before { content: "—"; position: absolute; left: 0; color: var(--grau-60); }
