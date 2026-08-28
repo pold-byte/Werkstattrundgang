@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Werkstattrundgang</title>
+  <link rel="stylesheet" href="./src/stil.css">
+</head>
+<body>
+  <header id="kopfzeile">DB Intern / DB internal</header>
+  <canvas id="buehne"></canvas>
+  <div id="titel" class="titel">
+    <h1>Eine Kennzahl — von der Werkstatthalle bis in die Planungsrunde</h1>
+    <p>[PLATZHALTER: Untertitel/Name/Datum]</p>
+  </div>
+  <div id="dimmer"></div>
+  <aside id="panel"></aside>
+  <div id="video-overlay" hidden>
+    <video id="video-gross" src="./video/demo_1080.mp4" muted playsinline preload="auto"></video>
+  </div>
+  <video id="video-textur" src="./video/demo_720.mp4" muted playsinline loop preload="auto" hidden></video>
+  <div id="schwarzbild" hidden></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
