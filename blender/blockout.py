@@ -84,9 +84,15 @@ quader("Station_5_pruefstand", (2.8, 1.4, 1.0), pos(2, 0.5, 6), m_objekt)
 quader("Station_6_besprechung_tisch", (2.4, 1.2, 0.75), pos(-9, 0.4, 6), m_objekt)
 
 # ---- Stationsschilder: dunkler Wuerfel + helle Ziffer (Spec §4 Startbild) ---
+# Die Ziffer haengt auf der kamerazugewandten Seite: Nord-Stationen (z<0) werden von
+# Sueden betrachtet (Ziffer bei z+0.28, Front nach Sueden), Sued-Stationen (z>0) von
+# Norden (Ziffer bei z-0.28, um 180 Grad gedreht) — sonst verdeckt der eigene Wuerfel
+# die Ziffer in den Stationsansichten 4-6.
 for nr, (x, z) in {1: (-10, -5), 2: (-3, -6), 3: (7, -5), 4: (9, 5), 5: (2, 6), 6: (-9, 6)}.items():
     quader(f"Schild_{nr}", (0.5, 0.5, 0.5), pos(x, 3.4, z), m_dunkel)
-    bpy.ops.object.text_add(location=pos(x, 3.4, z + 0.28))
+    nach_norden = z > 0
+    versatz = -0.28 if nach_norden else 0.28
+    bpy.ops.object.text_add(location=pos(x, 3.4, z + versatz))
     ziffer = bpy.context.active_object
     ziffer.name = f"Schild_{nr}_ziffer"
     ziffer.data.body = str(nr)
@@ -94,7 +100,8 @@ for nr, (x, z) in {1: (-10, -5), 2: (-3, -6), 3: (7, -5), 4: (9, 5), 5: (2, 6), 
     ziffer.data.extrude = 0.02
     ziffer.data.align_x = "CENTER"
     ziffer.data.align_y = "CENTER"
-    ziffer.rotation_euler = (1.5708, 0, 0)  # aufrecht, Front nach Sueden (Three +z)
+    # aufrecht; Front nach Sueden (Three +z) bzw. fuer Sued-Stationen nach Norden
+    ziffer.rotation_euler = (1.5708, 0, 3.14159 if nach_norden else 0)
     ziffer.data.materials.append(m_wand)
     bpy.ops.object.convert(target="MESH")  # glTF exportiert Text-Objekte nicht zuverlaessig
 
