@@ -1,10 +1,12 @@
 """Blockout der Instandhaltungswerkstatt (Low-Poly, Stil nach blender/referenz-werkstatt.webp).
 
-Layout orientiert an der isometrischen Referenz: Hallenfachwerk mit Fensterbaendern,
-Teildach ueber der Nordhaelfte (Cutaway), Tor in der Ostwand mit ausfuehrendem Gleis,
-Empore mit Treppe an der Westwand, Bodenmarkierungen, Arbeitszonen, heller Triebzug
-mit Verkehrsrot-Streifen. Farbakzente in entsaettigtem Blau und Orange (Referenz);
-alle Toene bleiben graustufentauglich (Unterscheidung ueber Helligkeit).
+Layout orientiert an der isometrischen Referenz (gamifizierter Look) und einem Foto
+eines echten ICE-Instandhaltungswerks: Hallenfachwerk mit Fensterbaendern, Teildach
+(Cutaway), Tor mit ausfuehrendem Gleis, Empore mit Treppe, Untersuchungsgrube mit
+gelb-schwarzen Warnkanten, weisse Dacharbeitsbuehnen ueber dem Zug, Kranbahn mit
+Laufkatzen, Rollgerueste, Service-/Werkstattwagen, Oelfaesser auf Auffangwanne,
+orange Schraffur-Zone, Signalsaeulen, Kabeltrassen. Farbakzente in entsaettigtem
+Blau/Orange/Sicherheitsgelb; alle Toene bleiben graustufentauglich.
 
 Konturen: ausgewaehlte Objekte bekommen eine Inverted-Hull-Silhouette (Duplikat mit
 umgedrehten Normalen, schwarz, backface-culled) — ergibt den illustrierten Look der
@@ -87,7 +89,10 @@ STAHL = (0.46, 0.51, 0.56)
 FENSTER = (0.72, 0.84, 0.95)
 BLAU = (0.28, 0.44, 0.66)        # Leitstand/Regal/Rohre (Referenz)
 ORANGE = (0.80, 0.42, 0.12)      # Sicherheits-Akzente (Referenz)
-MARKIERUNG = (0.82, 0.72, 0.28)  # Bodenmarkierung
+MARKIERUNG = (0.88, 0.75, 0.15)  # Sicherheits-Gelb (Markierung, Warnstreifen)
+STAHL_HELL = (0.80, 0.83, 0.86)  # weisser Stahlbau der Dacharbeitsbuehnen (ICE-Werk-Foto)
+GRUEN = (0.30, 0.55, 0.32)       # Signal-/Rettungszeichen-Gruen
+GRUBE = (0.15, 0.16, 0.18)       # Untersuchungsgrube
 ROT_ZUG = (0.70, 0.12, 0.16)     # Verkehrsrot-Streifen am Triebzug
 WEISS_ZUG = (0.88, 0.89, 0.90)
 KONTUR = (0.05, 0.05, 0.07)
@@ -104,6 +109,9 @@ m_orange = material("Orange", ORANGE)
 m_markierung = material("Markierung", MARKIERUNG)
 m_zug = material("Zug", ROT_ZUG)
 m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.5)
+m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.6)
+m_gruen = material("Gruen", GRUEN)
+m_grube = material("Grube", GRUBE)
 m_kontur = material("Kontur", KONTUR, rauheit=1.0)
 m_kontur.use_backface_culling = True  # exportiert single-sided — Pflicht fuer Inverted Hull
 
@@ -177,7 +185,122 @@ kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange, kontur=Tru
 kasten("Gleis_Schiene_Nord", 38, 0.15, 0.15, 2, 0.08, -0.7, m_dunkel)
 kasten("Gleis_Schiene_Sued", 38, 0.15, 0.15, 2, 0.08, 0.7, m_dunkel)
 for i in range(16):
-    kasten(f"Gleis_Schwelle_{i}", 0.22, 1.8, 0.06, -14.5 + i * 2.4, 0.03, 0, m_dunkel)
+    sx = -14.5 + i * 2.4
+    if -15.5 < sx < -8.5:
+        continue  # im Grubenbereich liegen die Schienen auf den Grubenwaenden, keine Schwellen
+    kasten(f"Gleis_Schwelle_{i}", 0.22, 1.8, 0.06, sx, 0.03, 0, m_dunkel)
+
+# ---- Untersuchungsgrube unter dem Gleis (ICE-Werk-Foto: offene Arbeitsgrube) ----
+kasten("Grube_Boden", 7, 2.0, 0.03, -12, 0.045, 0, m_grube)
+kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -12, 0.05, -0.9, m_fenster)
+kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -12, 0.05, 0.9, m_fenster)
+
+
+def warnstreifen(name, laenge, x, z, entlang_x=True):
+    """Gelb-schwarz gestreifte Sicherheitskante (0.5er-Segmente) auf dem Boden."""
+    n = int(laenge / 0.5)
+    for i in range(n):
+        m = m_markierung if i % 2 == 0 else m_dunkel
+        if entlang_x:
+            kasten(f"{name}_{i}", 0.5, 0.14, 0.04, x - laenge / 2 + 0.25 + i * 0.5, 0.05, z, m)
+        else:
+            kasten(f"{name}_{i}", 0.14, 0.5, 0.04, x, 0.05, z - laenge / 2 + 0.25 + i * 0.5, m)
+
+
+warnstreifen("Grube_Kante_Nord", 7, -12, -1.12)
+warnstreifen("Grube_Kante_Sued", 7, -12, 1.12)
+warnstreifen("Grube_Kante_West", 2, -15.55, 0, entlang_x=False)
+warnstreifen("Grube_Kante_Ost", 2, -8.45, 0, entlang_x=False)
+kasten("Grube_Leiter", 0.4, 0.08, 0.9, -8.7, 0.45, 0.7, m_orange)
+
+# ---- Dacharbeitsbuehne ueber dem Zug (ICE-Werk-Foto: weisse Stahlbuehnen) ---
+# Stuetzen enden bei x=4, damit sie der Station-4-Kamera (Anzeigetafel) nicht im Bild stehen
+for i, bx in enumerate((-6.5, -3, 0.5, 4)):
+    for j, bz in enumerate((-2.7, 2.7)):
+        kasten(f"Buehne_Stuetze_{i}_{j}", 0.18, 0.18, 3.2, bx, 1.6, bz, m_stahlhell)
+        kasten(f"Buehne_Stuetze_{i}_{j}_fuss", 0.26, 0.26, 0.18, bx, 0.09, bz, m_markierung)
+kasten("Buehne_Plattform_Nord", 11.5, 0.85, 0.1, -1.25, 3.25, -2.7, m_stahlhell, kontur=True)
+kasten("Buehne_Plattform_Sued", 11.5, 0.85, 0.1, -1.25, 3.25, 2.7, m_stahlhell, kontur=True)
+for j, bz in enumerate((-3.08, 3.08)):
+    kasten(f"Buehne_Handlauf_{j}", 11.5, 0.05, 0.06, -1.25, 4.25, bz, m_stahlhell)
+    for i, px in enumerate((-6.5, -3.75, -1, 1.75, 4)):
+        kasten(f"Buehne_Gelaenderpfosten_{j}_{i}", 0.05, 0.05, 0.95, px, 3.78, bz, m_stahlhell)
+for i, tx in enumerate((-6.5, 4)):  # Querverbindungen ueber dem Zugdach
+    kasten(f"Buehne_Quertraeger_{i}", 0.16, 5.4, 0.2, tx, 3.9, 0, m_stahlhell)
+kasten("Buehne_Treppe", 0.9, 2.6, 0.1, -7.3, 1.7, 2.0, m_stahlhell, drehung=(0.9, 0, 0), kontur=True)
+
+# ---- Kranbahn mit Laufkatzen (Foto: gelbe Hebezeuge unter der Decke) --------
+kasten("Kran_Traeger", 15, 0.3, 0.25, 0.5, 5.35, 0, m_stahlhell)
+for i, kx in enumerate((-2.5, 4)):
+    kasten(f"Kran_Laufkatze_{i}", 0.55, 0.6, 0.4, kx, 5.0, 0, m_markierung, kontur=True)
+    kasten(f"Kran_Haken_{i}", 0.06, 0.06, 0.5, kx, 4.55, 0, m_dunkel)
+
+# ---- Rollgeruste (Foto: fahrbare Alu-Geruste an den Zugtueren) --------------
+def rollgeruest(name, x, z):
+    for i, (gx, gz) in enumerate(((-0.55, -0.35), (0.55, -0.35), (-0.55, 0.35), (0.55, 0.35))):
+        kasten(f"{name}_holm_{i}", 0.07, 0.07, 2.6, x + gx, 1.3, z + gz, m_stahlhell)
+        kasten(f"{name}_rolle_{i}", 0.12, 0.12, 0.12, x + gx, 0.06, z + gz, m_dunkel)
+    kasten(f"{name}_buehne_1", 1.25, 0.8, 0.06, x, 1.25, z, m_stahlhell)
+    kasten(f"{name}_buehne_2", 1.25, 0.8, 0.06, x, 2.35, z, m_stahlhell, kontur=True)
+    kasten(f"{name}_handlauf", 1.25, 0.06, 0.06, x, 2.95, z + 0.38, m_markierung)
+    kasten(f"{name}_diagonale", 0.06, 0.06, 1.5, x, 1.8, z - 0.38, m_stahlhell, drehung=(0, 0.6, 0))
+
+
+rollgeruest("Rollgeruest_1", 4.2, -2.2)
+rollgeruest("Rollgeruest_2", -4.2, 2.2)
+
+# ---- Absaug-/Servicewagen (Foto: weisse Maschine mit blauen Tanks) ----------
+kasten("Servicewagen_Korpus", 1.3, 0.85, 1.0, 10.5, 0.62, 2.9, m_zugweiss, kontur=True)
+kasten("Servicewagen_Tank_1", 0.36, 0.36, 0.5, 10.2, 1.35, 2.75, m_blau)
+kasten("Servicewagen_Tank_2", 0.36, 0.36, 0.5, 10.8, 1.35, 2.75, m_blau)
+kasten("Servicewagen_Schlauch_1", 1.6, 0.09, 0.09, 9.4, 0.35, 2.4, m_dunkel, drehung=(0, 0, 0.5))
+kasten("Servicewagen_Schlauch_2", 1.2, 0.09, 0.09, 8.6, 0.3, 1.7, m_dunkel, drehung=(0, 0, -0.4))
+for i, (rx, rz) in enumerate(((-0.5, -0.3), (0.5, -0.3), (-0.5, 0.3), (0.5, 0.3))):
+    kasten(f"Servicewagen_rad_{i}", 0.16, 0.16, 0.16, 10.5 + rx, 0.08, 2.9 + rz, m_dunkel)
+
+# ---- Roter Werkstattwagen (Foto: roter Transportwagen) ----------------------
+kasten("Werkstattwagen_Korpus", 1.0, 0.65, 0.9, 12.5, 0.55, -3.5, m_zug, kontur=True)
+kasten("Werkstattwagen_Griff", 0.06, 0.55, 0.6, 13.05, 0.9, -3.5, m_dunkel)
+for i, (rx, rz) in enumerate(((-0.38, -0.24), (0.38, -0.24), (-0.38, 0.24), (0.38, 0.24))):
+    kasten(f"Werkstattwagen_rad_{i}", 0.14, 0.14, 0.14, 12.5 + rx, 0.07, -3.5 + rz, m_dunkel)
+
+# ---- Zweite Werkbank mit Schraubstock und Werkzeugkasten --------------------
+kasten("Werkbank2", 2.0, 0.7, 0.85, 2.5, 0.43, -9.4, m_stahl, kontur=True)
+kasten("Werkbank2_Platte", 2.0, 0.75, 0.08, 2.5, 0.9, -9.4, m_dunkel)
+kasten("Werkbank2_Schraubstock", 0.25, 0.3, 0.25, 3.2, 1.06, -9.35, m_dunkel)
+kasten("Werkbank2_Werkzeugkasten", 0.5, 0.3, 0.3, 2.0, 1.09, -9.4, m_zug, kontur=True)
+
+# ---- Oelfaesser auf Auffangwanne (Foto/Referenz: Fassgruppe) ----------------
+kasten("Oel_Wanne", 1.7, 1.3, 0.15, 11.5, 0.08, -8.7, m_markierung, kontur=True)
+kasten("Oel_Fass_1", 0.45, 0.45, 0.62, 11.2, 0.46, -8.9, m_dunkel, kontur=True)
+kasten("Oel_Fass_2", 0.45, 0.45, 0.62, 11.8, 0.46, -8.9, m_blau, kontur=True)
+kasten("Oel_Fass_3", 0.45, 0.45, 0.62, 11.2, 0.46, -8.4, m_orange, kontur=True)
+kasten("Oel_Fass_4", 0.45, 0.45, 0.62, 11.8, 0.46, -8.4, m_dunkel, kontur=True)
+
+# ---- Orange Schraffur-Zone (Foto: markierter Rangierweg) --------------------
+for i in range(8):
+    kasten(f"Schraffur_{i}", 0.35, 2.4, 0.02, 2.6 + i * 0.62, 0.045, 3.4, m_orange, drehung=(0, 0, 0.785))
+kasten("Schraffur_Rahmen_Nord", 5.4, 0.08, 0.02, 4.8, 0.05, 2.3, m_orange)
+kasten("Schraffur_Rahmen_Sued", 5.4, 0.08, 0.02, 4.8, 0.05, 4.5, m_orange)
+
+# ---- Signalsaeulen (Foto: kleine Ampeln an der Gleiskante) ------------------
+for i, (sx, sz) in enumerate(((-8, 1.6), (1, -1.6), (9, 1.6))):
+    kasten(f"Signal_{i}_mast", 0.08, 0.08, 1.0, sx, 0.5, sz, m_dunkel)
+    kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.1, sz, m_zug)
+    kasten(f"Signal_{i}_gelb", 0.13, 0.13, 0.13, sx, 1.25, sz, m_markierung)
+    kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.4, sz, m_gruen)
+
+# ---- Kabeltrassen-Details (Foto: Leitungen und Abgaenge) --------------------
+kasten("Kabel_Abgang_1", 0.1, 0.1, 2.2, 2.5, 3.6, -9.15, m_dunkel)
+kasten("Kabel_Abgang_2", 0.1, 0.1, 2.2, 7, 3.6, -9.15, m_dunkel)
+kasten("Kabel_Trommel", 0.5, 0.5, 0.5, 0.2, 0.25, -8.3, m_blau, kontur=True)
+kasten("Kabel_Trommel_Kern", 0.2, 0.56, 0.2, 0.2, 0.25, -8.3, m_dunkel)
+for i, lx in enumerate((-7, -1, 5, 11)):  # zweite Leuchtenreihe (Foto: dichte Decke)
+    kasten(f"Leuchte_Sued_{i}", 0.7, 0.28, 0.06, lx, 4.5, 3.2, m_fenster)
+    kasten(f"Leuchte_Sued_{i}_seil", 0.03, 0.03, 1.1, lx, 5.1, 3.2, m_dunkel)
+# Rettungszeichen am Tor und an der Westwand
+kasten("Rettungszeichen_Tor", 0.5, 0.05, 0.3, 15.8, 3.0, -1.6, m_gruen)
+kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.8, 3.0, -4, m_gruen)
 
 # ---- Absperrpfosten und Muelleimer (Referenz: orange Akzente) ---------------
 for i, (ax, az) in enumerate(((-10, 2.4), (-3, 2.4), (4, 2.4), (11, 2.4))):
