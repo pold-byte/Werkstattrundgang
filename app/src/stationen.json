@@ -1,0 +1,75 @@
+{
+  "totale": {
+    "kamera": { "position": [20, 16, 20], "blickziel": [0, 0, 0], "dauer_s": 6 }
+  },
+  "sprung_dauer_s": 2.5,
+  "stationen": [
+    {
+      "nr": 1,
+      "id": "meisterbuero",
+      "titel": "Wo die Zahl entsteht",
+      "kapitel": "Kap. 1.1, 3.1",
+      "kamera": { "position": [-6.5, 2.5, -1.5], "blickziel": [-10, 1, -5], "dauer_s": 6 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 1 — wird nach Bereitstellung der Quelldateien befüllt]",
+      "belegpunkte": ["[PLATZHALTER 1.1]", "[PLATZHALTER 1.2]", "[PLATZHALTER 1.3]"],
+      "anschauungsobjekt": "Pinnwand mit Excel-Ausdrucken",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    },
+    {
+      "nr": 2,
+      "id": "datenraum",
+      "titel": "Aus Chaos wird Struktur",
+      "kapitel": "Kap. 3.3, 3.5, 4.4",
+      "kamera": { "position": [0.5, 2.2, -2.5], "blickziel": [-3, 1, -6], "dauer_s": 5 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 2]",
+      "belegpunkte": ["[PLATZHALTER 2.1]", "[PLATZHALTER 2.2]", "[PLATZHALTER 2.3]"],
+      "anschauungsobjekt": "Regal: ungeordnete Ablage davor, geordnete Struktur darin",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    },
+    {
+      "nr": 3,
+      "id": "terminal",
+      "titel": "Fragen statt Formeln",
+      "kapitel": "Kap. 3.4, 4.3",
+      "kamera": { "position": [9.5, 1.8, -2], "blickziel": [7, 1.2, -5], "dauer_s": 5 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 3]",
+      "belegpunkte": ["[PLATZHALTER 3.1]", "[PLATZHALTER 3.2]", "[PLATZHALTER 3.3]"],
+      "anschauungsobjekt": "Bedienterminal mit Monitor (Demo-Video)",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    },
+    {
+      "nr": 4,
+      "id": "anzeigetafel",
+      "titel": "Ergebnis lesen",
+      "kapitel": "Kap. 4.2, 4.5",
+      "kamera": { "position": [5.5, 2.2, 2], "blickziel": [9, 2, 5], "dauer_s": 5 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 4]",
+      "belegpunkte": ["[PLATZHALTER 4.1]", "[PLATZHALTER 4.2]", "[PLATZHALTER 4.3]"],
+      "anschauungsobjekt": "Anzeigetafel",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    },
+    {
+      "nr": 5,
+      "id": "pruefstand",
+      "titel": "Stimmt das auch?",
+      "kapitel": "Kap. 5",
+      "kamera": { "position": [-1.5, 2.5, 2.5], "blickziel": [2, 1, 6], "dauer_s": 5 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 5]",
+      "belegpunkte": ["[PLATZHALTER 5.1]", "[PLATZHALTER 5.2]", "[PLATZHALTER 5.3]"],
+      "anschauungsobjekt": "Prüfstand mit Ergebnis-Grafik",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    },
+    {
+      "nr": 6,
+      "id": "besprechung",
+      "titel": "Was es bringt, was nicht",
+      "kapitel": "Kap. 6, 7",
+      "im_rundgang": false,
+      "kamera": { "position": [-5.5, 2.2, 2.5], "blickziel": [-9, 1, 6], "dauer_s": 6 },
+      "kernaussage": "[PLATZHALTER: Kernaussage Station 6 (Reserve)]",
+      "belegpunkte": ["[PLATZHALTER 6.1]", "[PLATZHALTER 6.2]", "[PLATZHALTER 6.3]"],
+      "anschauungsobjekt": "Besprechungstisch (Planungsrunde)",
+      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+    }
+  ]
+}
