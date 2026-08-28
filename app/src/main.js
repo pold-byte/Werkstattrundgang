@@ -164,6 +164,7 @@ async function start() {
   aktuellerOrt = leiteAnsichtAb(zustand.aktuell, daten.stationen).ort;
   wendeAnsichtAn(true);
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
+  if (import.meta.env.DEV) window.__szene = szene; // Dev-Inspektion (im Build entfernt)
   schleife();
 }
 
