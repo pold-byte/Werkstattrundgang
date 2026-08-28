@@ -29,6 +29,10 @@ const sperre = new Eingabesperre();
 
 let aktuelleFahrt = null;
 let aktuellerOrt = 'totale';
+// Tastatur erst freigeben, wenn start() den Stand wiederhergestellt hat — sonst
+// überschreibt ein früher Druck den sessionStorage-Stand (Spec §10: Reload-Garantie)
+// und startet eine Fahrt ab der Kamera-Defaultpose (0,0,0).
+let bereit = false;
 
 function poseFuerOrt(ort) {
   if (ort === 'totale') return daten.totale.kamera;
@@ -108,6 +112,7 @@ function beendeFahrt() {
 window.addEventListener('keydown', (ereignis) => {
   // Prüfungsraum-Härtung (Spec §6): F5/Scroll-Tasten neutralisieren.
   if (ereignis.key === 'F5') { ereignis.preventDefault(); return; }
+  if (!bereit) return;
   if (videoTexturEl.paused) videoTexturEl.play().catch(() => {}); // Autoplay erst nach Nutzergeste (Spec §5)
   // Leertaste bei offener Großansicht = Pause/Weiter des Videos.
   if (ereignis.key === ' ' && !videoOverlayEl.hidden) {
@@ -159,10 +164,17 @@ async function start() {
   verbindeVideoTextur(szene, videoTexturEl);
 
   const gespeichert = ladeStand(sessionStorage);
-  if (gespeichert) zustand.setzeStand(gespeichert);
+  if (gespeichert) {
+    // Sprung auf eine inzwischen unbekannte Stations-ID verwerfen — sonst wirft
+    // poseFuerOrt vor dem Start der Renderschleife und jeder Reload crasht erneut.
+    const sprungId = gespeichert.sprung?.stationId;
+    if (sprungId && !daten.stationen.some((s) => s.id === sprungId)) gespeichert.sprung = null;
+    zustand.setzeStand(gespeichert);
+  }
   setzeKamera(poseFuerOrt(leiteAnsichtAb(zustand.aktuell, daten.stationen).ort));
   aktuellerOrt = leiteAnsichtAb(zustand.aktuell, daten.stationen).ort;
   wendeAnsichtAn(true);
+  bereit = true;
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
   if (import.meta.env.DEV) window.__szene = szene; // Dev-Inspektion (im Build entfernt)
   schleife();
