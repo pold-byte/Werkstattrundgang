@@ -307,8 +307,12 @@ kasten("Tor_Balken", 0.25, 4.3, 0.25, 16.8, 4.35, 0, m_orange)
 for i, sx in enumerate((-13.6, -6.8, 0, 6.8, 13.6)):
     kasten(f"Stuetze_Nord_{i}", 0.3, 0.3, 6, sx, 3, -9.7, m_stahl)
     kasten(f"Stuetze_Sued_{i}", 0.3, 0.3, 6, sx, 3, 9.7, m_stahl)
+    # gelber Anfahrschutz am Stuetzenfuss (Werkstatt-typische Kontur + Farbe)
+    kasten(f"Stuetze_Nord_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, -9.7, m_markierung, fase=0.03)
+    kasten(f"Stuetze_Sued_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, 9.7, m_markierung, fase=0.03)
 for i, sz in enumerate((-6.7, 0, 6.7)):
     kasten(f"Stuetze_West_{i}", 0.3, 0.3, 6, -16.7, 3, sz, m_stahl)
+    kasten(f"Stuetze_West_{i}_schutz", 0.38, 0.38, 0.55, -16.7, 0.275, sz, m_markierung, fase=0.03)
 
 kasten("Dach_Decke", 34, 20, 0.12, 0, 6.3, 0, m_decke, fase=0)
 for i, tx in enumerate((-12, -6, 0, 6, 12)):
@@ -348,7 +352,7 @@ rohr_mit_bogen("Rohrlauf_Ost", [(16.7, 0.6, -8.4), (16.7, 2.6, -8.4), (16.7, 2.6
 for i, (lx, lz) in enumerate(((-12, 0), (-6, 0), (0, 0), (6, 0), (12, 0),
                               (-9, -6.5), (-1, -6.5), (7, -6.5),
                               (-8, 5.2), (1, 5.2), (10, 5.2))):
-    kegel(f"Lampe_{i}_schirm", 0.38, 0.45, lx, 4.85, lz, m_stahlhell)
+    kegel(f"Lampe_{i}_schirm", 0.38, 0.45, lx, 4.85, lz, m_blau if i % 2 else m_stahlhell)
     zylinder(f"Lampe_{i}_glut", 0.16, 0.06, lx, 4.62, lz, m_fenster)
     zylinder(f"Lampe_{i}_seil", 0.015, 1.2, lx, 5.65, lz, m_dunkel)
 
@@ -398,7 +402,11 @@ kasten("Grube_Quersteg_1", 0.4, 1.9, 0.04, -13.8, 0.075, 0, m_stahl, fase=0)
 kasten("Grube_Quersteg_2", 0.4, 1.9, 0.04, -10.3, 0.075, 0, m_stahl, fase=0)
 kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -12, 0.05, -0.9, m_fenster, fase=0)
 kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -12, 0.05, 0.9, m_fenster, fase=0)
-kasten("Grube_Leiter", 0.4, 0.08, 0.9, -8.7, 0.45, 0.7, m_orange)
+# Echte Grubenleiter: zwei Holme + Sprossen
+for i, lz in enumerate((0.52, 0.88)):
+    kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 1.0, -8.7, 0.5, lz, m_orange, fase=0)
+for i in range(4):
+    kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.36, 0.04, -8.7, 0.18 + i * 0.24, 0.7, m_orange, fase=0)
 
 
 def warnstreifen(name, laenge, x, z, entlang_x=True):
@@ -430,7 +438,7 @@ kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.35, ZUG_X, 1.08, 1.23, m_zug, fase=
 # Durchgehendes Fensterband mit weissen Pfosten (ICE-Optik), Tueren mit dunklem Rahmen
 for seite, sz in (("nord", -1.24), ("sued", 1.24)):
     kasten(f"Triebzug_Fensterband_{seite}", 11.6, 0.05, 0.66, 0.2, 1.85, sz, m_dunkel, fase=0)
-    for i, px in enumerate((-4.6, -3.3, -1.3, 0.1, 3.3, 4.3)):
+    for i, px in enumerate((-5.1, -4.0, -1.5, -0.4, 0.7, 1.8, 2.9, 4.0)):
         kasten(f"Triebzug_Fensterpfosten_{seite}_{i}", 0.16, 0.06, 0.66, px, 1.85, sz, m_zugweiss, fase=0)
     for i, tx in enumerate((-2.55, 5.15)):
         kasten(f"Triebzug_Tuerrahmen_{seite}_{i}", 1.06, 0.07, 1.44, tx, 1.42, sz, m_dunkel, fase=0)
@@ -450,25 +458,28 @@ kasten("Triebzug_Panto_Wippe_1", 0.16, 1.1, 0.04, -2.08, 4.14, -0.12, m_dunkel, 
 kasten("Triebzug_Widerstand", 0.9, 1.1, 0.28, -5.3, 2.66, 0, m_dunkel)
 zylinder("Triebzug_Antenne_1", 0.03, 0.35, 3.2, 2.72, 0.5, m_dunkel)
 zylinder("Triebzug_Antenne_2", 0.03, 0.35, -0.6, 2.72, -0.5, m_dunkel)
-# Heckleuchten am flachen Zugende
-for i, hz in enumerate((-0.8, 0.8)):
-    zylinder(f"Triebzug_Heckleuchte_{i}", 0.06, 0.05, -6.53, 1.85, hz, m_zug, achse="x")
+# Fuehrerstaende an BEIDEN Enden (echte Triebzuege sind symmetrisch):
+# gerundetes Fuehrerhaus, buendige Frontscheibe mit A-Saeulen und Wischer,
+# rotes Frontband, Schuerze, Scheinwerfer, Kupplungskasten
+def fuehrerstand(kennung, r):
+    """r = +1 fuer das Ost-Ende (Front), -1 fuer das West-Ende (Heck)."""
+    kasten(f"Triebzug_Fuehrerhaus_{kennung}", 1.3, 2.3, 1.45, 0.5 + r * 7.55, 1.43, 0, m_zugweiss, fase=0.1)
+    kasten(f"Triebzug_Fuehrerhaus_Dach_{kennung}", 1.25, 2.15, 0.2, 0.5 + r * 7.52, 2.28, 0, m_stahl, fase=0.05)
+    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.05, 1.7, 0.72, 0.5 + r * 8.18, 1.83, 0, m_dunkel, fase=0)
+    for i, az in enumerate((-0.88, 0.88)):
+        kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.06, 0.12, 0.76, 0.5 + r * 8.185, 1.83, az, m_zugweiss, fase=0)
+    kasten(f"Triebzug_Wischer_{kennung}", 0.02, 0.06, 0.4, 0.5 + r * 8.22, 1.6, -0.35 * r, m_dunkel, fase=0, drehung=(0.5, 0, 0))
+    kasten(f"Triebzug_Frontband_{kennung}", 0.6, 2.34, 0.3, 0.5 + r * 7.95, 1.12, 0, m_zug, fase=0.04)
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 2.05, 0.4, 0.5 + r * 7.8, 0.45, 0, m_dunkel, fase=0.04)
+    for i, lz in enumerate((-0.72, 0.72)):
+        zylinder(f"Triebzug_Scheinwerfer_{kennung}_{i}", 0.09, 0.06, 0.5 + r * 8.21, 1.0, lz, m_fenster, achse="x")
+        zylinder(f"Triebzug_Positionslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 8.21, 0.78, lz, m_zug, achse="x")
+    kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 8.25, 0.5, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Kupplung_{kennung}", 0.4, 0.18, 0.18, 0.5 + r * 8.45, 0.5, 0, m_dunkel)
 
-# Zugfront v2: gerundetes Fuehrerhaus, eingelassene geneigte Frontscheibe mit
-# A-Saeulen und Wischer, rotes Frontband, Schuerze, Scheinwerfer
-kasten("Triebzug_Fuehrerhaus", 1.3, 2.3, 1.45, 8.05, 1.43, 0, m_zugweiss, fase=0.1)
-kasten("Triebzug_Fuehrerhaus_Dach", 1.25, 2.15, 0.2, 8.02, 2.28, 0, m_stahl, fase=0.05)
-kasten("Triebzug_Frontscheibe", 0.05, 1.7, 0.72, 8.68, 1.83, 0, m_dunkel, fase=0)
-for i, az in enumerate((-0.88, 0.88)):
-    kasten(f"Triebzug_A_Saeule_{i}", 0.06, 0.12, 0.76, 8.685, 1.83, az, m_zugweiss, fase=0)
-kasten("Triebzug_Wischer", 0.02, 0.06, 0.4, 8.72, 1.6, -0.35, m_dunkel, fase=0, drehung=(0.5, 0, 0))
-kasten("Triebzug_Frontband", 0.6, 2.34, 0.3, 8.45, 1.12, 0, m_zug, fase=0.04)
-kasten("Triebzug_Frontschuerze", 0.85, 2.05, 0.4, 8.3, 0.45, 0, m_dunkel, fase=0.04)
-for i, lz in enumerate((-0.72, 0.72)):
-    zylinder(f"Triebzug_Scheinwerfer_{i}", 0.09, 0.06, 8.71, 1.0, lz, m_fenster, achse="x")
-    zylinder(f"Triebzug_Positionslicht_{i}", 0.045, 0.05, 8.71, 0.78, lz, m_zug, achse="x")
-kasten("Triebzug_Kupplungskasten", 0.3, 0.5, 0.3, 8.75, 0.5, 0, m_dunkel, fase=0)
-kasten("Triebzug_Kupplung", 0.4, 0.18, 0.18, 8.95, 0.5, 0, m_dunkel)
+
+fuehrerstand("ost", 1)
+fuehrerstand("west", -1)
 
 # ---- Dacharbeitsbuehnen, Kranbahn, Rollgerueste -----------------------------
 for i, bx in enumerate((-6.5, -3, 0.5, 4)):
@@ -520,15 +531,41 @@ for i, (rx, rz) in enumerate(((-0.38, -0.24), (0.38, -0.24), (-0.38, 0.24), (0.3
     zylinder(f"Werkstattwagen_rad_{i}", 0.08, 0.06, 12.5 + rx, 0.08, -3.5 + rz, m_dunkel, achse="z")
 kasten("Werkbank2", 2.0, 0.7, 0.85, 2.5, 0.43, -9.4, m_stahl)
 kasten("Werkbank2_Platte", 2.0, 0.75, 0.08, 2.5, 0.9, -9.4, m_dunkel)
+# farbige Schubladenfronten mit Griffen
+for i, (wx, wm) in enumerate(((1.95, m_blau), (2.5, m_orange), (3.05, m_blau))):
+    kasten(f"Werkbank2_schublade_{i}", 0.46, 0.05, 0.6, wx, 0.5, -9.03, wm, fase=0.02)
+    kasten(f"Werkbank2_griff_{i}", 0.2, 0.04, 0.04, wx, 0.68, -9.0, m_dunkel, fase=0)
 kasten("Werkbank2_Schraubstock", 0.25, 0.3, 0.25, 3.2, 1.06, -9.35, m_dunkel)
 kasten("Werkbank2_Werkzeugkasten", 0.5, 0.3, 0.3, 2.0, 1.09, -9.4, m_zug)
+def fass(name, x, z, y_boden, farbe):
+    """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
+    zylinder(f"{name}", 0.23, 0.62, x, y_boden + 0.31, z, farbe)
+    zylinder(f"{name}_ring_oben", 0.245, 0.04, x, y_boden + 0.46, z, m_stahl)
+    zylinder(f"{name}_ring_unten", 0.245, 0.04, x, y_boden + 0.16, z, m_stahl)
+    zylinder(f"{name}_deckel", 0.2, 0.03, x, y_boden + 0.63, z, m_stahlhell)
+
+
 kasten("Oel_Wanne", 1.7, 1.3, 0.15, 11.5, 0.08, -8.7, m_markierung)
 for i, (fx, fz, fm) in enumerate(((11.2, -8.9, m_dunkel), (11.8, -8.9, m_blau),
-                                  (11.2, -8.4, m_orange), (11.8, -8.4, m_dunkel))):
-    zylinder(f"Oel_Fass_{i}", 0.23, 0.62, fx, 0.46, fz, fm)
-    zylinder(f"Oel_Fass_{i}_ring", 0.24, 0.04, fx, 0.56, fz, m_stahl)
+                                  (11.2, -8.4, m_orange), (11.8, -8.4, m_zug))):
+    fass(f"Oel_Fass_{i}", fx, fz, 0.15, fm)
 kasten("Kabel_Trommel", 0.5, 0.5, 0.5, 0.2, 0.25, -8.3, m_blau)
 zylinder("Kabel_Trommel_Kern", 0.12, 0.56, 0.2, 0.25, -8.3, m_dunkel, achse="z")
+
+# ---- Radsatzlager: Zug-Radsaetze auf Lagerschienen (Suedseite) --------------
+def radsatz(name, x, z_mitte, y_achse=0.5):
+    """Zug-Radsatz: Achswelle + zwei Raeder mit heller Radscheibe."""
+    zylinder(f"{name}_achse", 0.055, 1.02, x, y_achse, z_mitte, m_stahl, achse="z")
+    for seite, dz in (("n", -0.55), ("s", 0.55)):
+        zylinder(f"{name}_rad_{seite}", 0.38, 0.11, x, y_achse, z_mitte + dz, m_dunkel, achse="z")
+        zylinder(f"{name}_scheibe_{seite}", 0.2, 0.12, x, y_achse, z_mitte + dz, m_stahlhell, achse="z")
+
+
+for i, rz in enumerate((2.45, 3.55)):
+    kasten(f"Radsatzlager_schiene_{i}", 3.4, 0.14, 0.12, 0.6, 0.06, rz, m_stahl, fase=0)
+for i, rx in enumerate((-0.5, 0.6, 1.7)):
+    radsatz(f"Radsatz_{i}", rx, 3.0)
+warnstreifen("Radsatzlager_kante", 3.5, 0.6, 4.0)
 
 # ---- Bodenmarkierungen, Signale, Sicherheit ---------------------------------
 # Markierte Zone als Kenney-Bodendekal (liest sich eindeutig als Markierung)
@@ -557,7 +594,9 @@ kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
 kasten("Station_1_meisterbuero", 4, 3, 2.6, -10.5, 1.3, -7.5, m_wand)
 kasten("Station_1_buerodach", 4.3, 3.3, 0.1, -10.5, 2.65, -7.5, m_dunkel)
 kasten("Station_1_buerofenster", 2.6, 0.06, 0.9, -10.5, 1.9, -5.95, m_fenster, fase=0)
-kasten("Station_1_buerotuer", 0.8, 0.06, 1.9, -8.9, 0.95, -5.95, m_dunkel, fase=0)
+kasten("Station_1_buerotuer", 0.8, 0.06, 1.9, -8.9, 0.95, -5.95, m_blau, fase=0)
+kasten("Station_1_buerotuer_rahmen", 0.9, 0.05, 2.0, -8.9, 1.0, -5.96, m_relief, fase=0)
+kasten("Station_1_tuerklinke", 0.1, 0.06, 0.04, -8.62, 1.0, -5.9, m_dunkel, fase=0)
 kasten("Station_1_pinnwand", 2.4, 0.08, 1.3, -10, 1.8, -5.2, m_objekt)
 kasten("Station_1_pinnwand_pfosten_west", 0.1, 0.1, 2.3, -11.0, 1.15, -5.2, m_dunkel)
 kasten("Station_1_pinnwand_pfosten_ost", 0.1, 0.1, 2.3, -9.0, 1.15, -5.2, m_dunkel)
@@ -578,7 +617,7 @@ kasten("Station_2_regalwange", 0.08, 1.0, 2.2, -1.8, 1.1, -6, m_blau)
 kasten("Station_2_kopfblende", 2.56, 1.04, 0.1, -3, 2.25, -6, m_dunkel)
 for i, by in enumerate((0.35, 0.95, 1.55, 2.15)):
     kasten(f"Station_2_regalbrett_{i}", 2.5, 1.0, 0.06, -3, by, -6, m_dunkel, fase=0)
-ordner_farben = (m_blau, m_orange, m_objekt, m_blau, m_orange, m_objekt)
+ordner_farben = (m_blau, m_orange, m_zug, m_gruen, m_blau, m_orange)
 for i in range(6):
     kasten(f"Station_2_ordner_{i}", 0.2, 0.4, 0.5, -3.9 + i * 0.36, 1.85, -6, ordner_farben[i], fase=0)
 for i in range(5):
@@ -588,8 +627,8 @@ chaos = [(-4.1, -4.9, 0.5, 0.35, m_objekt), (-3.4, -5.2, 0.45, -0.5, m_wand),
          (-3.0, -4.5, 0.35, 1.3, m_wand)]
 for i, (cx, cz, cg, cr, cm) in enumerate(chaos):
     kasten(f"Station_2_chaos_{i}", cg, cg, cg, cx, cg / 2, cz, cm, drehung=(0, 0, cr))
-zylinder("Station_2_fass_1", 0.21, 0.6, -1.4, 0.3, -5.0, m_dunkel)
-zylinder("Station_2_fass_2", 0.21, 0.6, -1.0, 0.3, -5.5, m_blau)
+fass("Station_2_fass_1", -1.4, -5.0, 0, m_dunkel)
+fass("Station_2_fass_2", -1.0, -5.5, 0, m_blau)
 kasten("Station_2_zettel_am_regal", 0.28, 0.03, 0.38, -4.24, 1.5, -5.45, m_fenster, fase=0)
 
 # ---- Station 3: Bedienterminal ----------------------------------------------
@@ -621,7 +660,11 @@ kasten("Station_4_pfosten_ost", 0.15, 0.15, 2.9, 10.4, 1.45, 5.8, m_stahl)
 
 # ---- Station 5: Pruefstand ---------------------------------------------------
 kasten("Station_5_pruefstand", 2.8, 1.2, 0.5, 2, 0.25, 6, m_stahl)
+kasten("Station_5_warnkante_west", 0.08, 1.24, 0.52, 0.64, 0.26, 6, m_markierung, fase=0)
+kasten("Station_5_warnkante_ost", 0.08, 1.24, 0.52, 3.36, 0.26, 6, m_markierung, fase=0)
 kasten("Station_5_aufbau", 1.4, 0.9, 0.9, 1.6, 1.15, 6, m_blau)
+kasten("Station_5_aufbau_blende", 1.44, 0.06, 0.3, 1.6, 1.45, 5.55, m_dunkel, fase=0)
+zylinder("Station_5_drehknopf", 0.06, 0.06, 1.3, 1.2, 5.52, m_orange, achse="z")
 zylinder("Station_5_rolle_1", 0.18, 1.0, 2.6, 0.7, 6, m_dunkel, achse="z")
 zylinder("Station_5_rolle_2", 0.18, 1.0, 3.1, 0.7, 6, m_dunkel, achse="z")
 kasten("Station_5_panel", 0.4, 0.05, 0.3, 1.3, 1.5, 5.5, m_fenster, fase=0)
@@ -642,8 +685,7 @@ kasten("Station_6_whiteboard_fuss_2", 0.08, 0.08, 1.2, -10.5, 0.6, 8.2, m_dunkel
 
 # ---- Requisiten --------------------------------------------------------------
 for i, (fx, fz, fm) in enumerate(((-15.6, -8.2, m_blau), (-15.0, -8.5, m_dunkel), (-15.3, -7.6, m_orange))):
-    zylinder(f"Requisite_Fass_{i}", 0.23, 0.62, fx, 0.31, fz, fm)
-    zylinder(f"Requisite_Fass_{i}_ring", 0.24, 0.04, fx, 0.45, fz, m_stahl)
+    fass(f"Requisite_Fass_{i}", fx, fz, 0, fm)
 kasten("Requisite_Palette", 1.2, 1.0, 0.12, -6.5, 0.06, -8.6, m_objekt, fase=0)
 kasten("Requisite_Palette_Kiste_1", 0.55, 0.5, 0.5, -6.7, 0.37, -8.7, m_wand)
 kasten("Requisite_Palette_Kiste_2", 0.4, 0.45, 0.35, -6.2, 0.3, -8.4, m_blau)
@@ -656,8 +698,12 @@ for i, (wx, wy, wz, wm) in enumerate(werkzeuge):
     kasten(f"Requisite_Werkzeug_{i}", 0.05, 0.1, 0.3, wx, wy, wz, wm, fase=0)
 kasten("Requisite_Wagen", 0.9, 0.5, 0.55, -13, 0.28, -2, m_blau)
 kasten("Requisite_Wagen_Griff", 0.06, 0.4, 0.5, -13.45, 0.75, -2, m_dunkel, fase=0)
-kasten("Requisite_Schrank_1", 0.8, 0.4, 1.8, 13.5, 0.9, -9.6, m_objekt)
-kasten("Requisite_Schrank_2", 0.8, 0.4, 1.8, 14.4, 0.9, -9.6, m_blau)
+for i, (sx, sm) in enumerate(((13.5, m_objekt), (14.4, m_blau))):
+    kasten(f"Requisite_Schrank_{i}", 0.8, 0.4, 1.8, sx, 0.9, -9.6, sm)
+    kasten(f"Requisite_Schrank_{i}_sockel", 0.84, 0.44, 0.12, sx, 0.06, -9.6, m_dunkel, fase=0)
+    kasten(f"Requisite_Schrank_{i}_fuge", 0.03, 0.05, 1.5, sx, 0.95, -9.38, m_dunkel, fase=0)
+    for j, gy in enumerate((0.8, 1.1)):
+        kasten(f"Requisite_Schrank_{i}_griff_{j}", 0.12, 0.05, 0.04, sx - 0.12, gy, -9.38, m_dunkel, fase=0)
 kasten("Requisite_Leiter", 0.5, 0.08, 2.4, 15.5, 1.2, -9.7, m_orange, fase=0)
 
 # ---- Kenney-Industriemodelle: Maschinenpark, Ventil, Tor, Kleinteile --------
@@ -703,9 +749,19 @@ def gabelstapler(name, x, z, dreh_y=0.0, farbe=None):
     teil("gabeltraeger", 0.07, 0.85, 0.3, 0.7, 0.35, 0, m_stahl, fase=0)
     for dz in (-0.25, 0.25):  # Gabeln
         teil(f"gabel_{'n' if dz < 0 else 's'}", 0.85, 0.1, 0.05, 1.18, 0.06, dz, m_stahl, fase=0)
+    # Echte runde Raeder mit Felgen — Achse folgt der Fahrzeugdrehung (Track-Quaternion)
+    achse_blender = Vector((-s, -c, 0))
     for dx, dz in ((0.35, -0.5), (0.35, 0.5), (-0.6, -0.5), (-0.6, 0.5)):
         r = 0.2 if dx < 0 else 0.17
-        teil(f"rad_{dx}_{dz}".replace(".", ""), 2 * r, 0.15, 2 * r, dx, r, dz, m_dunkel, fase=0.06)
+        px, pz = p(dx, dz)
+        for suffix, radius, dicke, mat in (("reifen", r, 0.16, m_dunkel), ("felge", r * 0.55, 0.17, m_stahlhell)):
+            bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=radius, depth=dicke,
+                                                location=pos(px, r, pz))
+            rad = bpy.context.active_object
+            rad.name = f"{name}_{suffix}_{dx}_{dz}".replace(".", "")
+            rad.rotation_mode = "QUATERNION"
+            rad.rotation_quaternion = achse_blender.to_track_quat("Z", "Y")
+            rad.data.materials.append(mat)
 
 
 gabelstapler("Stapler_1", -12.8, -5.2, dreh_y=0.9)
