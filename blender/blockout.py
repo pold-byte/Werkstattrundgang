@@ -481,7 +481,7 @@ kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_fenster, fase
 # Grubenleiter fuehrt in die Vertiefung (an der Ost-Innenwand)
 for i, lz in enumerate((-0.35, 0.35)):
     kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 1.4, -0.18, 0.0, lz, m_orange, fase=0)
-for i in range(5):
+for i in range(4):
     kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.66, 0.04, -0.18, -0.55 + i * 0.28, 0, m_orange, fase=0)
 
 
@@ -617,12 +617,12 @@ for i, (wx, wm) in enumerate(((1.95, m_blau), (2.5, m_orange), (3.05, m_blau))):
     kasten(f"Werkbank2_griff_{i}", 0.2, 0.04, 0.04, wx, 0.68, -9.0, m_dunkel, fase=0)
 kasten("Werkbank2_Schraubstock", 0.25, 0.3, 0.25, 3.2, 1.06, -9.35, m_dunkel)
 kasten("Werkbank2_Werkzeugkasten", 0.5, 0.3, 0.3, 2.0, 1.09, -9.4, m_zug)
-kasten("Oel_Wanne", 1.7, 1.3, 0.15, 11.5, 0.08, -8.7, m_markierung)
-for i, (fx, fz, fm) in enumerate(((11.2, -8.9, m_dunkel), (11.8, -8.9, m_blau),
-                                  (11.2, -8.4, m_orange), (11.8, -8.4, m_zug))):
+kasten("Oel_Wanne", 1.7, 1.3, 0.15, 12.15, 0.08, -8.7, m_markierung)
+for i, (fx, fz, fm) in enumerate(((11.85, -8.9, m_dunkel), (12.45, -8.9, m_blau),
+                                  (11.85, -8.4, m_orange), (12.45, -8.4, m_zug))):
     fass(f"Oel_Fass_{i}", fx, fz, 0.15, fm)
-kasten("Kabel_Trommel", 0.5, 0.5, 0.5, 0.2, 0.25, -8.3, m_blau)
-zylinder("Kabel_Trommel_Kern", 0.12, 0.56, 0.2, 0.25, -8.3, m_dunkel, achse="z")
+kasten("Kabel_Trommel", 0.5, 0.5, 0.5, -1.6, 0.25, -8.2, m_blau)
+zylinder("Kabel_Trommel_Kern", 0.12, 0.56, -1.6, 0.25, -8.2, m_dunkel, achse="z")
 
 # ---- Radsatzlager: Zug-Radsaetze auf Lagerschienen (Suedseite) --------------
 def radsatz(name, x, z_mitte, y_achse=0.5):
@@ -651,8 +651,8 @@ zylinder("Muelleimer_2", 0.22, 0.7, 2.7, 0.35, 4.7, m_orange)
 # Warnaufsteller stehen am Boden vor der Wand (die Modelle haben eigene Fuesse)
 lade_asset("factory_warning-orange.glb", "Warntafel_0", -8, 0, -9.45, ziel_hoehe=0.85)
 lade_asset("factory_warning-traffic.glb", "Warntafel_1", -2.2, 0, -9.45, ziel_hoehe=0.85, einfaerbung=m_orange)
-lade_asset("factory_warning-orange.glb", "Warntafel_2", 8.2, 0, -9.45, ziel_hoehe=0.85)
-for i, (sx, sz) in enumerate(((-9.8, 1.6), (1, -1.6), (9, 1.6))):
+lade_asset("factory_warning-orange.glb", "Warntafel_2", 6.7, 0, -9.45, ziel_hoehe=0.85)
+for i, (sx, sz) in enumerate(((-9.8, 1.6), (1, -1.6), (10.6, 1.6))):
     zylinder(f"Signal_{i}_mast", 0.04, 1.0, sx, 0.5, sz, m_dunkel)
     kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.06, sz, m_zug, fase=0)
     kasten(f"Signal_{i}_gelb", 0.13, 0.13, 0.13, sx, 1.19, sz, m_markierung, fase=0)
@@ -666,6 +666,36 @@ kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
 # Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone)
 kasten("Nordwand_Kabelkanal", 22, 0.06, 0.14, 3, 1.5, -9.8, m_dunkel, fase=0)
 zylinder("Nordwand_Rohr", 0.05, 22, 3, 2.4, -9.8, m_stahlhell, achse="x")
+
+# Personaltueren (die Halle hatte ausser dem Tor keine Tuer) mit Exit-Schild
+kasten("Personaltuer_Nord", 1.0, 0.08, 2.05, -4.6, 1.025, -9.82, m_blau, fase=0.02)
+kasten("Personaltuer_Nord_rahmen", 1.14, 0.06, 2.15, -4.6, 1.075, -9.83, m_relief, fase=0)
+kasten("Personaltuer_Nord_klinke", 0.12, 0.06, 0.04, -4.25, 1.05, -9.77, m_dunkel, fase=0)
+kasten("Personaltuer_Nord_exit", 0.4, 0.04, 0.24, -4.6, 2.62, -9.8, m_gruen, fase=0)
+kasten("Personaltuer_West", 0.08, 1.0, 2.05, -16.82, 1.025, 5.2, m_blau, fase=0.02)
+kasten("Personaltuer_West_rahmen", 0.06, 1.14, 2.15, -16.83, 1.075, 5.2, m_relief, fase=0)
+kasten("Personaltuer_West_klinke", 0.06, 0.12, 0.04, -16.77, 1.05, 4.85, m_dunkel, fase=0)
+kasten("Personaltuer_West_exit", 0.04, 0.4, 0.24, -16.8, 2.4, 5.2, m_gruen, fase=0)
+
+# Gasflaschen-Gestell an der Nordwand (Werkstatt-Klassiker)
+kasten("Gasflaschen_Gestell", 0.75, 0.32, 1.0, -10.6, 0.5, -9.6, m_stahl)
+zylinder("Gasflasche_1", 0.11, 1.3, -10.78, 0.65, -9.58, m_orange)
+zylinder("Gasflasche_2", 0.11, 1.3, -10.42, 0.65, -9.58, m_blau)
+zylinder("Gasflasche_1_ventil", 0.04, 0.12, -10.78, 1.36, -9.58, m_stahl)
+zylinder("Gasflasche_2_ventil", 0.04, 0.12, -10.42, 1.36, -9.58, m_stahl)
+kasten("Gasflaschen_Kette", 0.72, 0.04, 0.05, -10.6, 1.05, -9.44, m_dunkel, fase=0)
+
+# Hallenuhr ueber dem Tor
+zylinder("Hallenuhr", 0.32, 0.06, 16.8, 5.35, 0, m_fenster, achse="x")
+zylinder("Hallenuhr_rahmen", 0.36, 0.04, 16.82, 5.35, 0, m_dunkel, achse="x")
+kasten("Hallenuhr_zeiger_1", 0.02, 0.03, 0.2, 16.76, 5.42, 0, m_dunkel, fase=0)
+kasten("Hallenuhr_zeiger_2", 0.02, 0.14, 0.03, 16.76, 5.35, 0.08, m_dunkel, fase=0)
+
+# Kabelbruecke ueber dem Servicewagen-Schlauch + Stellplatz-Markierung fuer den Stapler
+kasten("Kabelbruecke", 0.9, 0.5, 0.07, 8.9, 0.035, 1.55, m_markierung, fase=0.02)
+for ex, ez in ((-1.1, -0.9), (1.1, -0.9), (-1.1, 0.9), (1.1, 0.9)):
+    kasten(f"Stellplatz_L1_{ex}_{ez}".replace(".", ""), 0.4, 0.06, 0.012, -12.8 + ex - 0.17 * (1 if ex > 0 else -1), 0.012, -5.2 + ez, m_fenster, fase=0)
+    kasten(f"Stellplatz_L2_{ex}_{ez}".replace(".", ""), 0.06, 0.4, 0.012, -12.8 + ex, 0.012, -5.2 + ez - 0.17 * (1 if ez > 0 else -1), m_fenster, fase=0)
 # Feuerloescher an den Nordstuetzen — der klassische Werkstatt-Glaubwuerdigkeitsanker
 for i, fx in enumerate((-6.8, 0, 6.8)):
     zylinder(f"Feuerloescher_{i}", 0.07, 0.45, fx, 1.05, -9.46, m_zug)
@@ -700,9 +730,10 @@ for i in range(6):
     kasten(f"Station_1_zettel_{i}", 0.03, 0.32, 0.42, -8.36, zy, zz, m_fenster, fase=0)
     kasten(f"Station_1_zettel_{i}_zeile", 0.035, 0.24, 0.05, -8.36, zy + 0.1, zz, m_objekt, fase=0)
 lade_asset("furniture_desk.glb", "Station_1_schreibtisch", -7.8, 0, -5.3, dreh_y=3.14159, ziel_breite=1.6, einfaerbung=m_objekt)
-lade_asset("furniture_chairDesk.glb", "Station_1_buerostuhl", -7.8, 0, -4.5, ziel_hoehe=0.95, einfaerbung=m_blau)
-lade_asset("furniture_computerScreen.glb", "Station_1_monitor", -8.0, 0.76, -5.45, ziel_hoehe=0.45, einfaerbung=m_dunkel)
-lade_asset("furniture_computerKeyboard.glb", "Station_1_tastatur", -7.6, 0.76, -5.2, ziel_breite=0.4, einfaerbung=m_dunkel)
+# Desk-Platte real: x -9.38..-7.78, z -5.32..-4.47, Oberkante 0.837 (Eckpivot)
+lade_asset("furniture_chairDesk.glb", "Station_1_buerostuhl", -8.55, 0, -4.2, ziel_hoehe=0.95, einfaerbung=m_blau)
+lade_asset("furniture_computerScreen.glb", "Station_1_monitor", -8.6, 0.84, -5.1, ziel_hoehe=0.45, einfaerbung=m_dunkel)
+lade_asset("furniture_computerKeyboard.glb", "Station_1_tastatur", -8.35, 0.84, -4.72, ziel_breite=0.4, einfaerbung=m_dunkel)
 lade_asset("furniture_bookcaseClosedWide.glb", "Station_1_aktenschrank", -12.2, 0, -5.6, ziel_hoehe=1.9, einfaerbung=m_objekt)
 
 # ---- Station 2: Datenraum-Regal ---------------------------------------------
@@ -779,27 +810,27 @@ kasten("Station_5_panel", 0.4, 0.05, 0.3, 1.3, 1.05, 5.56, m_fenster, fase=0)
 lade_asset("factory_machine.glb", "Station_5_maschine", 4.6, 0, 8.4, dreh_y=5.8, ziel_hoehe=1.5, einfaerbung=m_orange)
 kasten("Station_5_kabelkanal", 2.6, 0.18, 0.08, 2, 0.06, 5.3, m_dunkel, fase=0)
 # Strom-/Kabelanbindung des Pruefstands zur Suedwand
-rohr_mit_bogen("Station_5_kabel", [(3.3, 0.1, 6.4), (5.2, 0.1, 8.2), (6.2, 0.5, 9.6)], 0.04, m_dunkel)
-kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 6.2, 0.9, 9.75, m_objekt)
+rohr_mit_bogen("Station_5_kabel", [(3.3, 0.1, 6.4), (3.4, 0.1, 8.8), (6.2, 0.5, 9.7)], 0.04, m_dunkel)
+kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 6.2, 0.9, 9.78, m_objekt)
 
 # ---- Station 6: Besprechung (Kenney-Moebel) ---------------------------------
 lade_asset("furniture_table.glb", "Station_6_besprechung_tisch", -9, 0, 6, ziel_breite=2.2, einfaerbung=m_objekt)
-stuehle = [(-9.6, 4.85, 3.14159), (-8.4, 4.85, 3.14159), (-9.6, 7.15, 0), (-8.4, 7.15, 0)]
+stuehle = [(-8.7, 4.7, 3.14159), (-7.3, 4.7, 3.14159), (-8.7, 7.15, 0), (-7.3, 7.15, 0)]
 for i, (sx, sz, dreh) in enumerate(stuehle):
     lade_asset("furniture_chair.glb", f"Station_6_stuhl_{i}", sx, 0, sz, dreh_y=dreh, ziel_hoehe=0.95, einfaerbung=m_blau)
 # Laptop als Eigenbau (das Kenney-Modell liest sich aus der Stationskamera nicht)
-kasten("Station_6_laptop_basis", 0.35, 0.25, 0.02, -9.3, 0.77, 6, m_dunkel, fase=0)
-kasten("Station_6_laptop_deckel", 0.35, 0.02, 0.24, -9.3, 0.87, 5.88, m_dunkel, fase=0, drehung=(0.5, 0, 0))
-# Papier, Becher und Ordner — die Besprechungsecke wirkt sonst unbenutzt
-kasten("Station_6_papier", 0.3, 0.21, 0.015, -8.5, 0.76, 6.35, m_fenster, fase=0)
-zylinder("Station_6_becher_1", 0.04, 0.1, -8.7, 0.81, 5.7, m_fenster)
-zylinder("Station_6_becher_2", 0.04, 0.1, -9.9, 0.81, 6.3, m_blau)
+# Tischplatte real: x -9.0..-6.8, z 4.83..6.0, Oberkante 0.854 (Kenney-Eckpivot!)
+kasten("Station_6_laptop_basis", 0.35, 0.25, 0.02, -8.2, 0.865, 5.6, m_dunkel, fase=0)
+kasten("Station_6_laptop_deckel", 0.35, 0.02, 0.24, -8.2, 0.965, 5.48, m_dunkel, fase=0, drehung=(0.5, 0, 0))
+kasten("Station_6_papier", 0.3, 0.21, 0.015, -7.4, 0.862, 5.6, m_fenster, fase=0)
+zylinder("Station_6_becher_1", 0.04, 0.1, -7.2, 0.905, 5.15, m_fenster)
+zylinder("Station_6_becher_2", 0.04, 0.1, -8.7, 0.905, 5.3, m_blau)
 for i, om in enumerate((m_blau, m_orange, m_gruen)):
     kasten(f"Station_6_ordner_{i}", 0.08, 0.28, 0.32, -11.8 + i * 0.3, 0.96, 7, om, fase=0)
 kasten("Station_6_teppich", 3.4, 2.8, 0.02, -9, 0.015, 6, m_gleiszone, fase=0)
 for i, (my, mm) in enumerate(((1.85, m_blau), (1.7, m_zug), (1.55, m_gruen))):
     kasten(f"Station_6_marker_{i}", 0.5 - i * 0.12, 0.02, 0.05, -11.3, my, 8.16, mm, fase=0)
-lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -11.8, 0, 8.2, ziel_hoehe=1.1)
+lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -12.5, 0, 8.4, ziel_hoehe=1.1)
 kasten("Station_6_sideboard", 1.6, 0.5, 0.8, -11.5, 0.4, 7, m_objekt)
 kasten("Station_6_whiteboard", 1.6, 0.06, 1.0, -11.2, 1.7, 8.2, m_fenster)
 kasten("Station_6_whiteboard_fuss_1", 0.08, 0.08, 1.2, -11.9, 0.6, 8.2, m_dunkel, fase=0)
@@ -809,8 +840,6 @@ kasten("Station_6_whiteboard_fuss_2", 0.08, 0.08, 1.2, -10.5, 0.6, 8.2, m_dunkel
 for i, (fx, fz, fm) in enumerate(((-15.6, -8.2, m_blau), (-15.0, -8.5, m_dunkel), (-15.3, -7.6, m_orange))):
     fass(f"Requisite_Fass_{i}", fx, fz, 0, fm)
 kasten("Requisite_Palette", 1.2, 1.0, 0.12, -6.5, 0.06, -8.6, m_objekt, fase=0)
-kasten("Requisite_Palette_Kiste_1", 0.55, 0.5, 0.5, -6.7, 0.37, -8.7, m_wand)
-kasten("Requisite_Palette_Kiste_2", 0.4, 0.45, 0.35, -6.2, 0.3, -8.4, m_blau)
 kasten("Requisite_Werkbank", 2.2, 0.7, 0.85, -16.2, 0.43, 3, m_stahl)
 kasten("Requisite_Werkbank_Platte", 2.2, 0.75, 0.08, -16.2, 0.9, 3, m_dunkel)
 kasten("Requisite_Werkzeugtafel", 0.06, 1.8, 1.0, -16.85, 1.7, 3, m_dunkel, fase=0)
@@ -839,7 +868,7 @@ kasten("Tor_Blatt_Riegel", 0.14, 3.4, 0.18, 17.11, 2.1, 4.1, m_dunkel, fase=0)
 kasten("Tor_Schiene", 0.06, 8.0, 0.08, 17.15, 4.45, 2.2, m_dunkel, fase=0)
 for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6))):
     lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5, einfaerbung=m_orange)
-lade_asset("factory_box-large.glb", "Kiste_Palette", -5.6, 0, -8.6, dreh_y=0.4, ziel_hoehe=0.7)
+lade_asset("factory_box-large.glb", "Kiste_Palette", -6.5, 0.12, -8.6, dreh_y=0.2, ziel_hoehe=0.7)  # Plane-Kiste AUF der Palette
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
 lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
 
