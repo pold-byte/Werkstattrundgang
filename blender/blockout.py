@@ -815,7 +815,9 @@ kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 6.2, 0.9, 9.78, m_objekt)
 
 # ---- Station 6: Besprechung (Kenney-Moebel) ---------------------------------
 lade_asset("furniture_table.glb", "Station_6_besprechung_tisch", -9, 0, 6, ziel_breite=2.2, einfaerbung=m_objekt)
-stuehle = [(-8.7, 4.7, 3.14159), (-7.3, 4.7, 3.14159), (-8.7, 7.15, 0), (-7.3, 7.15, 0)]
+# Kenney-Stuhl hat Eck-Pivot: bei dreh=0 belegt er (x..x+0.4, z-0.4..z),
+# bei dreh=pi (x-0.4..x, z..z+0.4) — Anker so gesetzt, dass 1 cm Luft zur Platte bleibt
+stuehle = [(-8.3, 4.42, 3.14159), (-7.1, 4.42, 3.14159), (-8.7, 6.41, 0), (-7.5, 6.41, 0)]
 for i, (sx, sz, dreh) in enumerate(stuehle):
     lade_asset("furniture_chair.glb", f"Station_6_stuhl_{i}", sx, 0, sz, dreh_y=dreh, ziel_hoehe=0.95, einfaerbung=m_blau)
 # Laptop als Eigenbau (das Kenney-Modell liest sich aus der Stationskamera nicht)
