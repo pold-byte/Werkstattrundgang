@@ -542,6 +542,9 @@ def fuehrerstand(kennung, r):
     """r = +1 fuer das Ost-Ende (Front), -1 fuer das West-Ende (Heck)."""
     kasten(f"Triebzug_Fuehrerhaus_{kennung}", 1.3, 2.3, 1.9, 0.5 + r * 7.55, 1.7, 0, m_zugweiss, fase=0.1)
     kasten(f"Triebzug_Fuehrerhaus_Dach_{kennung}", 1.25, 2.15, 0.22, 0.5 + r * 7.52, 2.78, 0, m_stahlhell, fase=0.05)
+    # Zugzielanzeige ueber der Frontscheibe (gegreekt — kein echter Text)
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.04, 1.0, 0.16, 0.5 + r * 8.2, 2.62, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.05, 0.55, 0.05, 0.5 + r * 8.21, 2.62, -0.08 * r, m_markierung, fase=0)
     kasten(f"Triebzug_Frontscheibe_{kennung}", 0.05, 1.7, 0.8, 0.5 + r * 8.18, 2.18, 0, m_dunkel, fase=0)
     for i, az in enumerate((-0.88, 0.88)):
         kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.06, 0.12, 0.84, 0.5 + r * 8.185, 2.18, az, m_zugweiss, fase=0)
@@ -691,6 +694,41 @@ zylinder("Hallenuhr_rahmen", 0.36, 0.04, 16.82, 5.35, 0, m_dunkel, achse="x")
 kasten("Hallenuhr_zeiger_1", 0.02, 0.03, 0.2, 16.76, 5.42, 0, m_dunkel, fase=0)
 kasten("Hallenuhr_zeiger_2", 0.02, 0.14, 0.03, 16.76, 5.35, 0.08, m_dunkel, fase=0)
 
+# Prellbock am West-Gleisende
+for i, pz in enumerate((-0.5, 0.5)):
+    kasten(f"Prellbock_strebe_{i}", 0.9, 0.12, 0.12, -16.35, 0.35, pz, m_dunkel, fase=0, drehung=(0, 0.55, 0))
+    kasten(f"Prellbock_fuss_{i}", 0.5, 0.2, 0.06, -16.2, 0.03, pz, m_dunkel, fase=0)
+kasten("Prellbock_balken", 0.14, 1.6, 0.4, -15.95, 0.6, 0, m_zug, fase=0.03)
+
+# Erste-Hilfe-Kasten + Fluchtplan neben der Personaltuer Nord
+kasten("ErsteHilfe", 0.35, 0.06, 0.35, -3.7, 1.7, -9.8, m_fenster, fase=0.02)
+kasten("ErsteHilfe_kreuz_1", 0.2, 0.04, 0.06, -3.7, 1.7, -9.76, m_gruen, fase=0)
+kasten("ErsteHilfe_kreuz_2", 0.06, 0.04, 0.2, -3.7, 1.7, -9.76, m_gruen, fase=0)
+kasten("Fluchtplan", 0.3, 0.04, 0.4, -5.6, 1.7, -9.8, m_fenster, fase=0)
+kasten("Fluchtplan_gruen", 0.1, 0.03, 0.08, -5.66, 1.6, -9.77, m_gruen, fase=0)
+kasten("Fluchtplan_grundriss", 0.22, 0.03, 0.2, -5.6, 1.78, -9.77, m_gleiszone, fase=0)
+
+# Ventilhandraeder an der Nordwand-Rohrleitung
+for i, vx in enumerate((-5, 5)):
+    zylinder(f"Ventilrad_{i}", 0.09, 0.05, vx, 5.15, -9.24, m_orange, achse="z")
+    kasten(f"Ventilrad_{i}_gehaeuse", 0.12, 0.1, 0.12, vx, 5.15, -9.32, m_stahl, fase=0)
+
+# Gelbe Rammschutzbuegel vor den Nordwand-Maschinen
+for i, rx in enumerate((5.0, 8.4)):
+    for j, dz in enumerate((-0.45, 0.45)):
+        kasten(f"Rammschutz_{i}_pfosten_{j}", 0.08, 0.08, 0.6, rx + dz, 0.3, -7.75, m_markierung, fase=0.02)
+    kasten(f"Rammschutz_{i}_buegel", 0.98, 0.08, 0.08, rx, 0.62, -7.75, m_markierung, fase=0.02)
+
+# Feuerloescher auch an Sued- und Westwand
+zylinder("Feuerloescher_sued", 0.07, 0.45, 0, 1.05, 9.46, m_zug)
+kasten("Feuerloescher_sued_schild", 0.2, 0.02, 0.25, 0, 1.42, 9.53, m_zug, fase=0)
+zylinder("Feuerloescher_west", 0.07, 0.45, -16.42, 1.05, 0, m_zug)
+kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.49, 1.42, 0, m_zug, fase=0)
+
+# Schalterkaesten neben den Personaltueren
+kasten("Schalter_Nord", 0.12, 0.05, 0.18, -3.85, 1.1, -9.79, m_dunkel, fase=0)
+kasten("Schalter_West", 0.05, 0.12, 0.18, -16.79, 1.1, 4.45, m_dunkel, fase=0)
+
 # Kabelbruecke ueber dem Servicewagen-Schlauch + Stellplatz-Markierung fuer den Stapler
 kasten("Kabelbruecke", 0.9, 0.5, 0.07, 8.9, 0.035, 1.55, m_markierung, fase=0.02)
 for ex, ez in ((-1.1, -0.9), (1.1, -0.9), (-1.1, 0.9), (1.1, 0.9)):
@@ -816,8 +854,9 @@ kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 6.2, 0.9, 9.78, m_objekt)
 # ---- Station 6: Besprechung (Kenney-Moebel) ---------------------------------
 lade_asset("furniture_table.glb", "Station_6_besprechung_tisch", -9, 0, 6, ziel_breite=2.2, einfaerbung=m_objekt)
 # Kenney-Stuhl hat Eck-Pivot: bei dreh=0 belegt er (x..x+0.4, z-0.4..z),
-# bei dreh=pi (x-0.4..x, z..z+0.4) — Anker so gesetzt, dass 1 cm Luft zur Platte bleibt
-stuehle = [(-8.3, 4.42, 3.14159), (-7.1, 4.42, 3.14159), (-8.7, 6.41, 0), (-7.5, 6.41, 0)]
+# bei dreh=pi (x-0.4..x, z..z+0.4). Lehnen zeigen vom Tisch WEG (Sitz zum Tisch);
+# Anker so umgerechnet, dass die Standflaechen unveraendert bleiben.
+stuehle = [(-8.7, 4.82, 0), (-7.5, 4.82, 0), (-8.3, 6.01, 3.14159), (-7.1, 6.01, 3.14159)]
 for i, (sx, sz, dreh) in enumerate(stuehle):
     lade_asset("furniture_chair.glb", f"Station_6_stuhl_{i}", sx, 0, sz, dreh_y=dreh, ziel_hoehe=0.95, einfaerbung=m_blau)
 # Laptop als Eigenbau (das Kenney-Modell liest sich aus der Stationskamera nicht)
@@ -834,6 +873,7 @@ for i, (my, mm) in enumerate(((1.85, m_blau), (1.7, m_zug), (1.55, m_gruen))):
     kasten(f"Station_6_marker_{i}", 0.5 - i * 0.12, 0.02, 0.05, -11.3, my, 8.16, mm, fase=0)
 lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -12.5, 0, 8.4, ziel_hoehe=1.1)
 kasten("Station_6_sideboard", 1.6, 0.5, 0.8, -11.5, 0.4, 7, m_objekt)
+lade_asset("furniture_kitchenCoffeeMachine.glb", "Station_6_kaffee", -11.15, 0.8, 6.85, dreh_y=1.5708, ziel_hoehe=0.38)
 kasten("Station_6_whiteboard", 1.6, 0.06, 1.0, -11.2, 1.7, 8.2, m_fenster)
 kasten("Station_6_whiteboard_fuss_1", 0.08, 0.08, 1.2, -11.9, 0.6, 8.2, m_dunkel, fase=0)
 kasten("Station_6_whiteboard_fuss_2", 0.08, 0.08, 1.2, -10.5, 0.6, 8.2, m_dunkel, fase=0)
