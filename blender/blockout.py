@@ -258,10 +258,10 @@ ORANGE = (0.92, 0.48, 0.10)
 MARKIERUNG = (0.90, 0.76, 0.16)
 STAHL_HELL = (0.85, 0.86, 0.88)
 GRUEN = (0.30, 0.55, 0.32)
-GRUBE = (0.16, 0.17, 0.18)
+GRUBE = (0.09, 0.10, 0.11)
 ROT_ZUG = (0.72, 0.12, 0.16)
 WEISS_ZUG = (0.90, 0.90, 0.91)
-WAND_RELIEF = (0.70, 0.69, 0.66)
+WAND_RELIEF = (0.62, 0.61, 0.58)
 DECKE = (0.84, 0.83, 0.81)
 
 # Materialien mit ablesbarer Materialitaet: Beton matt+fleckig (Textur), Stahl
@@ -285,18 +285,33 @@ m_decke = material("Decke", DECKE)
 GLEIS_PNG = os.path.join(WURZEL, "blender", "gen_gleiszone.png")
 WAND_PNG = os.path.join(WURZEL, "blender", "gen_wand.png")
 RIFFEL_PNG = os.path.join(WURZEL, "blender", "gen_riffelblech.png")
-schreibe_noise_png(BODEN_PNG, basis=(168, 172, 166), spann=20, seed=7, koernung=6)
-schreibe_noise_png(GLEIS_PNG, basis=(126, 130, 127), spann=16, seed=11, koernung=8)
+schreibe_noise_png(BODEN_PNG, basis=(169, 170, 174), spann=20, seed=7, koernung=6)
+schreibe_noise_png(GLEIS_PNG, basis=(125, 127, 131), spann=16, seed=11, koernung=8)
 schreibe_noise_png(WAND_PNG, basis=(206, 202, 194), spann=7, seed=5, koernung=2)
 schreibe_riffelblech_png(RIFFEL_PNG)
+def fass(name, x, z, y_boden, farbe):
+    """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
+    zylinder(f"{name}", 0.23, 0.62, x, y_boden + 0.31, z, farbe)
+    zylinder(f"{name}_ring_oben", 0.245, 0.04, x, y_boden + 0.46, z, m_stahl)
+    zylinder(f"{name}_ring_unten", 0.245, 0.04, x, y_boden + 0.16, z, m_stahl)
+    zylinder(f"{name}_deckel", 0.2, 0.03, x, y_boden + 0.63, z, m_stahlhell)
+
+
 m_boden = material_mit_textur("Boden", BODEN_PNG, rauheit=0.92)
 m_gleiszone = material_mit_textur("Gleiszone", GLEIS_PNG, rauheit=0.92)
 m_wand = material_mit_textur("Wand", WAND_PNG, rauheit=0.85)
 m_riffel = material_mit_textur("Riffelblech", RIFFEL_PNG, rauheit=0.4, metall=0.7)
 
 # ---- Halle: Boden, Gleiszone, Markierungen ----------------------------------
-kasten("Halle_Boden", 34, 20, 0.2, 0, -0.1, 0, m_boden, fase=0)
-kasten("Halle_Gleiszone", 34, 3.6, 0.04, 0, 0.02, 0, m_gleiszone, fase=0)
+# Boden- und Gleiszonenplatten mit Aussparung fuer die Untersuchungsgrube (x -7..0, z -1..1)
+kasten("Halle_Boden_West", 10, 20, 0.2, -12, -0.1, 0, m_boden, fase=0)
+kasten("Halle_Boden_Ost", 17, 20, 0.2, 8.5, -0.1, 0, m_boden, fase=0)
+kasten("Halle_Boden_GrubeNord", 7, 9, 0.2, -3.5, -0.1, -5.5, m_boden, fase=0)
+kasten("Halle_Boden_GrubeSued", 7, 9, 0.2, -3.5, -0.1, 5.5, m_boden, fase=0)
+kasten("Halle_Gleiszone_West", 10, 3.6, 0.04, -12, 0.02, 0, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_Ost", 17, 3.6, 0.04, 8.5, 0.02, 0, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_GrubeNord", 7, 0.8, 0.04, -3.5, 0.02, -1.4, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.04, -3.5, 0.02, 1.4, m_gleiszone, fase=0)
 kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.045, -1.9, m_markierung, fase=0)
 kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.045, 1.9, m_markierung, fase=0)
 kasten("Halle_Weg_Nord", 34, 1.6, 0.03, 0, 0.02, -8.9, m_wand, fase=0)
@@ -408,7 +423,7 @@ for i, gz in enumerate((-9.5, -7.2, -4.9, -2.6, -0.4)):
 zylinder("Empore_Handlauf", 0.035, 9.6, -14.1, 4.1, -5, m_dunkel, achse="z")
 def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
     """Gerade Blocktreppe mit Normstufen (~19 cm) und abgestuetztem Gelaender."""
-    mat = mat or m_riffel
+    mat = mat or m_stahl  # Riffelblech nur auf ebenen Plattformen — auf Stufenflanken verzerrt es
     stufen = max(4, int(hoehe / 0.19))
     lauf = hoehe * 1.6
     for i in range(stufen):
@@ -422,14 +437,25 @@ def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
         h = bpy.context.active_object
         h.rotation_mode = "QUATERNION"
         h.rotation_quaternion = Vector((0, richtung_z * lauf, hoehe)).to_track_quat("Z", "Y")
-        for t in (0.15, 0.5, 0.85):  # Gelaenderpfosten verbinden Handlauf und Stufen
-            zylinder(f"{name}_gpfosten_{'w' if seite < 0 else 'o'}_{t}".replace(".", ""), 0.02, 0.9,
+        for t in (0.05, 0.35, 0.65, 0.95):  # Gelaenderpfosten bis unter die Handlaufenden
+            zylinder(f"{name}_gpfosten_{'w' if seite < 0 else 'o'}_{t}".replace(".", ""), 0.02, 0.82,
                      gx, hoehe * t + 0.45, z + richtung_z * (lauf / 2 - lauf * t), m_markierung)
 
 
 treppe("Empore_Treppe", -15.5, 1.0, 3.05, richtung_z=1)
 kasten("Empore_Kiste_1", 0.6, 0.55, 0.5, -15.9, 3.4, -8.4, m_blau)
 kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange)
+kasten("Empore_Palette", 1.2, 1.0, 0.12, -15.5, 3.19, -2.5, m_objekt, fase=0)
+kasten("Empore_Palette_Kiste", 0.5, 0.45, 0.45, -15.6, 3.48, -2.6, m_wand)
+# Lagerzone unter der Empore: Wandregal + Faesser
+kasten("UnterEmpore_Wange_1", 0.08, 0.9, 1.9, -16.35, 0.95, -4.6, m_blau)
+kasten("UnterEmpore_Wange_2", 0.08, 0.9, 1.9, -16.35, 0.95, -2.4, m_blau)
+for i, ry in enumerate((0.4, 1.0, 1.6)):
+    kasten(f"UnterEmpore_Brett_{i}", 0.08, 2.1, 0.05, -16.35, ry, -3.5, m_dunkel, fase=0)
+for i, (bz, bm) in enumerate(((-4.2, m_orange), (-3.5, m_wand), (-2.8, m_blau))):
+    kasten(f"UnterEmpore_Kiste_{i}", 0.4, 0.5, 0.4, -16.3, 0.65, bz, bm, fase=0)
+fass("UnterEmpore_Fass_1", -16.2, -1.3, 0, m_blau)
+fass("UnterEmpore_Fass_2", -15.8, -0.8, 0, m_dunkel)
 
 # ---- Gleis + Untersuchungsgrube ---------------------------------------------
 kasten("Gleis_Schiene_Nord", 38, 0.15, 0.15, 2, 0.08, -0.7, m_dunkel, fase=0)
@@ -442,19 +468,21 @@ for i in range(45):
         continue  # ueber der Grube liegen die Schienen frei auf den Grubenwaenden
     kasten(f"Gleis_Schwelle_{i}", 0.22, 1.8, 0.06, sx, 0.03, 0, m_dunkel, fase=0)
 
-# Grube liegt UNTER dem Zug (Werkstatt-Logik: Unterboden-Inspektion)
-kasten("Grube_Boden", 7, 2.0, 0.03, -3.5, 0.045, 0, m_grube, fase=0)
-kasten("Grube_Absatz_Nord", 7, 0.18, 0.05, -3.5, 0.07, -0.92, m_dunkel, fase=0)
-kasten("Grube_Absatz_Sued", 7, 0.18, 0.05, -3.5, 0.07, 0.92, m_dunkel, fase=0)
+# Grube liegt UNTER dem Zug — als ECHTE Vertiefung (Boden abgesenkt, Waende, Licht)
+kasten("Grube_Boden", 7, 2.0, 0.06, -3.5, -0.72, 0, m_grube, fase=0)
+kasten("Grube_Wand_Nord", 7, 0.1, 0.76, -3.5, -0.32, -0.95, m_grube, fase=0)
+kasten("Grube_Wand_Sued", 7, 0.1, 0.76, -3.5, -0.32, 0.95, m_grube, fase=0)
+kasten("Grube_Wand_West", 0.1, 1.8, 0.76, -6.95, -0.32, 0, m_grube, fase=0)
+kasten("Grube_Wand_Ost", 0.1, 1.8, 0.76, -0.05, -0.32, 0, m_grube, fase=0)
 kasten("Grube_Quersteg_1", 0.4, 1.9, 0.04, -5.3, 0.075, 0, m_stahl, fase=0)
 kasten("Grube_Quersteg_2", 0.4, 1.9, 0.04, -1.8, 0.075, 0, m_stahl, fase=0)
-kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, 0.05, -0.9, m_fenster, fase=0)
-kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, 0.05, 0.9, m_fenster, fase=0)
-# Echte Grubenleiter: zwei Holme + Sprossen (am Ost-Ende der Grube)
-for i, lz in enumerate((0.52, 0.88)):
-    kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 1.0, 0.2, 0.5, lz, m_orange, fase=0)
-for i in range(4):
-    kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.36, 0.04, 0.2, 0.18 + i * 0.24, 0.7, m_orange, fase=0)
+kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, -0.25, -0.82, m_fenster, fase=0)
+kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_fenster, fase=0)
+# Grubenleiter fuehrt in die Vertiefung (an der Ost-Innenwand)
+for i, lz in enumerate((-0.35, 0.35)):
+    kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 1.4, -0.18, 0.0, lz, m_orange, fase=0)
+for i in range(5):
+    kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.66, 0.04, -0.18, -0.55 + i * 0.28, 0, m_orange, fase=0)
 
 
 def warnstreifen(name, laenge, x, z, entlang_x=True):
@@ -473,6 +501,7 @@ warnstreifen("Grube_Kante_West", 2, -7.05, 0, entlang_x=False)
 warnstreifen("Grube_Kante_Ost", 2, 0.05, 0, entlang_x=False)
 
 # ---- Triebzug v3: realistische Hoehe (3 m Dachkante), sichtbare Raeder ------
+m_zugglas = material("ZugGlas", (0.12, 0.13, 0.15), rauheit=0.2)
 ZUG_X = 0.5
 kasten("Triebzug_Unterbau", 14, 1.55, 0.35, ZUG_X, 0.575, 0, m_dunkel)
 for i, bx in enumerate((-4.5, 5.5)):
@@ -491,8 +520,11 @@ for seite, sz in (("nord", -1.24), ("sued", 1.24)):
     for i, tx in enumerate((-2.55, 5.15)):
         kasten(f"Triebzug_Tuerrahmen_{seite}_{i}", 1.06, 0.07, 1.95, tx, 1.72, sz, m_zugweiss, fase=0)
         kasten(f"Triebzug_Tuer_{seite}_{i}", 0.95, 0.09, 1.85, tx, 1.7, sz, m_stahl, fase=0)
-        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.11, 0.45, tx, 2.2, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.14, 0.45, tx, 2.2, sz, m_zugglas, fase=0)
+        kasten(f"Triebzug_Tuerfuge_{seite}_{i}", 0.02, 0.1, 1.7, tx, 1.7, sz, m_dunkel, fase=0)
         kasten(f"Triebzug_Tuergriff_{seite}_{i}", 0.12, 0.11, 0.04, tx + 0.36, 1.4, sz, m_dunkel, fase=0)
+    for i, ax in enumerate((-6.0, 3.0)):  # Anschriftenfelder (gegreekt, keine echten Nummern)
+        kasten(f"Triebzug_Anschrift_{seite}_{i}", 0.6, 0.01, 0.12, ax, 1.5, sz * 1.008, m_dunkel, fase=0)
 kasten("Triebzug_Dach", 13.6, 2.2, 0.3, ZUG_X, 2.85, 0, m_stahlhell)
 zylinder("Triebzug_Dachleitung", 0.05, 12.5, 0, 3.07, -0.8, m_dunkel, achse="x")
 for i, kx in enumerate((-4, 0.5, 5)):
@@ -513,7 +545,7 @@ def fuehrerstand(kennung, r):
     kasten(f"Triebzug_Frontscheibe_{kennung}", 0.05, 1.7, 0.8, 0.5 + r * 8.18, 2.18, 0, m_dunkel, fase=0)
     for i, az in enumerate((-0.88, 0.88)):
         kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.06, 0.12, 0.84, 0.5 + r * 8.185, 2.18, az, m_zugweiss, fase=0)
-    kasten(f"Triebzug_Wischer_{kennung}", 0.02, 0.06, 0.28, 0.5 + r * 8.22, 1.88, -0.45 * r, m_dunkel, fase=0, drehung=(0.35, 0, 0))
+    kasten(f"Triebzug_Wischer_{kennung}", 0.02, 0.06, 0.24, 0.5 + r * 8.22, 2.0, -0.45 * r, m_dunkel, fase=0, drehung=(0.35, 0, 0))
     for i, cz in enumerate((-1.18, 1.18)):
         kasten(f"Triebzug_Cabstreifen_{kennung}_{i}", 1.3, 0.06, 0.35, 0.5 + r * 7.55, 1.05, cz, m_zug, fase=0)
     kasten(f"Triebzug_Frontband_{kennung}", 0.6, 2.42, 0.35, 0.5 + r * 7.95, 1.05, 0, m_zug, fase=0.04)
@@ -543,8 +575,8 @@ for j, bz in enumerate((-3.08, 3.08)):
         zylinder(f"Buehne_Gelaenderpfosten_{j}_{i}", 0.025, 0.95, px, 3.78, bz, m_stahlhell)
 for i, tx in enumerate((-6.5, 4)):
     kasten(f"Buehne_Quertraeger_{i}", 0.16, 5.4, 0.2, tx, 3.9, 0, m_stahlhell)
-# Nordseite, Westende — blockiert weder Stationskameras noch die Totale
-treppe("Buehne_Treppe", -7.4, -5.3, 3.3, richtung_z=-1, breite=0.85)
+# Nordseite, OSTende — dort blockiert sie weder Station 1/2 noch die Totale
+treppe("Buehne_Treppe", 2.9, -5.3, 3.3, richtung_z=-1, breite=0.85)
 
 i_traeger("Kran_Traeger", 15, 0.4, 0.3, 0.5, 5.4, 0, m_stahlhell, achse="x")
 for i, kx in enumerate((-2.5, 4)):
@@ -585,14 +617,6 @@ for i, (wx, wm) in enumerate(((1.95, m_blau), (2.5, m_orange), (3.05, m_blau))):
     kasten(f"Werkbank2_griff_{i}", 0.2, 0.04, 0.04, wx, 0.68, -9.0, m_dunkel, fase=0)
 kasten("Werkbank2_Schraubstock", 0.25, 0.3, 0.25, 3.2, 1.06, -9.35, m_dunkel)
 kasten("Werkbank2_Werkzeugkasten", 0.5, 0.3, 0.3, 2.0, 1.09, -9.4, m_zug)
-def fass(name, x, z, y_boden, farbe):
-    """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
-    zylinder(f"{name}", 0.23, 0.62, x, y_boden + 0.31, z, farbe)
-    zylinder(f"{name}_ring_oben", 0.245, 0.04, x, y_boden + 0.46, z, m_stahl)
-    zylinder(f"{name}_ring_unten", 0.245, 0.04, x, y_boden + 0.16, z, m_stahl)
-    zylinder(f"{name}_deckel", 0.2, 0.03, x, y_boden + 0.63, z, m_stahlhell)
-
-
 kasten("Oel_Wanne", 1.7, 1.3, 0.15, 11.5, 0.08, -8.7, m_markierung)
 for i, (fx, fz, fm) in enumerate(((11.2, -8.9, m_dunkel), (11.8, -8.9, m_blau),
                                   (11.2, -8.4, m_orange), (11.8, -8.4, m_zug))):
@@ -610,10 +634,10 @@ def radsatz(name, x, z_mitte, y_achse=0.5):
 
 
 for i, rz in enumerate((2.45, 3.55)):
-    kasten(f"Radsatzlager_schiene_{i}", 3.4, 0.14, 0.12, 0.6, 0.06, rz, m_stahl, fase=0)
-for i, rx in enumerate((-0.5, 0.6, 1.7)):
+    kasten(f"Radsatzlager_schiene_{i}", 3.4, 0.14, 0.12, -0.6, 0.06, rz, m_stahl, fase=0)
+for i, rx in enumerate((-1.7, -0.6, 0.5)):
     radsatz(f"Radsatz_{i}", rx, 3.0)
-warnstreifen("Radsatzlager_kante", 3.5, 0.6, 4.0)
+warnstreifen("Radsatzlager_kante", 3.5, -0.6, 4.0)
 
 # ---- Bodenmarkierungen, Signale, Sicherheit ---------------------------------
 # Markierte Zone als Kenney-Bodendekal (liest sich eindeutig als Markierung)
@@ -626,21 +650,26 @@ zylinder("Muelleimer_1", 0.22, 0.7, -6.6, 0.35, -4.0, m_orange)
 zylinder("Muelleimer_2", 0.22, 0.7, 2.7, 0.35, 4.7, m_orange)
 # Warnaufsteller stehen am Boden vor der Wand (die Modelle haben eigene Fuesse)
 lade_asset("factory_warning-orange.glb", "Warntafel_0", -8, 0, -9.45, ziel_hoehe=0.85)
-lade_asset("factory_warning-traffic.glb", "Warntafel_1", -2.2, 0, -9.45, ziel_hoehe=0.85)
+lade_asset("factory_warning-traffic.glb", "Warntafel_1", -2.2, 0, -9.45, ziel_hoehe=0.85, einfaerbung=m_orange)
 lade_asset("factory_warning-orange.glb", "Warntafel_2", 8.2, 0, -9.45, ziel_hoehe=0.85)
-for i, (sx, sz) in enumerate(((-8, 1.6), (1, -1.6), (9, 1.6))):
+for i, (sx, sz) in enumerate(((-9.8, 1.6), (1, -1.6), (9, 1.6))):
     zylinder(f"Signal_{i}_mast", 0.04, 1.0, sx, 0.5, sz, m_dunkel)
     kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.06, sz, m_zug, fase=0)
     kasten(f"Signal_{i}_gelb", 0.13, 0.13, 0.13, sx, 1.19, sz, m_markierung, fase=0)
     kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.32, sz, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor", 0.05, 0.5, 0.3, 16.78, 3.0, -2.6, m_gruen, fase=0)
+kasten("Rettungszeichen_Tor_symbol", 0.06, 0.2, 0.06, 16.76, 3.0, -2.6, m_fenster, fase=0)
 kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.78, 2.3, 2.0, m_gruen, fase=0)
+kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.76, 2.3, 2.0, m_fenster, fase=0)
 kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell, fase=0)
 kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
+# Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone)
+kasten("Nordwand_Kabelkanal", 22, 0.06, 0.14, 3, 1.5, -9.8, m_dunkel, fase=0)
+zylinder("Nordwand_Rohr", 0.05, 22, 3, 2.4, -9.8, m_stahlhell, achse="x")
 # Feuerloescher an den Nordstuetzen — der klassische Werkstatt-Glaubwuerdigkeitsanker
 for i, fx in enumerate((-6.8, 0, 6.8)):
-    zylinder(f"Feuerloescher_{i}", 0.07, 0.45, fx + 0.28, 1.05, -9.5, m_zug)
-    kasten(f"Feuerloescher_{i}_schild", 0.2, 0.02, 0.25, fx + 0.28, 1.6, -9.67, m_zug, fase=0)
+    zylinder(f"Feuerloescher_{i}", 0.07, 0.45, fx, 1.05, -9.46, m_zug)
+    kasten(f"Feuerloescher_{i}_schild", 0.2, 0.02, 0.25, fx, 1.42, -9.53, m_zug, fase=0)
 
 # Sued-Requisiten gegen die toten Zonen (Kritik: leere Suedost- und Suedwest-Wand)
 for i, (sx, sm) in enumerate(((11.8, m_objekt), (12.7, m_blau))):
@@ -653,7 +682,7 @@ fass("Sued_Fass_2", 10.2, 9.5, 0, m_orange)
 kasten("Sued_Werkbank", 2.0, 0.7, 0.85, -2.5, 0.43, 9.3, m_stahl)
 kasten("Sued_Werkbank_Platte", 2.0, 0.75, 0.08, -2.5, 0.9, 9.3, m_dunkel)
 fass("Sued_Fass_3", -4.1, 9.3, 0, m_dunkel)
-lade_asset("factory_box-large.glb", "Sued_Kiste", -0.8, 0, 9.2, dreh_y=0.5, ziel_hoehe=0.7)
+lade_asset("factory_box-large.glb", "Sued_Kiste", -5.6, 0, 9.0, dreh_y=0.5, ziel_hoehe=0.7, einfaerbung=m_blau)
 
 # ---- Station 1: Meisterbuero -------------------------------------------------
 kasten("Station_1_meisterbuero", 4, 3, 2.6, -10.5, 1.3, -7.5, m_wand)
@@ -703,8 +732,8 @@ kasten("Station_2_zettel_am_regal", 0.03, 0.28, 0.38, -4.26, 1.5, -5.8, m_fenste
 # Bedienterminal in Menschengroesse: Saeule mittig, Pult VOR dem Schirm (kamerasichtbar)
 kasten("Station_3_terminal_saeule", 0.5, 0.5, 1.2, 7, 0.6, -4.3, m_dunkel)
 kasten("Station_3_terminal_gehaeuse", 1.0, 0.35, 0.65, 7, 1.35, -4.15, m_blau)
-kasten("Station_3_terminal_pult", 1.2, 0.5, 0.1, 7, 0.95, -3.6, m_stahl)
-kasten("Station_3_tastatur", 0.6, 0.28, 0.05, 7, 1.02, -3.6, m_dunkel, fase=0)
+kasten("Station_3_terminal_pult", 1.2, 0.5, 0.1, 7, 0.95, -3.95, m_stahl)
+kasten("Station_3_tastatur", 0.6, 0.28, 0.05, 7, 1.02, -3.9, m_dunkel, fase=0)
 kasten("Station_3_bodenplatte", 2.2, 1.6, 0.03, 7, 0.02, -4.0, m_gleiszone, fase=0)
 bpy.ops.mesh.primitive_plane_add(size=1, location=pos(7, 1.35, -3.95))
 monitor = bpy.context.active_object
@@ -722,8 +751,18 @@ kasten("Station_4_rahmen_west", 0.08, 0.18, 1.92, 7.36, 2, 5.8, m_stahlhell, fas
 kasten("Station_4_rahmen_ost", 0.08, 0.18, 1.92, 10.64, 2, 5.8, m_stahlhell, fase=0)
 for i in range(4):
     breite = 2.6 - (i % 2) * 0.5
-    kasten(f"Station_4_zeile_{i}", breite, 0.04, 0.14, 8.8, 2.42 - i * 0.36, 5.71, m_stahl, fase=0)
-kasten("Station_4_titelzeile", 1.8, 0.04, 0.2, 8.5, 2.74, 5.71, m_markierung, fase=0)
+    kasten(f"Station_4_zeile_{i}", breite, 0.04, 0.14, 9.2, 2.42 - i * 0.36, 5.71, m_stahl, fase=0)
+kasten("Station_4_titelzeile", 1.8, 0.04, 0.2, 9.5, 2.74, 5.71, m_markierung, fase=0)
+# Rueckseite mit Streben (Totale schaut von hinten drauf) + Standzone davor
+kasten("Station_4_strebe_1", 3.2, 0.05, 0.12, 9, 1.5, 5.92, m_stahlhell, fase=0)
+kasten("Station_4_strebe_2", 3.2, 0.05, 0.12, 9, 2.5, 5.92, m_stahlhell, fase=0)
+kasten("Station_4_bodenplatte", 2.4, 1.6, 0.03, 9, 0.02, 4.6, m_gleiszone, fase=0)
+# Suedwand-Umfeld der Station 4 fuellen
+kasten("Station_4_werkzeugtafel", 1.6, 0.06, 1.0, 6.8, 1.7, 9.78, m_dunkel, fase=0)
+for i, (wx2, wy2, wm2) in enumerate(((6.3, 1.9, m_orange), (6.7, 1.8, m_stahl), (7.1, 1.95, m_orange), (7.3, 1.55, m_objekt))):
+    kasten(f"Station_4_werkzeug_{i}", 0.1, 0.05, 0.3, wx2, wy2, 9.72, wm2, fase=0)
+fass("Station_4_fass_1", 8.3, 9.4, 0, m_blau)
+fass("Station_4_fass_2", 8.8, 9.2, 0, m_dunkel)
 kasten("Station_4_pfosten_west", 0.15, 0.15, 2.9, 7.6, 1.45, 5.8, m_stahl)
 kasten("Station_4_pfosten_ost", 0.15, 0.15, 2.9, 10.4, 1.45, 5.8, m_stahl)
 
@@ -737,15 +776,29 @@ zylinder("Station_5_drehknopf", 0.06, 0.06, 1.3, 1.0, 5.52, m_orange, achse="z")
 zylinder("Station_5_rolle_1", 0.18, 1.0, 2.6, 0.7, 6, m_dunkel, achse="z")
 zylinder("Station_5_rolle_2", 0.18, 1.0, 3.1, 0.7, 6, m_dunkel, achse="z")
 kasten("Station_5_panel", 0.4, 0.05, 0.3, 1.3, 1.05, 5.56, m_fenster, fase=0)
-lade_asset("factory_machine.glb", "Station_5_maschine", 4.6, 0, 7.6, dreh_y=5.8, ziel_hoehe=1.5, einfaerbung=m_orange)
+lade_asset("factory_machine.glb", "Station_5_maschine", 4.6, 0, 8.4, dreh_y=5.8, ziel_hoehe=1.5, einfaerbung=m_orange)
 kasten("Station_5_kabelkanal", 2.6, 0.18, 0.08, 2, 0.06, 5.3, m_dunkel, fase=0)
+# Strom-/Kabelanbindung des Pruefstands zur Suedwand
+rohr_mit_bogen("Station_5_kabel", [(3.3, 0.1, 6.4), (5.2, 0.1, 8.2), (6.2, 0.5, 9.6)], 0.04, m_dunkel)
+kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 6.2, 0.9, 9.75, m_objekt)
 
 # ---- Station 6: Besprechung (Kenney-Moebel) ---------------------------------
 lade_asset("furniture_table.glb", "Station_6_besprechung_tisch", -9, 0, 6, ziel_breite=2.2, einfaerbung=m_objekt)
-stuehle = [(-9.6, 5.1, 3.14159), (-8.4, 5.1, 3.14159), (-9.6, 6.9, 0), (-8.4, 6.9, 0)]
+stuehle = [(-9.6, 4.85, 3.14159), (-8.4, 4.85, 3.14159), (-9.6, 7.15, 0), (-8.4, 7.15, 0)]
 for i, (sx, sz, dreh) in enumerate(stuehle):
     lade_asset("furniture_chair.glb", f"Station_6_stuhl_{i}", sx, 0, sz, dreh_y=dreh, ziel_hoehe=0.95, einfaerbung=m_blau)
-lade_asset("furniture_laptop.glb", "Station_6_laptop", -9.3, 0.75, 6, dreh_y=0.5, ziel_breite=0.45, einfaerbung=m_dunkel)
+# Laptop als Eigenbau (das Kenney-Modell liest sich aus der Stationskamera nicht)
+kasten("Station_6_laptop_basis", 0.35, 0.25, 0.02, -9.3, 0.77, 6, m_dunkel, fase=0)
+kasten("Station_6_laptop_deckel", 0.35, 0.02, 0.24, -9.3, 0.87, 5.88, m_dunkel, fase=0, drehung=(0.5, 0, 0))
+# Papier, Becher und Ordner — die Besprechungsecke wirkt sonst unbenutzt
+kasten("Station_6_papier", 0.3, 0.21, 0.015, -8.5, 0.76, 6.35, m_fenster, fase=0)
+zylinder("Station_6_becher_1", 0.04, 0.1, -8.7, 0.81, 5.7, m_fenster)
+zylinder("Station_6_becher_2", 0.04, 0.1, -9.9, 0.81, 6.3, m_blau)
+for i, om in enumerate((m_blau, m_orange, m_gruen)):
+    kasten(f"Station_6_ordner_{i}", 0.08, 0.28, 0.32, -11.8 + i * 0.3, 0.96, 7, om, fase=0)
+kasten("Station_6_teppich", 3.4, 2.8, 0.02, -9, 0.015, 6, m_gleiszone, fase=0)
+for i, (my, mm) in enumerate(((1.85, m_blau), (1.7, m_zug), (1.55, m_gruen))):
+    kasten(f"Station_6_marker_{i}", 0.5 - i * 0.12, 0.02, 0.05, -11.3, my, 8.16, mm, fase=0)
 lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -11.8, 0, 8.2, ziel_hoehe=1.1)
 kasten("Station_6_sideboard", 1.6, 0.5, 0.8, -11.5, 0.4, 7, m_objekt)
 kasten("Station_6_whiteboard", 1.6, 0.06, 1.0, -11.2, 1.7, 8.2, m_fenster)
@@ -777,12 +830,15 @@ kasten("Requisite_Leiter", 0.5, 0.08, 2.4, 15.5, 1.2, -9.7, m_orange, fase=0)
 
 # ---- Kenney-Industriemodelle: Maschinenpark, Ventil, Tor, Kleinteile --------
 lade_asset("factory_machine.glb", "Maschine_Nord_1", 5.0, 0, -9.2, ziel_hoehe=1.8, einfaerbung=m_blau)
-lade_asset("factory_machine-window.glb", "Maschine_Nord_2", 7.6, 0, -9.2, ziel_hoehe=1.8, einfaerbung=m_blau)
+lade_asset("factory_machine-window.glb", "Maschine_Nord_2", 8.4, 0, -9.2, ziel_hoehe=1.8, einfaerbung=m_blau)
 lade_asset("factory_machine-fortified.glb", "Maschine_West", -16.1, 0, 7.5, dreh_y=1.5708, ziel_hoehe=1.8, einfaerbung=m_blau)
 lade_asset("factory_pipe-large-valve.glb", "Ventil_Ost", 16.5, 0, -6.5, dreh_y=-1.5708, ziel_hoehe=1.5, einfaerbung=m_stahlhell)
-lade_asset("factory_door-wide-open.glb", "Tor_Fluegel", 17.0, 0, 1.75, dreh_y=1.5708, ziel_breite=3.5, einfaerbung=m_orange)
+# Aufgeschobenes Schiebetorblatt (Eigenbau — das Kenney-Tor hat einen kaputten Pivot)
+kasten("Tor_Blatt", 0.12, 3.6, 4.2, 17.12, 2.1, 4.1, m_orange, fase=0.03)
+kasten("Tor_Blatt_Riegel", 0.14, 3.4, 0.18, 17.11, 2.1, 4.1, m_dunkel, fase=0)
+kasten("Tor_Schiene", 0.06, 8.0, 0.08, 17.15, 4.45, 2.2, m_dunkel, fase=0)
 for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6))):
-    lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5)
+    lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5, einfaerbung=m_orange)
 lade_asset("factory_box-large.glb", "Kiste_Palette", -5.6, 0, -8.6, dreh_y=0.4, ziel_hoehe=0.7)
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
 lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
@@ -842,7 +898,7 @@ lade_asset("car_wheel-truck.glb", "Ersatzrad", -15.8, 0, 5.6, ziel_breite=0.6)
 kasten("Foerderband_Sockel", 2.4, 0.75, 0.45, 0.3, 0.225, -8.55, m_stahl)
 lade_asset("factory_conveyor-long.glb", "Foerderband", 0.3, 0.45, -8.55, ziel_breite=2.6, einfaerbung=m_blau)
 lade_asset("factory_box-small.glb", "Foerderband_Kiste", 0.1, 0.82, -8.55, dreh_y=0.3, ziel_hoehe=0.4)
-lade_asset("factory_screen-panel-wide.glb", "Leitstand_Panel", 9.2, 0, -9.35, ziel_hoehe=1.6, einfaerbung=m_dunkel)
+lade_asset("factory_screen-panel-wide.glb", "Leitstand_Panel", 10.4, 0, -9.35, ziel_hoehe=1.6, einfaerbung=m_dunkel)
 lade_asset("factory_hopper-square.glb", "Trichter", 15.3, 0, -8.3, ziel_hoehe=1.9, einfaerbung=m_stahlhell)
 
 # ---- Stationsschilder (Ziffer kamerazugewandt, Sued-Stationen gedreht) ------
