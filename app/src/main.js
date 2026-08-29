@@ -155,7 +155,9 @@ async function start() {
     if (szeneGlbBase64) await ladeModell(szene, base64ZuArrayBuffer(szeneGlbBase64));
   } else {
     try {
-      await ladeModell(szene, './szene.glb');
+      // Im Dev-Modus Cache-Buster anhaengen — sonst klebt der Browser nach einem
+      // Neuexport auf der alten szene.glb.
+      await ladeModell(szene, import.meta.env.DEV ? `./szene.glb?v=${Date.now()}` : './szene.glb');
     } catch {
       // Kein Modell vorhanden (vor Task 11): Platzhalter bleibt stehen.
     }

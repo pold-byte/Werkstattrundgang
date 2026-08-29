@@ -19,6 +19,7 @@ import os
 import random
 import struct
 import zlib
+from mathutils import Vector
 
 WURZEL = os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd()
 ZIEL = os.path.join(WURZEL, "app", "public", "szene.glb")
@@ -151,6 +152,43 @@ def i_traeger(name, laenge, hoehe, breite, x, y, z, mat, achse="x"):
         kasten(f"{name}_obergurt", breite, laenge, gurt, x, y + hoehe / 2 - gurt / 2, z, mat)
         kasten(f"{name}_untergurt", breite, laenge, gurt, x, y - hoehe / 2 + gurt / 2, z, mat)
         kasten(f"{name}_steg", steg, laenge, hoehe - 2 * gurt, x, y, z, mat)
+
+
+ASSETS = os.path.join(WURZEL, "blender", "assets", "kenney")
+
+
+def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=None):
+    """Importiert ein CC0-Kenney-GLB und haengt es unter ein Anker-Empty.
+
+    Die Hierarchie bleibt erhalten (geriggte Modelle wie der Roboterarm kollabieren
+    beim Joinen). Kenney-Ursprung liegt an der Standflaeche — y ist die Bodenhoehe.
+    ziel_hoehe/ziel_breite skalieren das Modell auf ein Wunschmass in Metern."""
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.ops.import_scene.gltf(filepath=os.path.join(ASSETS, datei))
+    neu = list(bpy.context.selected_objects)
+    meshes = [o for o in neu if o.type == "MESH"]
+    if not meshes:
+        return None
+    wurzeln = [o for o in neu if o.parent is None or o.parent not in neu]
+    # Gesamtmass ueber die Welt-Boundingboxen aller Meshes
+    ecken = [o.matrix_world @ Vector(e) for o in meshes for e in o.bound_box]
+    dx = max(e.x for e in ecken) - min(e.x for e in ecken)
+    dy = max(e.y for e in ecken) - min(e.y for e in ecken)
+    dz = max(e.z for e in ecken) - min(e.z for e in ecken)
+    faktor = 1.0
+    if ziel_hoehe and dz > 0:
+        faktor = ziel_hoehe / dz
+    elif ziel_breite and max(dx, dy) > 0:
+        faktor = ziel_breite / max(dx, dy)
+    bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
+    anker = bpy.context.active_object
+    anker.name = name
+    for w in wurzeln:
+        w.parent = anker  # Anker steht in der Welt-Null — Welttransform bleibt erhalten
+    anker.scale = (faktor, faktor, faktor)
+    anker.rotation_euler = (0, 0, dreh_y)
+    anker.location = pos(x, y, z)
+    return anker
 
 
 def rohr_mit_bogen(name, punkte, radius, mat):
@@ -320,7 +358,7 @@ for i, ez in enumerate((-9.5, -6.5, -3.5, -0.6)):
 for i, gz in enumerate((-9.5, -7.2, -4.9, -2.6, -0.4)):
     zylinder(f"Empore_Gelaenderpfosten_{i}", 0.03, 1.0, -14.1, 3.6, gz, m_dunkel)
 zylinder("Empore_Handlauf", 0.035, 9.6, -14.1, 4.1, -5, m_dunkel, achse="z")
-kasten("Empore_Treppe", 1.0, 4.4, 0.12, -15.5, 1.55, 1.6, m_stahl, drehung=(0.68, 0, 0))
+lade_asset("factory_catwalk-stairs.glb", "Empore_Treppe", -15.5, 0, 1.4, dreh_y=3.14159, ziel_hoehe=3.1)
 kasten("Empore_Kiste_1", 0.6, 0.55, 0.5, -15.9, 3.4, -8.4, m_blau)
 kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange)
 
@@ -459,10 +497,11 @@ kasten("Schraffur_Rahmen_Sued", 5.7, 0.08, 0.008, 4.85, 0.035, 4.5, m_orange, fa
 for i, (ax, az) in enumerate(((-10, 2.4), (-3, 2.4), (4, 2.4), (11, 2.4))):
     zylinder(f"Absperrpfosten_{i}", 0.07, 0.9, ax, 0.45, az, m_orange)
     zylinder(f"Absperrpfosten_{i}_ring", 0.075, 0.08, ax, 0.75, az, m_stahlhell)
-zylinder("Muelleimer_1", 0.22, 0.7, -7.5, 0.35, -4.6, m_orange)
+zylinder("Muelleimer_1", 0.22, 0.7, -6.6, 0.35, -4.0, m_orange)
 zylinder("Muelleimer_2", 0.22, 0.7, 5.2, 0.35, 4.4, m_orange)
-for i, wx in enumerate((-8, 0, 8)):
-    kasten(f"Warntafel_{i}", 0.5, 0.05, 0.6, wx, 2.5, -9.82, m_orange, fase=0)
+lade_asset("factory_warning-orange.glb", "Warntafel_0", -8, 2.2, -9.82, ziel_hoehe=0.6)
+lade_asset("factory_warning-traffic.glb", "Warntafel_1", 0, 2.2, -9.82, ziel_hoehe=0.6)
+lade_asset("factory_warning-orange.glb", "Warntafel_2", 8, 2.2, -9.82, ziel_hoehe=0.6)
 for i, (sx, sz) in enumerate(((-8, 1.6), (1, -1.6), (9, 1.6))):
     zylinder(f"Signal_{i}_mast", 0.04, 1.0, sx, 0.5, sz, m_dunkel)
     kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.1, sz, m_zug, fase=0)
@@ -486,9 +525,11 @@ for i in range(6):
     zy = 2.1 - (i // 3) * 0.55
     kasten(f"Station_1_zettel_{i}", 0.32, 0.03, 0.42, zx, zy, -5.14, m_fenster, fase=0)
     kasten(f"Station_1_zettel_{i}_zeile", 0.24, 0.035, 0.05, zx, zy + 0.1, -5.14, m_objekt, fase=0)
-kasten("Station_1_schreibtisch", 1.6, 0.7, 0.12, -8.2, 0.72, -5.4, m_objekt)
-kasten("Station_1_schreibtisch_fuss", 0.25, 0.6, 0.66, -8.2, 0.33, -5.4, m_dunkel)
-kasten("Station_1_ordnerstapel", 0.4, 0.3, 0.25, -8.5, 0.9, -5.5, m_blau)
+lade_asset("furniture_desk.glb", "Station_1_schreibtisch", -8.2, 0, -5.3, dreh_y=3.14159, ziel_breite=1.6)
+lade_asset("furniture_chairDesk.glb", "Station_1_buerostuhl", -8.2, 0, -4.5, ziel_hoehe=0.95)
+lade_asset("furniture_computerScreen.glb", "Station_1_monitor", -8.4, 0.76, -5.45, ziel_hoehe=0.45)
+lade_asset("furniture_computerKeyboard.glb", "Station_1_tastatur", -8.0, 0.76, -5.2, ziel_breite=0.4)
+lade_asset("furniture_bookcaseClosedWide.glb", "Station_1_aktenschrank", -12.2, 0, -5.6, ziel_hoehe=1.9)
 
 # ---- Station 2: Datenraum-Regal ---------------------------------------------
 kasten("Station_2_datenraum", 0.08, 1.0, 2.2, -4.2, 1.1, -6, m_blau)
@@ -543,18 +584,16 @@ kasten("Station_5_aufbau", 1.4, 0.9, 0.9, 1.6, 1.15, 6, m_blau)
 zylinder("Station_5_rolle_1", 0.18, 1.0, 2.6, 0.7, 6, m_dunkel, achse="z")
 zylinder("Station_5_rolle_2", 0.18, 1.0, 3.1, 0.7, 6, m_dunkel, achse="z")
 kasten("Station_5_panel", 0.4, 0.05, 0.3, 1.3, 1.5, 5.5, m_fenster, fase=0)
-kasten("Station_5_maschine", 0.9, 0.7, 0.8, 3.9, 0.4, 4.9, m_orange)
-kasten("Station_5_maschine_arm", 0.15, 0.6, 0.15, 3.9, 0.95, 5.15, m_dunkel, fase=0)
+lade_asset("factory_machine.glb", "Station_5_maschine", 3.9, 0, 4.9, dreh_y=2.9, ziel_hoehe=1.5)
 kasten("Station_5_kabelkanal", 2.6, 0.18, 0.08, 2, 0.06, 5.3, m_dunkel, fase=0)
 
-# ---- Station 6: Besprechung --------------------------------------------------
-kasten("Station_6_besprechung_tisch", 2.4, 1.2, 0.1, -9, 0.72, 6, m_objekt)
-zylinder("Station_6_tischfuss", 0.15, 0.67, -9, 0.34, 6, m_dunkel)
-stuehle = [(-10.1, 5.2), (-7.9, 5.2), (-10.1, 6.8), (-7.9, 6.8)]
-for i, (sx, sz) in enumerate(stuehle):
-    kasten(f"Station_6_stuhl_{i}_sitz", 0.45, 0.45, 0.08, sx, 0.45, sz, m_blau)
-    lehne_z = sz + (0.24 if sz > 6 else -0.24)
-    kasten(f"Station_6_stuhl_{i}_lehne", 0.45, 0.06, 0.5, sx, 0.75, lehne_z, m_blau, fase=0)
+# ---- Station 6: Besprechung (Kenney-Moebel) ---------------------------------
+lade_asset("furniture_table.glb", "Station_6_besprechung_tisch", -9, 0, 6, ziel_breite=2.2)
+stuehle = [(-9.6, 5.1, 3.14159), (-8.4, 5.1, 3.14159), (-9.6, 6.9, 0), (-8.4, 6.9, 0)]
+for i, (sx, sz, dreh) in enumerate(stuehle):
+    lade_asset("furniture_chair.glb", f"Station_6_stuhl_{i}", sx, 0, sz, dreh_y=dreh, ziel_hoehe=0.95)
+lade_asset("furniture_laptop.glb", "Station_6_laptop", -9.3, 0.75, 6, dreh_y=0.5, ziel_breite=0.45)
+lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -11.8, 0, 8.2, ziel_hoehe=1.1)
 kasten("Station_6_sideboard", 1.6, 0.5, 0.8, -11.5, 0.4, 7, m_objekt)
 kasten("Station_6_whiteboard", 1.6, 0.06, 1.0, -11.2, 1.7, 8.2, m_fenster)
 kasten("Station_6_whiteboard_fuss_1", 0.08, 0.08, 1.2, -11.9, 0.6, 8.2, m_dunkel, fase=0)
@@ -579,6 +618,18 @@ kasten("Requisite_Wagen_Griff", 0.06, 0.4, 0.5, -13.45, 0.75, -2, m_dunkel, fase
 kasten("Requisite_Schrank_1", 0.8, 0.4, 1.8, 13.5, 0.9, -9.6, m_objekt)
 kasten("Requisite_Schrank_2", 0.8, 0.4, 1.8, 14.4, 0.9, -9.6, m_blau)
 kasten("Requisite_Leiter", 0.5, 0.08, 2.4, 15.5, 1.2, -9.7, m_orange, fase=0)
+
+# ---- Kenney-Industriemodelle: Maschinenpark, Ventil, Tor, Kleinteile --------
+lade_asset("factory_machine.glb", "Maschine_Nord_1", 5.6, 0, -9.2, ziel_hoehe=1.8)
+lade_asset("factory_machine-window.glb", "Maschine_Nord_2", 7.2, 0, -9.2, ziel_hoehe=1.8)
+lade_asset("factory_machine-fortified.glb", "Maschine_West", -16.1, 0, 7.5, dreh_y=1.5708, ziel_hoehe=1.8)
+lade_asset("factory_pipe-large-valve.glb", "Ventil_Ost", 16.5, 0, -6.5, dreh_y=-1.5708, ziel_hoehe=1.5)
+lade_asset("factory_door-wide-open.glb", "Tor_Fluegel", 16.9, 0, 0, dreh_y=1.5708, ziel_breite=4.0)
+for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6))):
+    lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5)
+lade_asset("factory_box-large.glb", "Kiste_Palette", -5.6, 0, -8.6, dreh_y=0.4, ziel_hoehe=0.7)
+lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
+lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
 
 # ---- Stationsschilder (Ziffer kamerazugewandt, Sued-Stationen gedreht) ------
 for nr, (x, z) in {1: (-10, -5), 2: (-3, -6), 3: (7, -5), 4: (9, 5), 5: (2, 6), 6: (-9, 6)}.items():
