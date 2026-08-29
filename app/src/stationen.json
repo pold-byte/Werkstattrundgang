@@ -1,6 +1,6 @@
 {
   "totale": {
-    "kamera": { "position": [15.5, 5.6, 8.8], "blickziel": [-6, 0.5, -2], "dauer_s": 6 }
+    "kamera": { "position": [15.5, 4.6, 8.8], "blickziel": [-6, 0.5, -2], "dauer_s": 6 }
   },
   "sprung_dauer_s": 2.5,
   "stationen": [

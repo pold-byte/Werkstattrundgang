@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export function erzeugeRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -7,6 +8,8 @@ export function erzeugeRenderer(canvas) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // weiche Schatten fuer den Iso-Look
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; // filmische Abstufung — Materialien lesen sich besser
+  renderer.toneMappingExposure = 0.92;
   return renderer;
 }
 
@@ -24,10 +27,17 @@ export function aktiviereSchatten(objekt) {
   });
 }
 
-export function erzeugeSzene() {
+export function erzeugeSzene(renderer) {
   const szene = new THREE.Scene();
   szene.background = new THREE.Color(0xdfe3e6);
-  szene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  if (renderer) {
+    // Environment-Map: erst damit liest sich Metall als Metall (Reflexe auf Stahl,
+    // Zuglack und Riffelblech). RoomEnvironment ist eingebaut und laeuft offline.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    szene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    szene.environmentIntensity = 0.32;
+  }
+  szene.add(new THREE.AmbientLight(0xffffff, 0.3));
   // Himmel/Boden-Verlauf ersetzt einen Teil des Ambient — wirkt wie weiche AO.
   szene.add(new THREE.HemisphereLight(0xf4f6f8, 0x878c90, 0.55));
   const sonne = new THREE.DirectionalLight(0xffffff, 1.5);

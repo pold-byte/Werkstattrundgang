@@ -20,7 +20,7 @@ const videoGrossEl = document.getElementById('video-gross');
 const videoTexturEl = document.getElementById('video-textur');
 
 const renderer = erzeugeRenderer(canvas);
-const szene = erzeugeSzene();
+const szene = erzeugeSzene(renderer);
 const kamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
 
 const schritte = baueSchritte(daten.stationen);
