@@ -192,20 +192,22 @@ def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=No
 
 
 def rohr_mit_bogen(name, punkte, radius, mat):
-    """Rohrzug aus Zylindersegmenten zwischen Punkten, Kugelgelenke an den Knicken."""
+    """Rohrzug aus Zylindersegmenten zwischen Punkten (beliebige Richtungen),
+    Kugelgelenke an den Knicken. Punkte in Three.js-Koordinaten."""
     for i in range(len(punkte) - 1):
-        (x1, y1, z1), (x2, y2, z2) = punkte[i], punkte[i + 1]
-        laenge = ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
-        mx, my, mz = (x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2
-        if abs(x2 - x1) >= max(abs(y2 - y1), abs(z2 - z1)):
-            achse = "x"
-        elif abs(y2 - y1) >= abs(z2 - z1):
-            achse = "y"
-        else:
-            achse = "z"
-        zylinder(f"{name}_seg_{i}", radius, laenge, mx, my, mz, mat, achse=achse, ecken=12)
+        a = Vector(pos(*punkte[i]))
+        b = Vector(pos(*punkte[i + 1]))
+        richtung = b - a
+        mitte = (a + b) / 2
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius,
+                                            depth=richtung.length, location=mitte)
+        obj = bpy.context.active_object
+        obj.name = f"{name}_seg_{i}"
+        obj.rotation_mode = "QUATERNION"
+        obj.rotation_quaternion = richtung.to_track_quat("Z", "Y")
+        obj.data.materials.append(mat)
         if i < len(punkte) - 2:
-            kugel(f"{name}_bogen_{i}", radius * 1.25, x2, y2, z2, mat)
+            kugel(f"{name}_bogen_{i}", radius * 1.25, *punkte[i + 1], mat)
 
 
 # ---- Szene leeren -----------------------------------------------------------
@@ -323,7 +325,7 @@ zylinder("Rohr_Blau", 0.1, 33, 0, 5.15, -9.3, m_blau, achse="x")
 zylinder("Rohr_Grau", 0.09, 33, 0, 4.85, -9.0, m_stahlhell, achse="x")
 zylinder("Rohr_Orange", 0.07, 33, 0, 4.6, -9.15, m_orange, achse="x")
 for i, hx in enumerate((-14, -7, 0, 7, 14)):
-    kasten(f"Rohr_Halter_{i}", 0.06, 0.5, 0.8, hx, 5.35, -9.15, m_stahl, fase=0)
+    kasten(f"Rohr_Halter_{i}", 0.06, 0.5, 1.7, hx, 5.4, -9.15, m_stahl, fase=0)  # bis zur Decke
 zylinder("Sprinkler_Leitung", 0.035, 30, 0, 6.0, 3.5, m_zug, achse="x")
 for i in range(6):
     zylinder(f"Sprinkler_Kopf_{i}", 0.03, 0.12, -12.5 + i * 5, 5.93, 3.5, m_dunkel)
@@ -358,7 +360,25 @@ for i, ez in enumerate((-9.5, -6.5, -3.5, -0.6)):
 for i, gz in enumerate((-9.5, -7.2, -4.9, -2.6, -0.4)):
     zylinder(f"Empore_Gelaenderpfosten_{i}", 0.03, 1.0, -14.1, 3.6, gz, m_dunkel)
 zylinder("Empore_Handlauf", 0.035, 9.6, -14.1, 4.1, -5, m_dunkel, achse="z")
-lade_asset("factory_catwalk-stairs.glb", "Empore_Treppe", -15.5, 0, 1.4, dreh_y=3.14159, ziel_hoehe=3.1)
+def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
+    """Gerade Blocktreppe mit Gelaender; steigt von +z nach -z (richtung_z=1) an."""
+    mat = mat or m_stahl
+    stufen = max(4, int(hoehe / 0.35))
+    lauf = hoehe * 1.35
+    for i in range(stufen):
+        sh = hoehe * (i + 1) / stufen
+        sz = z + richtung_z * (lauf / 2 - lauf * (i + 0.5) / stufen)
+        kasten(f"{name}_stufe_{i}", breite, lauf / stufen + 0.02, sh, x, sh / 2, sz, mat, fase=0)
+    for seite in (-1, 1):
+        gx = x + seite * (breite / 2 + 0.03)
+        zylinder(f"{name}_handlauf_{'w' if seite < 0 else 'o'}", 0.03,
+                 (lauf ** 2 + hoehe ** 2) ** 0.5, gx, hoehe / 2 + 0.9, z, m_markierung)
+        h = bpy.context.active_object
+        h.rotation_mode = "QUATERNION"
+        h.rotation_quaternion = Vector((0, richtung_z * lauf, hoehe)).to_track_quat("Z", "Y")
+
+
+treppe("Empore_Treppe", -15.5, 1.4, 3.05, richtung_z=1)
 kasten("Empore_Kiste_1", 0.6, 0.55, 0.5, -15.9, 3.4, -8.4, m_blau)
 kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange)
 
@@ -443,7 +463,7 @@ for j, bz in enumerate((-3.08, 3.08)):
         zylinder(f"Buehne_Gelaenderpfosten_{j}_{i}", 0.025, 0.95, px, 3.78, bz, m_stahlhell)
 for i, tx in enumerate((-6.5, 4)):
     kasten(f"Buehne_Quertraeger_{i}", 0.16, 5.4, 0.2, tx, 3.9, 0, m_stahlhell)
-kasten("Buehne_Treppe", 0.9, 2.6, 0.1, -7.3, 1.7, 2.0, m_stahlhell, drehung=(0.9, 0, 0))
+treppe("Buehne_Treppe", -7.6, 4.6, 3.3, richtung_z=1, breite=0.85, mat=m_stahlhell)
 
 i_traeger("Kran_Traeger", 15, 0.4, 0.3, 0.5, 5.4, 0, m_stahlhell, achse="x")
 for i, kx in enumerate((-2.5, 4)):
@@ -489,24 +509,23 @@ kasten("Kabel_Trommel", 0.5, 0.5, 0.5, 0.2, 0.25, -8.3, m_blau)
 zylinder("Kabel_Trommel_Kern", 0.12, 0.56, 0.2, 0.25, -8.3, m_dunkel, achse="z")
 
 # ---- Bodenmarkierungen, Signale, Sicherheit ---------------------------------
-# Zebra-Markierung als flacher "Farbauftrag" (hauchduenn, wirft keinen Schatten)
-for i in range(10):
-    kasten(f"Schraffur_{i}", 0.3, 2.2, 0.008, 2.4 + i * 0.55, 0.035, 3.4, m_orange, fase=0)
-kasten("Schraffur_Rahmen_Nord", 5.7, 0.08, 0.008, 4.85, 0.035, 2.3, m_orange, fase=0)
-kasten("Schraffur_Rahmen_Sued", 5.7, 0.08, 0.008, 4.85, 0.035, 4.5, m_orange, fase=0)
+# Markierte Zone als Kenney-Bodendekal (liest sich eindeutig als Markierung)
+lade_asset("factory_indicator-special-lines.glb", "Schraffur_Dekal_1", 3.6, 0.03, 3.4, ziel_breite=2.3)
+lade_asset("factory_indicator-special-lines.glb", "Schraffur_Dekal_2", 6.0, 0.03, 3.4, ziel_breite=2.3)
 for i, (ax, az) in enumerate(((-10, 2.4), (-3, 2.4), (4, 2.4), (11, 2.4))):
     zylinder(f"Absperrpfosten_{i}", 0.07, 0.9, ax, 0.45, az, m_orange)
     zylinder(f"Absperrpfosten_{i}_ring", 0.075, 0.08, ax, 0.75, az, m_stahlhell)
 zylinder("Muelleimer_1", 0.22, 0.7, -6.6, 0.35, -4.0, m_orange)
 zylinder("Muelleimer_2", 0.22, 0.7, 5.2, 0.35, 4.4, m_orange)
-lade_asset("factory_warning-orange.glb", "Warntafel_0", -8, 2.2, -9.82, ziel_hoehe=0.6)
-lade_asset("factory_warning-traffic.glb", "Warntafel_1", 0, 2.2, -9.82, ziel_hoehe=0.6)
-lade_asset("factory_warning-orange.glb", "Warntafel_2", 8, 2.2, -9.82, ziel_hoehe=0.6)
+# Warnaufsteller stehen am Boden vor der Wand (die Modelle haben eigene Fuesse)
+lade_asset("factory_warning-orange.glb", "Warntafel_0", -8, 0, -9.45, ziel_hoehe=0.85)
+lade_asset("factory_warning-traffic.glb", "Warntafel_1", 0.8, 0, -9.45, ziel_hoehe=0.85)
+lade_asset("factory_warning-orange.glb", "Warntafel_2", 8.2, 0, -9.45, ziel_hoehe=0.85)
 for i, (sx, sz) in enumerate(((-8, 1.6), (1, -1.6), (9, 1.6))):
     zylinder(f"Signal_{i}_mast", 0.04, 1.0, sx, 0.5, sz, m_dunkel)
-    kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.1, sz, m_zug, fase=0)
-    kasten(f"Signal_{i}_gelb", 0.13, 0.13, 0.13, sx, 1.25, sz, m_markierung, fase=0)
-    kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.4, sz, m_gruen, fase=0)
+    kasten(f"Signal_{i}_rot", 0.13, 0.13, 0.13, sx, 1.06, sz, m_zug, fase=0)
+    kasten(f"Signal_{i}_gelb", 0.13, 0.13, 0.13, sx, 1.19, sz, m_markierung, fase=0)
+    kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.32, sz, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor", 0.5, 0.05, 0.3, 15.8, 3.0, -1.6, m_gruen, fase=0)
 kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.8, 3.0, -4, m_gruen, fase=0)
 kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell, fase=0)
@@ -630,6 +649,18 @@ for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6)
 lade_asset("factory_box-large.glb", "Kiste_Palette", -5.6, 0, -8.6, dreh_y=0.4, ziel_hoehe=0.7)
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
 lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
+
+# ---- Fahrzeuge und Ersatzteile (Kenney Car Kit) -----------------------------
+lade_asset("car_tractor-shovel.glb", "Radlader", -13.5, 0, -3.2, dreh_y=0.7, ziel_breite=2.6)
+lade_asset("car_delivery.glb", "Lieferwagen", 13.4, 0, 4.6, dreh_y=1.9, ziel_breite=3.0)
+# Ersatzraeder als wartende Teile (die "debris"-Modelle sind Unfallschrott — ungeeignet)
+lade_asset("car_wheel-truck.glb", "Ersatzrad", -15.8, 0, 5.6, ziel_breite=0.6)
+
+# ---- Mehr Werkstatt-Ausstattung (Factory Kit) -------------------------------
+lade_asset("factory_conveyor-long.glb", "Foerderband", 0.3, 0, -8.55, ziel_breite=2.6)
+lade_asset("factory_box-small.glb", "Foerderband_Kiste", 0.1, 0.55, -8.55, dreh_y=0.3, ziel_hoehe=0.4)
+lade_asset("factory_screen-panel-wide.glb", "Leitstand_Panel", 9.2, 0, -9.35, ziel_hoehe=1.6)
+lade_asset("factory_hopper-square.glb", "Trichter", 15.3, 0, -8.3, ziel_hoehe=1.9)
 
 # ---- Stationsschilder (Ziffer kamerazugewandt, Sued-Stationen gedreht) ------
 for nr, (x, z) in {1: (-10, -5), 2: (-3, -6), 3: (7, -5), 4: (9, 5), 5: (2, 6), 6: (-9, 6)}.items():
