@@ -427,26 +427,48 @@ for i, bx in enumerate((-4.5, 5.5)):
 kasten("Triebzug_Korpus", 14, 2.4, 1.5, ZUG_X, 1.5, 0, m_zugweiss, fase=0.06)
 kasten("Triebzug_Streifen_Nord", 14, 0.06, 0.35, ZUG_X, 1.08, -1.23, m_zug, fase=0)
 kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.35, ZUG_X, 1.08, 1.23, m_zug, fase=0)
+# Durchgehendes Fensterband mit weissen Pfosten (ICE-Optik), Tueren mit dunklem Rahmen
 for seite, sz in (("nord", -1.24), ("sued", 1.24)):
-    for i, fx in enumerate((-5.2, -3.9, -1.2, 0.1, 2.8, 4.1, 6.2)):
-        kasten(f"Triebzug_Fenster_{seite}_{i}", 0.85, 0.06, 0.6, fx, 1.85, sz, m_dunkel, fase=0)
+    kasten(f"Triebzug_Fensterband_{seite}", 11.6, 0.05, 0.66, 0.2, 1.85, sz, m_dunkel, fase=0)
+    for i, px in enumerate((-4.6, -3.3, -1.3, 0.1, 3.3, 4.3)):
+        kasten(f"Triebzug_Fensterpfosten_{seite}_{i}", 0.16, 0.06, 0.66, px, 1.85, sz, m_zugweiss, fase=0)
     for i, tx in enumerate((-2.55, 5.15)):
-        kasten(f"Triebzug_Tuer_{seite}_{i}", 0.95, 0.08, 1.35, tx, 1.4, sz, m_stahl, fase=0)
-        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.1, 0.45, tx, 1.85, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Tuerrahmen_{seite}_{i}", 1.06, 0.07, 1.44, tx, 1.42, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Tuer_{seite}_{i}", 0.95, 0.09, 1.35, tx, 1.4, sz, m_stahl, fase=0)
+        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.11, 0.45, tx, 1.85, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Tuergriff_{seite}_{i}", 0.12, 0.11, 0.04, tx + 0.36, 1.35, sz, m_dunkel, fase=0)
 kasten("Triebzug_Dach", 13.6, 2.2, 0.3, ZUG_X, 2.4, 0, m_stahl)
 zylinder("Triebzug_Dachleitung", 0.05, 12.5, 0, 2.62, -0.8, m_dunkel, achse="x")
 for i, kx in enumerate((-4, 0.5, 5)):
     kasten(f"Triebzug_Klima_{i}", 1.4, 1.4, 0.25, kx, 2.65, 0, m_dunkel)
-kasten("Triebzug_Panto_Basis", 0.8, 1.0, 0.1, -2, 2.83, 0, m_dunkel, fase=0)
-kasten("Triebzug_Panto_Arm", 0.08, 0.08, 0.9, -2, 3.25, 0, m_dunkel, drehung=(0.5, 0, 0), fase=0)
-kasten("Triebzug_Panto_Buegel", 0.06, 1.3, 0.05, -2, 3.65, 0.2, m_dunkel, fase=0)
-kasten("Triebzug_Front", 1.2, 2.2, 1.4, 8.1, 1.45, 0, m_zugweiss, fase=0.08)
-kasten("Triebzug_Front_Streifen", 1.26, 2.1, 0.3, 8.1, 1.0, 0, m_zug, fase=0)
-kasten("Triebzug_Windschutz", 0.5, 1.6, 0.7, 8.5, 1.95, 0, m_dunkel, drehung=(0, -0.35, 0), fase=0)
-for i, lz in enumerate((-0.7, 0.7)):
-    zylinder(f"Triebzug_Scheinwerfer_{i}", 0.09, 0.06, 8.72, 1.05, lz, m_fenster, achse="x")
-kasten("Triebzug_Kupplung", 0.5, 0.25, 0.25, 8.85, 0.55, 0, m_dunkel)
-kasten("Triebzug_Schuerze", 1.1, 1.9, 0.35, 8.15, 0.45, 0, m_dunkel, fase=0)
+# Dachtechnik: Scherenstromabnehmer, Widerstandskasten, Antennen
+kasten("Triebzug_Panto_Basis", 0.8, 1.0, 0.12, -2, 2.84, 0, m_dunkel, fase=0)
+kasten("Triebzug_Panto_Unterarm", 0.07, 0.07, 1.0, -2, 3.2, 0.18, m_dunkel, drehung=(0.55, 0, 0), fase=0)
+kasten("Triebzug_Panto_Oberarm", 0.06, 0.06, 0.95, -2, 3.85, 0.1, m_dunkel, drehung=(-0.7, 0, 0), fase=0)
+kasten("Triebzug_Panto_Buegel", 0.05, 1.4, 0.06, -2, 4.18, -0.12, m_dunkel, fase=0)
+kasten("Triebzug_Panto_Wippe_1", 0.16, 1.1, 0.04, -2.08, 4.14, -0.12, m_dunkel, fase=0)
+kasten("Triebzug_Widerstand", 0.9, 1.1, 0.28, -5.3, 2.66, 0, m_dunkel)
+zylinder("Triebzug_Antenne_1", 0.03, 0.35, 3.2, 2.72, 0.5, m_dunkel)
+zylinder("Triebzug_Antenne_2", 0.03, 0.35, -0.6, 2.72, -0.5, m_dunkel)
+# Heckleuchten am flachen Zugende
+for i, hz in enumerate((-0.8, 0.8)):
+    zylinder(f"Triebzug_Heckleuchte_{i}", 0.06, 0.05, -6.53, 1.85, hz, m_zug, achse="x")
+
+# Zugfront v2: gerundetes Fuehrerhaus, eingelassene geneigte Frontscheibe mit
+# A-Saeulen und Wischer, rotes Frontband, Schuerze, Scheinwerfer
+kasten("Triebzug_Fuehrerhaus", 1.3, 2.3, 1.45, 8.05, 1.43, 0, m_zugweiss, fase=0.1)
+kasten("Triebzug_Fuehrerhaus_Dach", 1.25, 2.15, 0.2, 8.02, 2.28, 0, m_stahl, fase=0.05)
+kasten("Triebzug_Frontscheibe", 0.05, 1.7, 0.72, 8.68, 1.83, 0, m_dunkel, fase=0)
+for i, az in enumerate((-0.88, 0.88)):
+    kasten(f"Triebzug_A_Saeule_{i}", 0.06, 0.12, 0.76, 8.685, 1.83, az, m_zugweiss, fase=0)
+kasten("Triebzug_Wischer", 0.02, 0.06, 0.4, 8.72, 1.6, -0.35, m_dunkel, fase=0, drehung=(0.5, 0, 0))
+kasten("Triebzug_Frontband", 0.6, 2.34, 0.3, 8.45, 1.12, 0, m_zug, fase=0.04)
+kasten("Triebzug_Frontschuerze", 0.85, 2.05, 0.4, 8.3, 0.45, 0, m_dunkel, fase=0.04)
+for i, lz in enumerate((-0.72, 0.72)):
+    zylinder(f"Triebzug_Scheinwerfer_{i}", 0.09, 0.06, 8.71, 1.0, lz, m_fenster, achse="x")
+    zylinder(f"Triebzug_Positionslicht_{i}", 0.045, 0.05, 8.71, 0.78, lz, m_zug, achse="x")
+kasten("Triebzug_Kupplungskasten", 0.3, 0.5, 0.3, 8.75, 0.5, 0, m_dunkel, fase=0)
+kasten("Triebzug_Kupplung", 0.4, 0.18, 0.18, 8.95, 0.5, 0, m_dunkel)
 
 # ---- Dacharbeitsbuehnen, Kranbahn, Rollgerueste -----------------------------
 for i, bx in enumerate((-6.5, -3, 0.5, 4)):
@@ -650,10 +672,45 @@ lade_asset("factory_box-large.glb", "Kiste_Palette", -5.6, 0, -8.6, dreh_y=0.4, 
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
 lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
 
-# ---- Fahrzeuge und Ersatzteile (Kenney Car Kit) -----------------------------
-lade_asset("car_tractor-shovel.glb", "Radlader", -13.5, 0, -3.2, dreh_y=0.7, ziel_breite=2.6)
-lade_asset("car_delivery.glb", "Lieferwagen", 13.4, 0, 4.6, dreh_y=1.9, ziel_breite=3.0)
-# Ersatzraeder als wartende Teile (die "debris"-Modelle sind Unfallschrott — ungeeignet)
+# ---- Gabelstapler (Eigenbau — unverwechselbare Silhouette, passt zur Palette) ----
+def gabelstapler(name, x, z, dreh_y=0.0, farbe=None):
+    """Klassischer Stapler, Fahrtrichtung +x (Mast und Gabeln vorn)."""
+    farbe = farbe or m_markierung
+    import math
+    c, s = math.cos(dreh_y), math.sin(dreh_y)
+
+    def p(dx, dz):
+        return x + dx * c - dz * s, z + dx * s + dz * c
+
+    def teil(tname, laenge, tiefe, hoehe, dx, y, dz, mat, fase=0.03):
+        px, pz = p(dx, dz)
+        kasten(f"{name}_{tname}", laenge, tiefe, hoehe, px, y, pz, mat,
+               drehung=(0, 0, -dreh_y), fase=fase)
+
+    teil("chassis", 1.15, 0.95, 0.5, -0.1, 0.5, 0, farbe, fase=0.06)
+    teil("gegengewicht", 0.4, 0.9, 0.55, -0.75, 0.55, 0, farbe, fase=0.08)
+    teil("sitz", 0.4, 0.45, 0.35, -0.25, 0.93, 0, m_dunkel)
+    teil("lenksaeule", 0.06, 0.06, 0.4, 0.25, 1.0, 0, m_dunkel, fase=0)
+    teil("lenkrad", 0.16, 0.16, 0.05, 0.28, 1.2, 0, m_dunkel, fase=0)
+    for dx, dz in ((0.28, -0.38), (0.28, 0.38), (-0.62, -0.38), (-0.62, 0.38)):
+        teil(f"dachpfosten_{dx}_{dz}".replace(".", ""), 0.06, 0.06, 1.1, dx, 1.3, dz, m_dunkel, fase=0)
+    teil("schutzdach", 0.95, 0.9, 0.07, -0.17, 1.9, 0, farbe)
+    teil("warnleuchte", 0.1, 0.1, 0.1, -0.55, 1.99, 0, m_orange, fase=0)
+    for dz in (-0.28, 0.28):  # Mast
+        teil(f"mast_{'n' if dz < 0 else 's'}", 0.08, 0.08, 1.85, 0.62, 0.93, dz, m_dunkel, fase=0)
+    teil("mast_steg_1", 0.08, 0.62, 0.07, 0.62, 1.7, 0, m_dunkel, fase=0)
+    teil("mast_steg_2", 0.08, 0.62, 0.07, 0.62, 0.9, 0, m_dunkel, fase=0)
+    teil("gabeltraeger", 0.07, 0.85, 0.3, 0.7, 0.35, 0, m_stahl, fase=0)
+    for dz in (-0.25, 0.25):  # Gabeln
+        teil(f"gabel_{'n' if dz < 0 else 's'}", 0.85, 0.1, 0.05, 1.18, 0.06, dz, m_stahl, fase=0)
+    for dx, dz in ((0.35, -0.5), (0.35, 0.5), (-0.6, -0.5), (-0.6, 0.5)):
+        r = 0.2 if dx < 0 else 0.17
+        teil(f"rad_{dx}_{dz}".replace(".", ""), 2 * r, 0.15, 2 * r, dx, r, dz, m_dunkel, fase=0.06)
+
+
+gabelstapler("Stapler_1", -12.8, -5.2, dreh_y=0.9)
+gabelstapler("Stapler_2", 13.2, 4.6, dreh_y=2.5, farbe=m_orange)
+# Ersatzrad als wartendes Teil an der Westwand
 lade_asset("car_wheel-truck.glb", "Ersatzrad", -15.8, 0, 5.6, ziel_breite=0.6)
 
 # ---- Mehr Werkstatt-Ausstattung (Factory Kit) -------------------------------
