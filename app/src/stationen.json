@@ -1,6 +1,6 @@
 {
   "totale": {
-    "kamera": { "position": [15.5, 4.6, 8.8], "blickziel": [-6, 0.5, -2], "dauer_s": 6 }
+    "kamera": { "position": [15, 4.6, 4.5], "blickziel": [-8, 0.5, 0.2], "dauer_s": 6 }
   },
   "sprung_dauer_s": 2.5,
   "stationen": [
@@ -9,7 +9,7 @@
       "id": "meisterbuero",
       "titel": "Wo die Zahl entsteht",
       "kapitel": "Kap. 1.1, 3.1",
-      "kamera": { "position": [-6.5, 2.5, -1.5], "blickziel": [-10, 1, -5], "dauer_s": 6 },
+      "kamera": { "position": [-5.2, 2.1, -3.2], "blickziel": [-10.2, 1.2, -6.6], "dauer_s": 6 },
       "kernaussage": "[PLATZHALTER: Kernaussage Station 1 — wird nach Bereitstellung der Quelldateien befüllt]",
       "belegpunkte": ["[PLATZHALTER 1.1]", "[PLATZHALTER 1.2]", "[PLATZHALTER 1.3]"],
       "anschauungsobjekt": "Pinnwand mit Excel-Ausdrucken",
@@ -31,7 +31,7 @@
       "id": "terminal",
       "titel": "Fragen statt Formeln",
       "kapitel": "Kap. 3.4, 4.3",
-      "kamera": { "position": [9.5, 1.8, -2], "blickziel": [7, 1.2, -5], "dauer_s": 5 },
+      "kamera": { "position": [9.2, 1.6, -1.6], "blickziel": [6.6, 1.2, -4.4], "dauer_s": 5 },
       "kernaussage": "[PLATZHALTER: Kernaussage Station 3]",
       "belegpunkte": ["[PLATZHALTER 3.1]", "[PLATZHALTER 3.2]", "[PLATZHALTER 3.3]"],
       "anschauungsobjekt": "Bedienterminal mit Monitor (Demo-Video)",
@@ -42,7 +42,7 @@
       "id": "anzeigetafel",
       "titel": "Ergebnis lesen",
       "kapitel": "Kap. 4.2, 4.5",
-      "kamera": { "position": [5.5, 2.2, 2], "blickziel": [9, 2, 5], "dauer_s": 5 },
+      "kamera": { "position": [10.6, 1.9, 2.0], "blickziel": [8.6, 2.0, 5.9], "dauer_s": 5 },
       "kernaussage": "[PLATZHALTER: Kernaussage Station 4]",
       "belegpunkte": ["[PLATZHALTER 4.1]", "[PLATZHALTER 4.2]", "[PLATZHALTER 4.3]"],
       "anschauungsobjekt": "Anzeigetafel",
