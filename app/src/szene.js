@@ -5,19 +5,45 @@ export function erzeugeRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Spec §5: Deckel 2
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // weiche Schatten fuer den Iso-Look
   return renderer;
+}
+
+// Alle Meshes eines Teilbaums werfen und empfangen Schatten.
+// Die Gebaeudehuelle (Dach/Waende) wirft KEINE Schatten, sonst laege die ganze
+// geschlossene Halle im Eigenschatten — die Sonne soll wie im Iso-Look einfallen.
+const HUELLE = /^(Dach_|Wand_|Halle_|Relief_|Schraffur_|Grube_Kante_|Bodenfuge)/;
+
+export function aktiviereSchatten(objekt) {
+  objekt.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = !HUELLE.test(o.name);
+      o.receiveShadow = true;
+    }
+  });
 }
 
 export function erzeugeSzene() {
   const szene = new THREE.Scene();
   szene.background = new THREE.Color(0xdfe3e6);
-  szene.add(new THREE.AmbientLight(0xffffff, 0.75));
-  const sonne = new THREE.DirectionalLight(0xffffff, 1.6);
+  szene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  // Himmel/Boden-Verlauf ersetzt einen Teil des Ambient — wirkt wie weiche AO.
+  szene.add(new THREE.HemisphereLight(0xf4f6f8, 0x878c90, 0.55));
+  const sonne = new THREE.DirectionalLight(0xffffff, 1.5);
   sonne.position.set(12, 20, 8);
+  sonne.castShadow = true;
+  sonne.shadow.mapSize.set(2048, 2048);
+  sonne.shadow.camera.left = -24;
+  sonne.shadow.camera.right = 24;
+  sonne.shadow.camera.top = 24;
+  sonne.shadow.camera.bottom = -24;
+  sonne.shadow.camera.near = 1;
+  sonne.shadow.camera.far = 70;
+  sonne.shadow.bias = -0.0004;
   szene.add(sonne);
-  // Fuelllicht von der Gegenseite: zeichnet die sonnenabgewandten Flaechen,
-  // damit Wandrelief und Kanten ohne Umrandungen plastisch bleiben.
-  const fuelllicht = new THREE.DirectionalLight(0xdfe8ff, 0.55);
+  // Fuelllicht von der Gegenseite: zeichnet die sonnenabgewandten Flaechen.
+  const fuelllicht = new THREE.DirectionalLight(0xdfe8ff, 0.4);
   fuelllicht.position.set(-14, 10, -10);
   szene.add(fuelllicht);
   return szene;
@@ -60,6 +86,7 @@ export function bauePlatzhalter(szene, daten) {
   monitor.name = 'Monitor_Bildschirm';
   gruppe.add(monitor);
 
+  aktiviereSchatten(gruppe);
   szene.add(gruppe);
   return gruppe;
 }
@@ -74,6 +101,7 @@ export async function ladeModell(szene, quelle) {
   const platzhalter = szene.getObjectByName('Platzhalter');
   if (platzhalter) szene.remove(platzhalter);
   gltf.scene.name = 'Werkstatt';
+  aktiviereSchatten(gltf.scene);
   szene.add(gltf.scene);
   return gltf.scene;
 }
