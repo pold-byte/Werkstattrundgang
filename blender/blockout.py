@@ -761,13 +761,28 @@ def fuehrerstand(kennung, r):
     Scheibe (verschwindet im Vollkoerper) und eine Grundriss-Verjuengung ueber gedrehte
     Wangen (ergab helle Finnen neben zu schmaler Scheibe).
     """
-    # ---- Grundkoerper: voller Wagenquerschnitt, vorn im Grundriss ausgerundet ----
-    kasten(f"Triebzug_Kopf_Korpus_{kennung}", 1.58, 2.4, 1.04, 0.5 + r * 7.19, 1.47, 0, m_zugweiss, fase=0.06)
-    kasten(f"Triebzug_Kopf_Stirn_{kennung}", 0.22, 1.96, 1.04, 0.5 + r * 8.09, 1.47, 0, m_zugweiss, fase=0.04)
-    for i, s in enumerate((-1, 1)):
-        # Viertelrundung: Achse bei x 8.48/|z| 0.98, r 0.22 -> Aussentangente |z| 1.20 und
-        # Stirntangente x 8.70. Damit laeuft die Flanke ohne Kante in die Stirn.
-        zylinder(f"Triebzug_Kopf_Ecke_{kennung}_{i}", 0.22, 1.04, 0.5 + r * 7.98, 1.47, s * 0.98, m_zugweiss, ecken=24)
+    # ---- Grundkoerper mit langer, tiefer Bugnase (ICE-Charakter) ----
+    # Der Kopf endete bisher als kurze Stirn bei x 8.70. Jetzt laeuft er in drei nach
+    # hinten gestaffelten Schichten bis x 9.55 aus: die unterste liegt am weitesten vorn
+    # und am tiefsten, darueber weicht die Nase zurueck. Im Profil ergibt das den langen,
+    # flach ansteigenden Bug eines Hochgeschwindigkeitszugs statt einer senkrechten Stirn.
+    # Jede Schicht endet in zwei Viertelzylindern, deren Aussentangente die Schichtbreite
+    # und deren Stirntangente die Schichtspitze trifft — die Flanke laeuft ohne Kante in
+    # den Bug, im Grundriss entsteht eine Spitze.
+    kasten(f"Triebzug_Kopf_Korpus_{kennung}", 1.3, 2.4, 1.04, 0.5 + r * 7.05, 1.47, 0, m_zugweiss, fase=0.06)
+    # (halbbreite, Eckradius, Spitze x, y-Mitte, dy, Material)
+    for i, (hw, er, spitze, yc, dy, mat) in enumerate((
+            (1.05, 0.32, 9.55, 1.225, 0.55, m_zug),      # rote Bauchlinie, ganz vorn und unten
+            (1.09, 0.30, 9.25, 1.675, 0.35, m_zugweiss),
+            (1.12, 0.28, 8.90, 1.925, 0.15, m_zugweiss))):
+        ecke_x = spitze - er
+        kasten(f"Triebzug_Bug_{kennung}_{i}", ecke_x - 7.9, 2 * hw, dy,
+               0.5 + r * ((7.9 + ecke_x) / 2 - 0.5), yc, 0, mat, fase=0.04)
+        kasten(f"Triebzug_Bug_{kennung}_{i}_stirn", er, 2 * (hw - er), dy,
+               0.5 + r * (ecke_x + er / 2 - 0.5), yc, 0, mat, fase=0.03)
+        for j, s in enumerate((-1, 1)):
+            zylinder(f"Triebzug_Bug_{kennung}_{i}_ecke_{j}", er, dy,
+                     0.5 + r * (ecke_x - 0.5), yc, s * (hw - er), mat, ecken=24)
     # Kabine sitzt auf dem Korpus; ihre Stirn (8.245) liegt auf der ganzen Hoehe
     # y 1.99..2.70 zwischen Masken-Rueckflaeche (max 8.233) und Masken-Aussenflaeche
     # (min 8.260) — nachgerechnet, damit weder eine Nut klafft noch die Kabine durchstoesst.
@@ -799,24 +814,21 @@ def fuehrerstand(kennung, r):
            fase=0, drehung=(0.5, -r * 0.46, 0))
     zylinder(f"Triebzug_Wischerlager_{kennung}", 0.045, 0.06, 0.5 + r * 8.06, 2.19, -0.36 * r, m_dunkel, achse="x")
 
-    # ---- Dunkle Ecksaeulen mit Spitzen- und Schlusslicht ----
-    # Flache Leuchtenfelder statt vorstehender Linsenzylinder: runde Linsen lasen in der
-    # Frontalansicht als Schraubenkoepfe.
+    # ---- Leuchten sitzen auf der Bugschulter, nicht mehr auf einer senkrechten Stirn ----
+    # Die Bugschicht 1 (Spitze 9.25, Eckachse 8.95, r 0.30) traegt sie: bei |z| 0.70 liegt
+    # ihre Oberflaeche auf x 9.236, die Felder stehen dort buendig.
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.24, 0.3, 0.54, 0.5 + r * 8.06, 1.75, s * 0.98, m_zugdach, fase=0.08)
-        kasten(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.05, 0.2, 0.14, 0.5 + r * 8.17, 1.86, s * 0.98, m_fenster, fase=0.01)
-        kasten(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.05, 0.14, 0.1, 0.5 + r * 8.17, 1.6, s * 0.98, m_zug, fase=0.01)
-    # Zwei Lueftungsgitter gliedern das weisse Nasenfeld (klein und mittig lasen sie als
-    # Fliegendreck, deshalb breiter und weiter aussen)
-    for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.06, 0.4, 0.1, 0.5 + r * 8.16, 1.74, s * 0.62, m_dunkel, fase=0)
+        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.26, 0.3, 0.34, 0.5 + r * 8.62, 1.675, s * 0.7, m_zugdach, fase=0.06)
+        kasten(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.05, 0.2, 0.12, 0.5 + r * 8.71, 1.75, s * 0.7, m_fenster, fase=0.01)
+        kasten(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.05, 0.14, 0.09, 0.5 + r * 8.71, 1.58, s * 0.7, m_zug, fase=0.01)
+        # Lueftungsgitter auf der Bugflanke statt auf einer Stirnflaeche
+        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.5, 0.06, 0.1, 0.5 + r * 8.0, 1.74, s * 1.06, m_dunkel, fase=0)
 
-    # ---- Rote Bauchbinde: laeuft um die gerundete Ecke herum ----
-    kasten(f"Triebzug_Frontband_{kennung}", 0.16, 2.0, 0.55, 0.5 + r * 8.18, 1.225, 0, m_zug, fase=0.05)
+    # ---- Rote Bauchlinie ----
+    # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
+    # setzt der Streifen sie bis zum Wagenkasten fort.
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}", 1.58, 0.06, 0.55, 0.5 + r * 7.19, 1.225, s * 1.23, m_zug, fase=0)
-        # Ringstueck auf dem Eckzylinder — sonst braeche die Binde an der Rundung ab
-        zylinder(f"Triebzug_Kopf_Bandecke_{kennung}_{i}", 0.235, 0.55, 0.5 + r * 7.98, 1.225, s * 0.98, m_zug, ecken=24)
+        kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}", 1.30, 0.06, 0.55, 0.5 + r * 7.05, 1.225, s * 1.23, m_zug, fase=0)
 
     # ---- Kabinenflanke: dunkles Band als Fortsetzung des Fensterbands ----
     for i, s in enumerate((-1, 1)):
@@ -835,22 +847,24 @@ def fuehrerstand(kennung, r):
         kasten(f"Triebzug_Spiegel_{kennung}_{i}", 0.09, 0.08, 0.28, 0.5 + r * 7.2, 2.52, s * 1.36, m_dunkel, fase=0.02)
 
     # ---- Unterbau, Schuerze, Kupplung ----
-    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 2.2, 0.63, 0.5 + r * 7.8, 0.635, 0, m_unterflur, fase=0.05)
+    # Schuerze und Frontanbauten sind mit der Nase nach vorn gewandert (+0.35), damit
+    # unter dem 0.85 m laengeren Bug nicht ins Leere gegriffen wird.
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 1.3, 2.1, 0.63, 0.5 + r * 8.05, 0.635, 0, m_unterflur, fase=0.05)
     kasten(f"Triebzug_Kopftraeger_{kennung}", 0.42, 1.3, 0.3, 0.5 + r * 7.18, 0.8, 0, m_unterflur)
     for i, bz in enumerate((-0.62, 0.62)):
-        kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 8.255, 0.38, bz, m_unterflur, fase=0)
+        kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 8.605, 0.38, bz, m_unterflur, fase=0)
     for i, gz in enumerate((-0.82, 0.82)):
-        kasten(f"Triebzug_Rangiertritt_{kennung}_{i}", 0.34, 0.24, 0.06, 0.5 + r * 7.95, 0.295, gz, m_riffel, fase=0)
-        zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.5, 0.5 + r * 8.245, 0.685, gz, m_stahlhell)
+        kasten(f"Triebzug_Rangiertritt_{kennung}_{i}", 0.34, 0.24, 0.06, 0.5 + r * 8.3, 0.295, gz, m_riffel, fase=0)
+        zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.5, 0.5 + r * 8.595, 0.685, gz, m_stahlhell)
     for i, cz in enumerate((-0.6, 0.6)):
-        kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.44, 0.5 + r * 8.245, 0.6, cz, m_dunkel, fase=0)
-        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 8.265, 0.79, cz * 0.77, m_stahlhell, fase=0)
-    kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 8.33, 0.5, 0, m_dunkel, fase=0)
-    zylinder(f"Triebzug_Kuppelschaft_{kennung}", 0.075, 0.34, 0.5 + r * 8.55, 0.5, 0, m_stahl, achse="x")
-    kasten(f"Triebzug_Kuppelkopf_{kennung}", 0.13, 0.46, 0.36, 0.5 + r * 8.685, 0.5, 0, m_stahl, fase=0.02)
-    zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 8.76, 0.56, -0.11 * r, m_stahlhell, achse="x")
-    zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 8.75, 0.56, 0.11 * r, m_dunkel, achse="x")
-    kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 8.68, 0.76, 0, m_stahlhell, fase=0.02)
+        kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.44, 0.5 + r * 8.595, 0.6, cz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 8.615, 0.79, cz * 0.77, m_stahlhell, fase=0)
+    kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 8.68, 0.5, 0, m_dunkel, fase=0)
+    zylinder(f"Triebzug_Kuppelschaft_{kennung}", 0.075, 0.34, 0.5 + r * 8.9, 0.5, 0, m_stahl, achse="x")
+    kasten(f"Triebzug_Kuppelkopf_{kennung}", 0.13, 0.46, 0.36, 0.5 + r * 9.035, 0.5, 0, m_stahl, fase=0.02)
+    zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 9.11, 0.56, -0.11 * r, m_stahlhell, achse="x")
+    zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 9.1, 0.56, 0.11 * r, m_dunkel, achse="x")
+    kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 9.03, 0.76, 0, m_stahlhell, fase=0.02)
 
 fuehrerstand("ost", 1)
 fuehrerstand("west", -1)
