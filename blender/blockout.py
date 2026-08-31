@@ -314,6 +314,10 @@ m_gruen = material("Gruen", GRUEN, rauheit=0.5, metall=0.2)
 m_grube = material("Grube", GRUBE, rauheit=0.85)
 m_zug = material("Zug", ROT_ZUG, rauheit=0.35, metall=0.3)
 m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.3, metall=0.25)
+# Dach dunkel absetzen: es lief bisher auf m_stahlhell (0.85) gegen den Kasten (0.90) —
+# fuenf Prozent Unterschied, aus Beamerabstand also gar keine Dachkante. Der Zug hatte
+# damit keine Oberkante und franste oben in die helle Halle aus.
+m_zugdach = material("ZugDach", (0.26, 0.28, 0.31), rauheit=0.55, metall=0.30)
 m_relief = material("WandRelief", WAND_RELIEF)
 m_decke = material("Decke", DECKE)
 # Unterflur-Staffelung: Schiene blank gefahren, Schwelle stumpfes Beton-Grau,
@@ -587,100 +591,236 @@ kasten("Triebzug_Unterbau", 14, 1.1, 0.3, ZUG_X, 0.8, 0, m_unterflur)
 for i, bx in enumerate((-4.5, 5.5)):
     # Aussenliegender Drehgestellrahmen mit Achslagern, Primaerfedern, Bremsscheiben
     # und Sandstreurohren — vorher war das eine dunkle Platte mit vier Scheiben davor.
-    kasten(f"Triebzug_DG_{i}_quertraeger", 0.34, 2.0, 0.2, bx, 0.62, 0, m_stahl)
+    # Rahmen auf y 0.80..0.95 gehoben: vorher kappte er die Raeder 5.5 cm ueber der
+    # Radmitte und sie lasen als Hufeisen. Die Achsfuehrung ueberbrueckt die Luecke
+    # zum Achslager — ohne sie waere der Rahmen ein Schweber. In der Mitte sitzen
+    # jetzt Fahrmotor und Bremszangen statt eines Durchblicks.
+    kasten(f"Triebzug_DG_{i}_quertraeger", 0.6, 2.0, 0.26, bx, 0.63, 0, m_stahl)
+    zylinder(f"Triebzug_DG_{i}_motor", 0.2, 0.8, bx + 0.45, 0.62, 0, m_stahl, achse="z")
     for s, seite in ((-1, "nord"), (1, "sued")):
-        kasten(f"Triebzug_DG_{i}_rahmen_{seite}", 2.3, 0.16, 0.26, bx, 0.72, s * 0.98, m_stahl)
+        kasten(f"Triebzug_DG_{i}_rahmen_{seite}", 2.3, 0.16, 0.15, bx, 0.875, s * 0.98, m_stahl)
         for j, rx in enumerate((-0.7, 0.7)):
-            kasten(f"Triebzug_DG_{i}_achslager_{seite}_{j}", 0.28, 0.24, 0.24, bx + rx, 0.55, s * 0.98, m_unterflur)
-            zylinder(f"Triebzug_DG_{i}_feder_{seite}_{j}", 0.07, 0.14, bx + rx, 0.9, s * 0.98, m_markierung)
+            kasten(f"Triebzug_DG_{i}_achslager_{seite}_{j}", 0.3, 0.34, 0.24, bx + rx, 0.55, s * 1.0, m_unterflur)
+            kasten(f"Triebzug_DG_{i}_fuehrung_{seite}_{j}", 0.14, 0.16, 0.22, bx + rx, 0.74, s * 0.98, m_stahl)
+            kasten(f"Triebzug_DG_{i}_bremszange_{seite}_{j}", 0.12, 0.08, 0.28, bx + rx, 0.58, s * 0.505, m_stahl)
+            zylinder(f"Triebzug_DG_{i}_feder_{seite}_{j}", 0.1, 0.14, bx + rx, 0.74, s * 1.06, m_stahlhell)
             zylinder(f"Triebzug_DG_{i}_sandrohr_{seite}_{j}", 0.03, 0.42, bx + rx, 0.4, s * 0.88, m_dunkel)
             zylinder(f"Triebzug_Rad_{i}_{j}_{seite}", 0.38, 0.12, bx + rx, 0.535, s * 0.78, m_unterflur, achse="z")
             zylinder(f"Triebzug_Radscheibe_{i}_{j}_{seite}", 0.22, 0.13, bx + rx, 0.535, s * 0.78, m_stahlhell, achse="z")
             zylinder(f"Triebzug_DG_{i}_bremsscheibe_{seite}_{j}", 0.24, 0.05, bx + rx, 0.535, s * 0.45, m_stahlhell, achse="z")
     for j, rx in enumerate((-0.7, 0.7)):
         zylinder(f"Triebzug_DG_{i}_welle_{j}", 0.06, 2.1, bx + rx, 0.535, 0, m_stahl, achse="z")
+# Unterflur-Aggregate: unter dem Zug lag 7.4 m Bauchraum voellig leer, obwohl die
+# begehbare Untersuchungsgrube genau dorthin blickt. Alle Kaesten haengen mit
+# Oberkante 0.65 am Untergestell und bleiben bei |z| <= 0.85 innerhalb der
+# Drehgestellrahmen und ausserhalb der Grubenwaende.
+kasten("Triebzug_UF_Trafo", 2.6, 1.55, 0.4, -1.8, 0.45, 0, m_unterflur, fase=0.03)
+kasten("Triebzug_UF_Umrichter", 2.4, 1.5, 0.38, 1.9, 0.46, 0, m_dunkel, fase=0.03)
+kasten("Triebzug_UF_Batterie", 1.15, 1.2, 0.3, 3.7, 0.5, 0, m_stahl, fase=0.03)
+kasten("Triebzug_UF_Kasten_West", 0.9, 1.2, 0.3, -6.0, 0.5, 0, m_unterflur, fase=0.03)
+kasten("Triebzug_UF_Luftpresser", 0.8, 1.2, 0.32, 7.05, 0.49, 0, m_dunkel, fase=0.03)
+zylinder("Triebzug_UF_Lufttank", 0.17, 1.2, -0.1, 0.48, 0.7, m_stahl, achse="x")
+for s in (-1, 1):
+    kasten(f"Triebzug_UF_Gitter_{s}", 1.1, 0.03, 0.26, -1.8, 0.46, s * 0.79, m_stahlhell, fase=0)
 kasten("Triebzug_Korpus", 14, 2.4, 1.75, ZUG_X, 1.825, 0, m_zugweiss, fase=0.06)
-kasten("Triebzug_Streifen_Nord", 14, 0.06, 0.35, ZUG_X, 1.15, -1.23, m_zug, fase=0)
-kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.35, ZUG_X, 1.15, 1.23, m_zug, fase=0)
+kasten("Triebzug_Streifen_Nord", 14, 0.06, 0.55, ZUG_X, 1.225, -1.23, m_zug, fase=0)
+kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.55, ZUG_X, 1.225, 1.23, m_zug, fase=0)
 # Schmales Fensterband oben (viel Weiss darunter), Tueren stechen mit weissem Rahmen heraus
 # Flanke: die 0.77 m hohe, 14 m lange weisse Leerflaeche unter dem Fensterband bekommt
 # Lueftungsgitter, Wartungsklappen, Tankstutzen und zwei umlaufende Sicken. Die
 # Laengselemente sind dreigeteilt, damit sie nicht durch die beiden Tueren laufen
 # (belegt: x -3.08..-2.02 und 4.62..5.68).
-FLANKE_ABSCHNITTE = ((3.3, -4.75), (7.5, 0.85), (1.7, 6.6))
+# Flanke neu proportioniert. Vorher: Fensterband nur 0.42 m hoch dicht unter der
+# Dachkante, darunter 0.67 m leeres Weiss ueber 14 m — 56 Prozent der Flanke waren weiss
+# und der Zug las sich als Container. Jetzt ist das Band 0.72 m hoch und tiefer gesetzt,
+# die Bauchbinde 0.46 m breit. Das Band ist in drei Laeufe zwischen den Tueren geteilt,
+# damit keine Rest-Schlitze von 30 cm mehr entstehen; die Pfosten werden je Lauf
+# gleichmaessig eingerechnet statt fest gesetzt.
+# Ein durchgehendes Band; die beiden Tueren teilen es auf natuerliche Weise in drei
+# Laeufe, sodass mit nur sechs Pfosten neun gleich breite Scheiben zu 0.97 m entstehen.
+# Vorher lagen dort vier Rest-Schlitze zwischen 0.32 und 0.54 m.
+FLANKE_ABSCHNITTE = ((3.32, -4.74), (6.64, 1.30), (1.82, 6.59))
+DACHRAND_ABSCHNITTE = ((3.42, -4.79), (6.64, 1.30), (1.82, 6.59))
 for seite, sz in (("nord", -1.24), ("sued", 1.24)):
+    aussen = 1 if sz > 0 else -1
     fz = sz * 0.9758  # Fensterband 3 cm eingelassen -> echte Schattenkante an den Pfosten
-    kasten(f"Triebzug_Fensterband_{seite}", 11.6, 0.05, 0.42, 0.2, 2.2, fz, m_zugglas, fase=0)
-    for i, px in enumerate((-5.1, -4.0, -1.5, -0.4, 0.7, 1.8, 2.9, 4.0)):
-        kasten(f"Triebzug_Fensterpfosten_{seite}_{i}", 0.16, 0.06, 0.42, px, 2.2, sz, m_zugweiss, fase=0)
+    kasten(f"Triebzug_Fensterband_{seite}", 11.84, 0.05, 0.58, 0.73, 2.15, fz, m_zugglas, fase=0)
+    for i, px in enumerate((-4.13, -0.97, 0.17, 1.3, 2.43, 3.56)):
+        kasten(f"Triebzug_Fensterpfosten_{seite}_{i}", 0.16, 0.06, 0.58, px, 2.15, sz, m_zugweiss, fase=0)
     for i, (fl, fx) in enumerate(FLANKE_ABSCHNITTE):
-        kasten(f"Triebzug_Fensterleiste_u_{seite}_{i}", fl, 0.03, 0.05, fx, 1.96, sz, m_zugweiss, fase=0)
-        kasten(f"Triebzug_Fensterleiste_o_{seite}_{i}", fl, 0.03, 0.05, fx, 2.44, sz, m_zugweiss, fase=0)
-        for n, sy in enumerate((1.5, 1.92)):
-            kasten(f"Triebzug_Sicke_{seite}_{n}_{i}", fl, 0.02, 0.04, fx, sy, sz, m_zugweiss, fase=0)
+        kasten(f"Triebzug_Fensterleiste_u_{seite}_{i}", fl, 0.03, 0.05, fx, 1.83, sz, m_zugweiss, fase=0)
+        kasten(f"Triebzug_Fensterleiste_o_{seite}_{i}", fl, 0.03, 0.05, fx, 2.47, sz, m_zugweiss, fase=0)
+    # Dachrandprofil und Regenrinne: die kraeftigste Horizontale der Seitenansicht,
+    # deckt zugleich den Absatz zwischen Dach (|z| 1.15) und Flanke (1.20) ab.
+    for i, (dl, dcx) in enumerate(DACHRAND_ABSCHNITTE):
+        kasten(f"Triebzug_Dachfascie_{seite}_{i}", dl, 0.12, 0.1, dcx, 2.65, sz * 0.9839, m_zugdach, fase=0.03)
+        kasten(f"Triebzug_Regenrinne_{seite}_{i}", dl, 0.05, 0.03, dcx, 2.585, sz * 0.9919, m_dunkel, fase=0)
+    # Senkrechte Stossleisten gliedern die weisse Zone zwischen Bauchbinde und Band
+    for i, lx in enumerate((-5.3, -3.6, -1.53, 0.45, 2.5, 5.9)):
+        kasten(f"Triebzug_Stossleiste_{seite}_{i}", 0.045, 0.05, 0.33, lx, 1.665, sz * 0.9879, m_zugweiss, fase=0)
+    # Gitter zurueckgesetzt, Lamellen davor — vorher steckten die Lamellen dahinter
     for i, gx in enumerate((-4.6, -0.9, 6.4)):
-        kasten(f"Triebzug_Gitter_{seite}_{i}", 0.7, 0.03, 0.45, gx, 1.7, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Gitter_{seite}_{i}", 0.72, 0.03, 0.32, gx, 1.68, sz * 0.9758, m_dunkel, fase=0)
         for j in range(4):
-            kasten(f"Triebzug_Gitterlamelle_{seite}_{i}_{j}", 0.66, 0.02, 0.04, gx, 1.56 + j * 0.1, sz - 0.012 * (1 if sz > 0 else -1), m_stahlhell, fase=0)
+            kasten(f"Triebzug_Gitterlamelle_{seite}_{i}_{j}", 0.68, 0.05, 0.035, gx, 1.5525 + j * 0.085, sz, m_stahlhell, fase=0)
     for i, kx in enumerate((1.9, 4.0)):
-        kasten(f"Triebzug_Klappe_{seite}_{i}", 0.8, 0.025, 0.6, kx, 1.68, sz, m_zugweiss, fase=0)
-        kasten(f"Triebzug_Klappenfuge_{seite}_{i}", 0.82, 0.02, 0.02, kx, 1.38, sz, m_dunkel, fase=0)
-    zylinder(f"Triebzug_Tankstutzen_{seite}", 0.09, 0.06, -1.9, 1.45, sz, m_stahl, achse="z")
+        kasten(f"Triebzug_Klappe_{seite}_{i}", 0.8, 0.025, 0.32, kx, 1.68, sz, m_zugweiss, fase=0)
+        kasten(f"Triebzug_Klappenfuge_{seite}_{i}", 0.82, 0.02, 0.02, kx, 1.52, sz, m_dunkel, fase=0)
+    zylinder(f"Triebzug_Tankstutzen_{seite}", 0.09, 0.06, -1.9, 1.66, sz, m_stahl, achse="z")
     for i, tx in enumerate((-2.55, 5.15)):
         kasten(f"Triebzug_Tuerrahmen_{seite}_{i}", 1.06, 0.07, 1.75, tx, 1.825, sz, m_zugweiss, fase=0)
         kasten(f"Triebzug_Tuer_{seite}_{i}", 0.95, 0.09, 1.65, tx, 1.8, sz, m_stahl, fase=0)
-        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.14, 0.45, tx, 2.25, sz, m_zugglas, fase=0)
-        kasten(f"Triebzug_Tuerfuge_{seite}_{i}", 0.02, 0.1, 1.55, tx, 1.825, sz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Tuerfenster_{seite}_{i}", 0.6, 0.14, 0.58, tx, 2.15, sz, m_zugglas, fase=0)
+        kasten(f"Triebzug_Tuerfuge_{seite}_{i}", 0.02, 0.04, 1.65, tx, 1.8, sz * 1.05, m_dunkel, fase=0)
         kasten(f"Triebzug_Tuergriff_{seite}_{i}", 0.12, 0.11, 0.04, tx + 0.36, 1.55, sz, m_dunkel, fase=0)
-        kasten(f"Triebzug_Trittstufe_{seite}_{i}", 0.95, 0.16, 0.05, tx, 0.93, sz - 0.03 * (1 if sz > 0 else -1), m_riffel, fase=0)
+        kasten(f"Triebzug_Trittstufe_{seite}_{i}", 0.95, 0.16, 0.05, tx, 0.93, sz - 0.03 * aussen, m_riffel, fase=0)
+        # Gummidichtungen und Statusleuchte — die Tueren lasen als graue Platten
+        for s in (-1, 1):
+            kasten(f"Triebzug_Tuerdichtung_{seite}_{i}_{s}", 0.035, 0.1, 1.65, tx + s * 0.4725, 1.8, sz, m_gummi, fase=0)
+        kasten(f"Triebzug_Tuerleuchte_{seite}_{i}", 0.16, 0.05, 0.05, tx, 2.57, sz * 1.028, m_gruen, fase=0)
     for i, ax in enumerate((-6.0, 3.0)):  # Anschriftenfelder (gegreekt, keine echten Nummern)
         kasten(f"Triebzug_Anschrift_{seite}_{i}", 0.6, 0.01, 0.12, ax, 1.6, sz * 1.008, m_dunkel, fase=0)
-kasten("Triebzug_Dach", 13.6, 2.2, 0.3, ZUG_X, 2.85, 0, m_stahlhell)
-zylinder("Triebzug_Dachleitung", 0.05, 12.5, 0, 3.07, -0.8, m_dunkel, achse="x")
+kasten("Triebzug_Dach", 13.6, 2.3, 0.3, ZUG_X, 2.85, 0, m_zugdach, fase=0.06)
+# Dachtechnik auf hellen Stahl umgestellt — auf dem jetzt dunklen Dach waere sie
+# in m_dunkel unsichtbar geworden. Kontrast dreht sich um, Geometrie bleibt.
+# Dachdurchfuehrung mit Kabel zum Stromabnehmer: die alte Dachleitung lief auf z -0.8
+# quer am Panto (z 0) vorbei und beruehrte ihn nie — es gab keinen Weg vom Schleifstueck
+# ins Fahrzeug. Die Durchfuehrung sitzt in der Luecke zwischen Klima_0 und dem Panto.
+zylinder("Triebzug_Dachdurchfuehrung", 0.09, 0.34, -3.05, 3.17, -0.55, m_stahlhell)
+kasten("Triebzug_Dachdurchfuehrung_flansch", 0.3, 0.3, 0.05, -3.05, 3.025, -0.55, m_dunkel, fase=0)
+rohr_mit_bogen("Triebzug_Dachkabel", [(-3.05, 3.34, -0.55), (-2.7, 3.4, -0.48), (-2.38, 3.33, -0.4)], 0.035, m_dunkel)
+# Dachrand, Laufstege und Blechstoesse — die sechs Klappbruecken endeten auf blankem Blech
+for seite, dz in (("nord", -1.0), ("sued", 1.0)):
+    kasten(f"Triebzug_Dachrand_{seite}", 13.6, 0.09, 0.07, ZUG_X, 3.02, dz * 1.11, m_stahlhell, fase=0.01)
+    kasten(f"Triebzug_Laufsteg_{seite}", 12.8, 0.3, 0.02, ZUG_X, 3.01, dz * 0.95, m_riffel, fase=0)
+for i, nx in enumerate((-5.6, -2.55, -1.35, 2.05, 3.45, 6.3, 6.95)):
+    kasten(f"Triebzug_Dachnaht_{i}", 0.05, 1.4, 0.012, nx, 3.006, 0, m_stahlhell, fase=0)
+for i, (ex, ez) in enumerate(((-5.9, -0.6), (-5.9, 0.6), (6.6, -0.6), (6.6, 0.6))):
+    zylinder(f"Triebzug_Erdung_{i}", 0.05, 0.04, ex, 3.02, ez, m_markierung)
+for i, lx in enumerate((3.2, 6.5)):
+    kasten(f"Triebzug_Dachluke_{i}", 0.6, 0.6, 0.035, lx, 3.017, 0, m_stahl, fase=0.01)
+# Klimaanlagen mit Sockelrahmen, Ansaug- und Ausblasgittern statt nackter Platten
 for i, kx in enumerate((-4, 0.5, 5)):
-    kasten(f"Triebzug_Klima_{i}", 1.4, 1.4, 0.25, kx, 3.1, 0, m_dunkel)
-# Dachtechnik: gesenkter Scherenstromabnehmer (klappt in LAENGSrichtung), Widerstand, Antennen
-kasten("Triebzug_Panto_Basis", 0.8, 1.0, 0.12, -2, 3.29, 0, m_dunkel, fase=0)
-kasten("Triebzug_Panto_Unterarm", 0.07, 0.07, 0.9, -1.7, 3.45, 0, m_dunkel, drehung=(0, 1.2, 0), fase=0)
-kasten("Triebzug_Panto_Oberarm", 0.06, 0.06, 0.9, -2.25, 3.62, 0, m_dunkel, drehung=(0, -1.05, 0), fase=0)
-kasten("Triebzug_Panto_Wippe", 0.05, 1.4, 0.06, -2.6, 3.78, 0, m_dunkel, fase=0)
-kasten("Triebzug_Widerstand", 0.9, 1.1, 0.28, -5.3, 3.11, 0, m_dunkel)
-zylinder("Triebzug_Antenne_1", 0.03, 0.35, 3.2, 3.17, 0.5, m_dunkel)
-zylinder("Triebzug_Antenne_2", 0.03, 0.35, -0.6, 3.17, -0.5, m_dunkel)
+    kasten(f"Triebzug_Klima_{i}_sockel", 1.56, 1.46, 0.06, kx, 3.02, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Klima_{i}", 1.44, 1.44, 0.38, kx, 3.17, 0, m_stahlhell)
+    for s in (-1, 1):
+        kasten(f"Triebzug_Klima_{i}_gitter_{s}", 0.05, 1.16, 0.2, kx + s * 0.72, 3.14, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Klima_{i}_ausblas", 0.86, 0.86, 0.04, kx, 3.375, 0, m_dunkel, fase=0)
+    for j in range(5):
+        kasten(f"Triebzug_Klima_{i}_steg_{j}", 0.82, 0.09, 0.03, kx, 3.392, -0.34 + j * 0.17, m_stahlhell, fase=0)
+# Scherenstromabnehmer: er schwebte 0.23 m ueber dem Blech und kreuzte sich zum X, weil
+# Unter- und Oberarm gespiegelte Vorzeichen hatten. Jetzt tragen ihn vier Isolatoren, und
+# beide Arme teilen sich einen Gelenkpunkt (Knie bei x -2.78, y 3.78).
+for i, (px, pz) in enumerate(((-2.38, -0.4), (-2.38, 0.4), (-1.62, -0.4), (-1.62, 0.4))):
+    zylinder(f"Triebzug_Panto_Isolator_{i}", 0.045, 0.24, px, 3.12, pz, m_stahlhell)
+    for j in range(3):
+        zylinder(f"Triebzug_Panto_Isolator_{i}_schirm_{j}", 0.085, 0.03, px, 3.05 + j * 0.07, pz, m_stahlhell)
+for i, pz in enumerate((-0.4, 0.4)):
+    kasten(f"Triebzug_Panto_Holm_{i}", 0.95, 0.08, 0.09, -2.0, 3.285, pz, m_stahlhell, fase=0)
+    zylinder(f"Triebzug_Panto_Fusslager_{i}", 0.05, 0.1, -1.55, 3.33, pz, m_stahlhell, achse="z")
+for i, px in enumerate((-2.38, -1.62)):
+    kasten(f"Triebzug_Panto_Querholm_{i}", 0.08, 0.88, 0.09, px, 3.285, 0, m_stahlhell, fase=0)
+kasten("Triebzug_Panto_Unterarm", 0.09, 0.09, 1.31, -2.165, 3.555, 0, m_dunkel, drehung=(0, -1.22, 0), fase=0)
+kasten("Triebzug_Panto_Oberarm", 0.06, 0.06, 0.98, -2.315, 3.94, 0, m_dunkel, drehung=(0, 1.24, 0), fase=0)
+zylinder("Triebzug_Panto_Knielager", 0.055, 0.2, -2.78, 3.78, 0, m_stahlhell, achse="z")
+kasten("Triebzug_Panto_Absenkzylinder", 0.4, 0.09, 0.09, -1.95, 3.47, 0.24, m_markierung, drehung=(0, -0.6, 0), fase=0)
+kasten("Triebzug_Panto_Wippe", 0.1, 1.3, 0.06, -1.85, 4.105, 0, m_dunkel, fase=0)
+for i, sx in enumerate((-1.96, -1.74)):
+    kasten(f"Triebzug_Panto_Schleifleiste_{i}", 0.07, 1.1, 0.045, sx, 4.155, 0, m_stahlhell, fase=0)
+for i, hz in enumerate((-0.68, 0.68)):
+    kasten(f"Triebzug_Panto_Horn_{i}", 0.3, 0.26, 0.05, -1.85, 4.16, hz, m_dunkel,
+           drehung=(-0.6 if hz < 0 else 0.6, 0, 0), fase=0)
+# Bremswiderstand mit offenem Rippenpaket — sein einziges Erkennungsmerkmal
+kasten("Triebzug_Widerstand_sockel", 1.06, 1.16, 0.1, -5.3, 3.05, 0, m_dunkel, fase=0)
+for j in range(11):
+    kasten(f"Triebzug_Widerstand_rippe_{j}", 0.05, 1.02, 0.3, -5.72 + j * 0.084, 3.25, 0, m_stahlhell, fase=0)
+for i, wx in enumerate((-5.78, -4.82)):
+    kasten(f"Triebzug_Widerstand_wange_{i}", 0.05, 1.1, 0.36, wx, 3.28, 0, m_dunkel, fase=0)
+kasten("Triebzug_Widerstand_haube", 1.1, 1.16, 0.05, -5.3, 3.485, 0, m_dunkel, fase=0)
+zylinder("Triebzug_Antenne_1", 0.05, 0.35, 3.2, 3.17, 0.5, m_stahlhell)
+zylinder("Triebzug_Antenne_2", 0.05, 0.35, -0.6, 3.17, -0.5, m_stahlhell)
+for i, (ax, az) in enumerate(((3.2, 0.5), (-0.6, -0.5))):
+    kasten(f"Triebzug_Antennenfuss_{i}", 0.16, 0.16, 0.03, ax, 3.015, az, m_stahlhell, fase=0)
 # Fuehrerstaende an BEIDEN Enden; rote Bauchbinde laeuft ueber die Kabinenflanke durch
 def fuehrerstand(kennung, r):
     """r = +1 fuer das Ost-Ende (Front), -1 fuer das West-Ende (Heck)."""
-    kasten(f"Triebzug_Fuehrerhaus_{kennung}", 1.3, 2.3, 1.75, 0.5 + r * 7.55, 1.825, 0, m_zugweiss, fase=0.1)
-    kasten(f"Triebzug_Fuehrerhaus_Dach_{kennung}", 1.25, 2.15, 0.22, 0.5 + r * 7.52, 2.78, 0, m_stahlhell, fase=0.05)
-    # Die Frontscheibe liegt jetzt 3.5 cm in einer Laibung statt buendig auf der Nase;
-    # Zielanzeige und unterer Rahmen fassen sie ein. Vorher war es eine rahmenlose
-    # graue Platte — der Grund, warum die Front als "grauer Block" gelesen wurde.
-    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.05, 1.7, 0.8, 0.5 + r * 8.14, 2.18, 0, m_zugglas, fase=0)
-    kasten(f"Triebzug_Scheibenrahmen_{kennung}", 0.07, 1.86, 0.09, 0.5 + r * 8.185, 1.735, 0, m_zugweiss, fase=0)
-    # Zugzielanzeige uebernimmt zugleich den oberen Scheibenrahmen (gegreekt — kein Text)
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.07, 1.86, 0.13, 0.5 + r * 8.185, 2.615, 0, m_dunkel, fase=0)
-    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.55, 0.05, 0.5 + r * 8.22, 2.615, -0.08 * r, m_markierung, fase=0)
-    for i, az in enumerate((-0.88, 0.88)):
-        kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.06, 0.12, 0.84, 0.5 + r * 8.185, 2.18, az, m_zugweiss, fase=0)
-    kasten(f"Triebzug_Wischer_{kennung}", 0.02, 0.06, 0.24, 0.5 + r * 8.18, 2.0, -0.45 * r, m_dunkel, fase=0, drehung=(0.35, 0, 0))
+    # Kopf verjuengt und geneigt. Vorher war das Fuehrerhaus ein 1.30 x 2.30 x 1.75
+    # Quader mit senkrechter Stirnwand und exakt dem Querschnitt des Wagenkastens —
+    # in der Eroeffnungs-Totale las er sich als Kuehlschrank mit aufgeklebtem Fenster.
+    # Jetzt: kurze Kabine, davor eine im Grundriss von 2.30 auf 1.70 verjuengte Nase
+    # (zwei gedrehte Wangen) und darueber die zurueckgeneigte Scheibe. Die Nasenebene
+    # bleibt bei |x-0.5| = 8.70, damit sich Zuglaenge und Kameraposen nicht aendern.
+    kasten(f"Triebzug_Fuehrerhaus_{kennung}", 0.95, 2.3, 1.75, 0.5 + r * 6.875, 1.825, 0, m_zugweiss, fase=0.06)
+    kasten(f"Triebzug_Nase_unten_{kennung}", 0.85, 1.7, 0.83, 0.5 + r * 7.775, 1.365, 0, m_zugweiss, fase=0.06)
+    kasten(f"Triebzug_Nase_oben_{kennung}", 0.55, 1.7, 0.92, 0.5 + r * 7.625, 2.24, 0, m_zugweiss, fase=0.06)
+    for i, s in enumerate((-1, 1)):
+        kasten(f"Triebzug_Wange_{kennung}_{i}", 0.92, 0.12, 1.75, 0.5 + r * 7.775, 1.825, s * 1.0,
+               m_zugweiss, drehung=(0, 0, r * s * 0.3392), fase=0.04)
+        kasten(f"Triebzug_Wangenstreifen_{kennung}_{i}", 0.92, 0.14, 0.55, 0.5 + r * 7.775, 1.225, s * 1.0,
+               m_zug, drehung=(0, 0, r * s * 0.3392), fase=0)
+    # Gemessen: das Wagendach endet bei x 7.30 mit Oberkante 3.00, das Kabinendach begann
+    # erst bei 7.395 mit Oberkante 2.89 — eine 9.5 cm breite Fuge mit 11 cm Stufe. Jetzt
+    # schliesst es luecken- und stufenlos an und hat dieselbe Breite wie das Hauptdach.
+    kasten(f"Triebzug_Fuehrerhaus_Dach_{kennung}", 1.4, 2.3, 0.3, 0.5 + r * 7.5, 2.85, 0, m_zugdach, fase=0.06)
+    # WICHTIG: der Kopf ist ein Vollkoerper. Ein Element mit kleinerem |x| verschwindet
+    # restlos darin — genau daran war die Scheibe schon einmal gescheitert. Sie sitzt
+    # jetzt 0.42 rad zurueckgeneigt auf der Nase; die Laibung entsteht aus Nasenoberkante
+    # und Dachueberhang, ein eigener Scheibenrahmen entfaellt.
+    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.06, 1.7, 0.8, 0.5 + r * 8.0, 2.22, 0, m_zugglas,
+           fase=0, drehung=(0, -r * 0.42, 0))
+    for i, az in enumerate((-0.78, 0.78)):
+        kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.08, 0.12, 0.8, 0.5 + r * 8.0, 2.22, az, m_zugweiss,
+               fase=0, drehung=(0, -r * 0.42, 0))
+    # Zugzielanzeige in der Brauennische auf der Nasenoberkante (gegreekt — kein Text)
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.06, 1.2, 0.14, 0.5 + r * 7.93, 2.63, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.55, 0.05, 0.5 + r * 7.965, 2.63, -0.08 * r, m_markierung, fase=0)
+    # Wischer traegt jetzt die Scheibenneigung und liegt auf dem Glas statt daneben
+    kasten(f"Triebzug_Wischer_{kennung}", 0.03, 0.09, 0.62, 0.5 + r * 8.055, 2.2, -0.3 * r, m_dunkel,
+           fase=0, drehung=(0.3, -r * 0.42, 0))
+    zylinder(f"Triebzug_Wischerlager_{kennung}", 0.05, 0.07, 0.5 + r * 8.1, 1.92, -0.3 * r, m_dunkel, achse="x")
+    # Aussenspiegel auf der noch 2.30 breiten Kabinenflanke (weiter vorn haengen sie frei)
+    for i, s in enumerate((-1, 1)):
+        zylinder(f"Triebzug_Spiegelarm_{kennung}_{i}", 0.025, 0.24, 0.5 + r * 7.15, 2.52, s * 1.21, m_stahlhell, achse="z")
+        kasten(f"Triebzug_Spiegel_{kennung}_{i}", 0.09, 0.08, 0.28, 0.5 + r * 7.15, 2.52, s * 1.27, m_dunkel, fase=0.02)
     # Seitliche Cabfenster — die Kabinenflanke war eine leere weisse Wange
     for i, cz in enumerate((-1.155, 1.155)):
-        kasten(f"Triebzug_Cabfenster_{kennung}_{i}", 0.62, 0.05, 0.5, 0.5 + r * 7.72, 2.2, cz, m_zugglas, fase=0)
+        kasten(f"Triebzug_Cabfenster_{kennung}_{i}", 0.6, 0.05, 0.58, 0.5 + r * 6.92, 2.15, cz, m_zugglas, fase=0)
     for i, cz in enumerate((-1.18, 1.18)):
-        kasten(f"Triebzug_Cabstreifen_{kennung}_{i}", 1.3, 0.06, 0.35, 0.5 + r * 7.55, 1.15, cz, m_zug, fase=0)
-    kasten(f"Triebzug_Frontband_{kennung}", 0.6, 2.42, 0.35, 0.5 + r * 7.95, 1.15, 0, m_zug, fase=0.04)
-    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 2.05, 0.55, 0.5 + r * 7.8, 0.6, 0, m_unterflur, fase=0.04)
-    # Bugklappe mit Fuge und Scharnieren auf der Schuerze
-    kasten(f"Triebzug_Bugklappe_{kennung}", 0.03, 1.2, 0.4, 0.5 + r * 8.72, 0.6, 0, m_dunkel, fase=0)
-    for i, hz in enumerate((-0.5, 0.5)):
-        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.04, 0.1, 0.08, 0.5 + r * 8.73, 0.78, hz, m_stahlhell, fase=0)
-    # Scheinwerfer sitzen jetzt in einem Gehaeuse statt als aufgeklebte Kugeln
-    for i, lz in enumerate((-0.72, 0.72)):
-        kasten(f"Triebzug_Lampenkasten_{kennung}_{i}", 0.08, 0.28, 0.22, 0.5 + r * 8.28, 1.15, lz, m_dunkel, fase=0.02)
-        zylinder(f"Triebzug_Scheinwerfer_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 8.35, 1.15, lz, m_fenster, achse="x")
-        zylinder(f"Triebzug_Positionslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 8.26, 0.86, lz, m_zug, achse="x")
-    kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 8.25, 0.5, 0, m_dunkel, fase=0)
-    kasten(f"Triebzug_Kupplung_{kennung}", 0.4, 0.18, 0.18, 0.5 + r * 8.45, 0.5, 0, m_dunkel)
+        kasten(f"Triebzug_Cabstreifen_{kennung}_{i}", 0.95, 0.06, 0.55, 0.5 + r * 6.875, 1.225, cz, m_zug, fase=0)
+    # Frontband auf die Nasenbreite nachgezogen — 2.42 breit haette es 0.4 m seitlich
+    # aus der jetzt 1.70 breiten Nase herausgestanden.
+    kasten(f"Triebzug_Frontband_{kennung}", 0.35, 1.78, 0.55, 0.5 + r * 8.05, 1.225, 0, m_zug, fase=0.04)
+    # Schuerze bis an die Kastenunterkante 0.95 hochgezogen: darunter klaffte ein 10 cm
+    # hoher Schlitz ueber die volle Kopfbreite, durch den man den Zug hindurch sah.
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 1.66, 0.63, 0.5 + r * 7.8, 0.635, 0, m_unterflur, fase=0.04)
+    # Der Unterbau endet bei |x-0.5| = 7.0; dieses Stueck traegt den Kopf bis zur Schuerze.
+    kasten(f"Triebzug_Kopftraeger_{kennung}", 0.42, 1.3, 0.3, 0.5 + r * 7.18, 0.8, 0, m_unterflur)
+    # Bahnraeumer, Rangiertritte und Griffe — die Schuerze war ein glatter grauer Block
+    for i, bz in enumerate((-0.55, 0.55)):
+        kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 8.255, 0.38, bz, m_unterflur, fase=0)
+    for i, gz in enumerate((-0.65, 0.65)):
+        kasten(f"Triebzug_Rangiertritt_{kennung}_{i}", 0.34, 0.24, 0.06, 0.5 + r * 7.95, 0.295, gz, m_riffel, fase=0)
+        zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.5, 0.5 + r * 8.245, 0.685, gz, m_stahlhell)
+    # Bugklappe in zwei Haelften geteilt, damit die Kupplung dazwischen sichtbar wird.
+    # SCHWEBER-FIX: sie stand bei 0.5 + r*8.75, also auf x 9.23..9.27 — einen halben Meter
+    # VOR der Schuerzenstirn (8.725) und damit frei in der Luft, und verdeckte dabei die
+    # einzige Kupplung. Der Pruefer hatte sie durchgewinkt, weil sie die Kupplung auf
+    # exakt 0.08 m verfehlte, also genau seine Kontakttoleranz.
+    for i, cz in enumerate((-0.6, 0.6)):
+        kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.44, 0.5 + r * 8.245, 0.6, cz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 8.265, 0.79, cz * 0.77, m_stahlhell, fase=0)
+    # Spitzen- und Schlusslicht in einem Gehaeuse, Linsen buendig statt als Schraubenkoepfe
+    for i, lz in enumerate((-0.68, 0.68)):
+        kasten(f"Triebzug_Lampenkasten_{kennung}_{i}", 0.09, 0.3, 0.4, 0.5 + r * 8.27, 1.15, lz, m_dunkel, fase=0.02)
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.085, 0.03, 0.5 + r * 8.3, 1.26, lz, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.055, 0.03, 0.5 + r * 8.3, 1.04, lz, m_zug, achse="x")
+    # Mittelpufferkupplung statt Kasten mit Stab
+    kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 8.33, 0.5, 0, m_dunkel, fase=0)
+    zylinder(f"Triebzug_Kuppelschaft_{kennung}", 0.075, 0.34, 0.5 + r * 8.55, 0.5, 0, m_stahl, achse="x")
+    kasten(f"Triebzug_Kuppelkopf_{kennung}", 0.13, 0.46, 0.36, 0.5 + r * 8.685, 0.5, 0, m_stahl, fase=0.02)
+    zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 8.76, 0.56, -0.11 * r, m_stahlhell, achse="x")
+    zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 8.75, 0.56, 0.11 * r, m_dunkel, achse="x")
+    kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 8.68, 0.76, 0, m_stahlhell, fase=0.02)
 
 
 fuehrerstand("ost", 1)
