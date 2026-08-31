@@ -744,20 +744,24 @@ for i, (ax, az) in enumerate(((3.2, 0.5), (-0.6, -0.5))):
 # Fuehrerstaende an BEIDEN Enden; rote Bauchbinde laeuft ueber die Kabinenflanke durch
 def fuehrerstand(kennung, r):
     """r = +1 fuer das Ost-Ende (Front), -1 fuer das West-Ende (Heck)."""
-    # Kopf verjuengt und geneigt. Vorher war das Fuehrerhaus ein 1.30 x 2.30 x 1.75
-    # Quader mit senkrechter Stirnwand und exakt dem Querschnitt des Wagenkastens —
-    # in der Eroeffnungs-Totale las er sich als Kuehlschrank mit aufgeklebtem Fenster.
-    # Jetzt: kurze Kabine, davor eine im Grundriss von 2.30 auf 1.70 verjuengte Nase
-    # (zwei gedrehte Wangen) und darueber die zurueckgeneigte Scheibe. Die Nasenebene
-    # bleibt bei |x-0.5| = 8.70, damit sich Zuglaenge und Kameraposen nicht aendern.
+    # Kopf: kurze Kabine, davor eine geschlossene Nase mit zurueckgeneigter Scheibe.
+    # Die Nasenebene bleibt bei |x-0.5| = 8.70, damit sich Zuglaenge und Kameraposen
+    # nicht aendern.
+    # Die Breiten sind bewusst ANGEGLICHEN: Wagenkasten 2.40, Kabine 2.30, Nase 2.20,
+    # Dach 2.30. Eine frueher versuchte Verjuengung auf 1.70 mit zwei gedrehten Wangen
+    # ist wieder entfallen — die Wangen standen als zwei helle Finnen neben einer zu
+    # schmalen Scheibe unter einem zu breiten Dach, und der Kopf zerfiel in drei
+    # verschieden breite Schichten. Der Charakter kommt jetzt aus der Scheibenneigung,
+    # der Dachbraue und den kraeftigen Fasen, nicht aus einem Grundrissknick.
     kasten(f"Triebzug_Fuehrerhaus_{kennung}", 0.95, 2.3, 1.75, 0.5 + r * 6.875, 1.825, 0, m_zugweiss, fase=0.06)
-    kasten(f"Triebzug_Nase_unten_{kennung}", 0.85, 1.7, 0.83, 0.5 + r * 7.775, 1.365, 0, m_zugweiss, fase=0.06)
-    kasten(f"Triebzug_Nase_oben_{kennung}", 0.55, 1.7, 0.92, 0.5 + r * 7.625, 2.24, 0, m_zugweiss, fase=0.06)
+    kasten(f"Triebzug_Nase_unten_{kennung}", 0.85, 2.2, 0.9, 0.5 + r * 7.775, 1.4, 0, m_zugweiss, fase=0.14)
+    kasten(f"Triebzug_Nase_oben_{kennung}", 0.55, 2.2, 0.92, 0.5 + r * 7.625, 2.24, 0, m_zugweiss, fase=0.14)
+    # Die geneigte Scheibe laesst zwischen Nasenstirn (x 8.40) und Glas einen Hohlraum,
+    # der seitlich offen war — man sah im Dreiviertelblick durch den Kopf auf die
+    # Arbeitsbuehne dahinter. Diese beiden Wangen schliessen ihn.
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Wange_{kennung}_{i}", 0.92, 0.12, 1.75, 0.5 + r * 7.775, 1.825, s * 1.0,
-               m_zugweiss, drehung=(0, 0, r * s * 0.3392), fase=0.04)
-        kasten(f"Triebzug_Wangenstreifen_{kennung}_{i}", 0.92, 0.14, 0.55, 0.5 + r * 7.775, 1.225, s * 1.0,
-               m_zug, drehung=(0, 0, r * s * 0.3392), fase=0)
+        kasten(f"Triebzug_Nase_wange_{kennung}_{i}", 0.3, 0.1, 0.85, 0.5 + r * 8.05, 2.275, s * 1.05,
+               m_zugweiss, fase=0.04)
     # Gemessen: das Wagendach endet bei x 7.30 mit Oberkante 3.00, das Kabinendach begann
     # erst bei 7.395 mit Oberkante 2.89 — eine 9.5 cm breite Fuge mit 11 cm Stufe. Jetzt
     # schliesst es luecken- und stufenlos an und hat dieselbe Breite wie das Hauptdach.
@@ -766,13 +770,15 @@ def fuehrerstand(kennung, r):
     # restlos darin — genau daran war die Scheibe schon einmal gescheitert. Sie sitzt
     # jetzt 0.42 rad zurueckgeneigt auf der Nase; die Laibung entsteht aus Nasenoberkante
     # und Dachueberhang, ein eigener Scheibenrahmen entfaellt.
-    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.06, 1.7, 0.8, 0.5 + r * 8.0, 2.22, 0, m_zugglas,
+    # Scheibe auf die volle Nasenbreite gezogen (2.00 statt 1.70): schmaler wirkte sie
+    # unter dem 2.30 breiten Dach wie ein zu kleines Fenster in einer zu grossen Stirn.
+    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.06, 2.0, 0.8, 0.5 + r * 8.0, 2.22, 0, m_zugglas,
            fase=0, drehung=(0, -r * 0.42, 0))
-    for i, az in enumerate((-0.78, 0.78)):
-        kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.08, 0.12, 0.8, 0.5 + r * 8.0, 2.22, az, m_zugweiss,
+    for i, az in enumerate((-0.93, 0.93)):
+        kasten(f"Triebzug_A_Saeule_{kennung}_{i}", 0.08, 0.14, 0.8, 0.5 + r * 8.0, 2.22, az, m_zugweiss,
                fase=0, drehung=(0, -r * 0.42, 0))
     # Zugzielanzeige in der Brauennische auf der Nasenoberkante (gegreekt — kein Text)
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.06, 1.2, 0.14, 0.5 + r * 7.93, 2.63, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.06, 1.6, 0.14, 0.5 + r * 7.93, 2.63, 0, m_dunkel, fase=0)
     kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.55, 0.05, 0.5 + r * 7.965, 2.63, -0.08 * r, m_markierung, fase=0)
     # Wischer traegt jetzt die Scheibenneigung und liegt auf dem Glas statt daneben
     kasten(f"Triebzug_Wischer_{kennung}", 0.03, 0.09, 0.62, 0.5 + r * 8.055, 2.2, -0.3 * r, m_dunkel,
@@ -787,18 +793,18 @@ def fuehrerstand(kennung, r):
         kasten(f"Triebzug_Cabfenster_{kennung}_{i}", 0.6, 0.05, 0.58, 0.5 + r * 6.92, 2.15, cz, m_zugglas, fase=0)
     for i, cz in enumerate((-1.18, 1.18)):
         kasten(f"Triebzug_Cabstreifen_{kennung}_{i}", 0.95, 0.06, 0.55, 0.5 + r * 6.875, 1.225, cz, m_zug, fase=0)
-    # Frontband auf die Nasenbreite nachgezogen — 2.42 breit haette es 0.4 m seitlich
-    # aus der jetzt 1.70 breiten Nase herausgestanden.
-    kasten(f"Triebzug_Frontband_{kennung}", 0.35, 1.78, 0.55, 0.5 + r * 8.05, 1.225, 0, m_zug, fase=0.04)
+    # Frontband auf die Nasenbreite: die rote Binde laeuft damit von der Flanke (|z| 1.23)
+    # ueber die Kabine (1.18) auf die Nasenstirn (1.08) durch, ohne abzubrechen.
+    kasten(f"Triebzug_Frontband_{kennung}", 0.35, 2.16, 0.55, 0.5 + r * 8.05, 1.225, 0, m_zug, fase=0.04)
     # Schuerze bis an die Kastenunterkante 0.95 hochgezogen: darunter klaffte ein 10 cm
     # hoher Schlitz ueber die volle Kopfbreite, durch den man den Zug hindurch sah.
-    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 1.66, 0.63, 0.5 + r * 7.8, 0.635, 0, m_unterflur, fase=0.04)
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 0.85, 2.0, 0.63, 0.5 + r * 7.8, 0.635, 0, m_unterflur, fase=0.04)
     # Der Unterbau endet bei |x-0.5| = 7.0; dieses Stueck traegt den Kopf bis zur Schuerze.
     kasten(f"Triebzug_Kopftraeger_{kennung}", 0.42, 1.3, 0.3, 0.5 + r * 7.18, 0.8, 0, m_unterflur)
     # Bahnraeumer, Rangiertritte und Griffe — die Schuerze war ein glatter grauer Block
-    for i, bz in enumerate((-0.55, 0.55)):
+    for i, bz in enumerate((-0.62, 0.62)):
         kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 8.255, 0.38, bz, m_unterflur, fase=0)
-    for i, gz in enumerate((-0.65, 0.65)):
+    for i, gz in enumerate((-0.82, 0.82)):
         kasten(f"Triebzug_Rangiertritt_{kennung}_{i}", 0.34, 0.24, 0.06, 0.5 + r * 7.95, 0.295, gz, m_riffel, fase=0)
         zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.5, 0.5 + r * 8.245, 0.685, gz, m_stahlhell)
     # Bugklappe in zwei Haelften geteilt, damit die Kupplung dazwischen sichtbar wird.
@@ -810,7 +816,7 @@ def fuehrerstand(kennung, r):
         kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.44, 0.5 + r * 8.245, 0.6, cz, m_dunkel, fase=0)
         kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 8.265, 0.79, cz * 0.77, m_stahlhell, fase=0)
     # Spitzen- und Schlusslicht in einem Gehaeuse, Linsen buendig statt als Schraubenkoepfe
-    for i, lz in enumerate((-0.68, 0.68)):
+    for i, lz in enumerate((-0.86, 0.86)):
         kasten(f"Triebzug_Lampenkasten_{kennung}_{i}", 0.09, 0.3, 0.4, 0.5 + r * 8.27, 1.15, lz, m_dunkel, fase=0.02)
         zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.085, 0.03, 0.5 + r * 8.3, 1.26, lz, m_fenster, achse="x")
         zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.055, 0.03, 0.5 + r * 8.3, 1.04, lz, m_zug, achse="x")
