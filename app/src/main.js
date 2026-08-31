@@ -3,6 +3,7 @@ import daten from './stationen.json';
 import { baueSchritte } from './schritte.js';
 import { Zustandsmaschine, leiteAnsichtAb } from './zustand.js';
 import { Kamerafahrt } from './kamera.js';
+import { findeWegpunkte } from './fahrtwege.js';
 import { tasteZuAktion, Eingabesperre } from './steuerung.js';
 import { speichereStand, ladeStand } from './speicher.js';
 import { zeigePanel, versteckePanel, zeigeTitel, schalteSchwarzbild, schalteVideoGross, schalteDimmer } from './overlays.js';
@@ -55,6 +56,7 @@ function wendeAnsichtAn(sofort = false) {
       blickziel: aktuelleFahrt ? aktuelleFahrt.nach.blickziel : poseFuerOrt(aktuellerOrt).blickziel,
     };
     const nach = poseFuerOrt(ansicht.ort);
+    const wegpunkte = findeWegpunkte(aktuellerOrt, ansicht.ort);
     aktuellerOrt = ansicht.ort;
     versteckePanel(panelEl);
     zeigeTitel(titelEl, false); // Spec §4: während der Fahrt kein neuer Text
@@ -65,7 +67,7 @@ function wendeAnsichtAn(sofort = false) {
       zeigeAnkunft(ansicht);
     } else {
       const dauer = zustand.aktuell.typ?.startsWith('sprung') ? daten.sprung_dauer_s : nach.dauer_s;
-      aktuelleFahrt = new Kamerafahrt(von, { position: nach.position, blickziel: nach.blickziel }, dauer);
+      aktuelleFahrt = new Kamerafahrt(von, { position: nach.position, blickziel: nach.blickziel }, dauer, wegpunkte);
       sperre.sperren();
     }
   } else {
@@ -138,7 +140,9 @@ window.addEventListener('resize', () => {
 const uhr = new THREE.Clock();
 let orbitAktiv = null;
 function schleife() {
-  const delta = uhr.getDelta();
+  // Delta deckeln: nach Tab-Wechsel/Ruckler liefert getDelta() sonst Sekunden
+  // auf einmal und eine laufende Fahrt teleportiert ans Ziel (Spec §6: Härtung).
+  const delta = Math.min(uhr.getDelta(), 0.1);
   if (aktuelleFahrt) {
     setzeKamera(aktuelleFahrt.fortschritt(delta));
     if (aktuelleFahrt.fertig) beendeFahrt();

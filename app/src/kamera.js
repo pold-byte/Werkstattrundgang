@@ -12,12 +12,34 @@ export function lerp3(a, b, t) {
 }
 
 export class Kamerafahrt {
-  constructor(von, nach, dauerS) {
+  // wegpunkte: optionale Zwischenpositionen (kollisionsfrei geroutet, siehe
+  // blender/berechne_fahrtwege.py). Die Position folgt der Polylinie mit
+  // konstanter Bahngeschwindigkeit pro Easing-Fortschritt, das Blickziel
+  // schwenkt weiterhin direkt von Start- zu Zielblick.
+  constructor(von, nach, dauerS, wegpunkte = []) {
     this.von = von;
     this.nach = nach;
     this.dauerS = dauerS;
     this.zeit = 0;
     this.fertig = false;
+    this.pfad = [von.position, ...wegpunkte, nach.position];
+    this.laengen = [0];
+    for (let i = 1; i < this.pfad.length; i += 1) {
+      const [ax, ay, az] = this.pfad[i - 1];
+      const [bx, by, bz] = this.pfad[i];
+      this.laengen.push(this.laengen[i - 1] + Math.hypot(bx - ax, by - ay, bz - az));
+    }
+  }
+
+  positionBei(e) {
+    const gesamt = this.laengen[this.laengen.length - 1];
+    if (gesamt <= 0) return [...this.nach.position];
+    const s = e * gesamt;
+    let i = 1;
+    while (i < this.laengen.length - 1 && this.laengen[i] < s) i += 1;
+    const segment = this.laengen[i] - this.laengen[i - 1];
+    const anteil = segment <= 0 ? 1 : (s - this.laengen[i - 1]) / segment;
+    return lerp3(this.pfad[i - 1], this.pfad[i], anteil);
   }
 
   fortschritt(deltaS) {
@@ -29,7 +51,7 @@ export class Kamerafahrt {
     }
     const e = glaetten(t);
     return {
-      position: lerp3(this.von.position, this.nach.position, e),
+      position: this.positionBei(e),
       blickziel: lerp3(this.von.blickziel, this.nach.blickziel, e),
     };
   }

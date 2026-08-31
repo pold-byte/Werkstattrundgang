@@ -53,4 +53,25 @@ describe('Kamerafahrt', () => {
     expect(pose.position[0]).toBeCloseTo(5, 10);
     expect(pose.blickziel[1]).toBeCloseTo(0.5, 10);
   });
+
+  it('folgt Wegpunkten: bei halber Strecke exakt auf dem mittigen Wegpunkt', () => {
+    const a = { position: [0, 0, 0], blickziel: [0, 0, -1] };
+    const b = { position: [2, 0, 0], blickziel: [4, 0, -1] };
+    // Wegpunkt liegt seitlich versetzt genau auf halber Bogenlänge.
+    const fahrt = new Kamerafahrt(a, b, 4, [[1, 3, 0]]);
+    const pose = fahrt.fortschritt(2); // t=0.5 → e=0.5 → s = halbe Gesamtlänge
+    expect(pose.position[0]).toBeCloseTo(1, 10);
+    expect(pose.position[1]).toBeCloseTo(3, 10);
+    // Blickziel schwenkt weiter direkt von Start- zu Zielblick.
+    expect(pose.blickziel[0]).toBeCloseTo(2, 10);
+  });
+
+  it('endet auch mit Wegpunkten exakt auf der Zielpose', () => {
+    const fahrt = new Kamerafahrt(von, nach, 6, [[0, 5, 0], [10, 5, -6]]);
+    let pose;
+    for (const dt of [0.7, 1.9, 0.016, 4.0]) pose = fahrt.fortschritt(dt);
+    expect(fahrt.fertig).toBe(true);
+    expect(pose.position).toEqual(nach.position);
+    expect(pose.blickziel).toEqual(nach.blickziel);
+  });
 });
