@@ -19,7 +19,7 @@ import os
 import random
 import struct
 import zlib
-from mathutils import Vector
+from mathutils import Euler, Matrix, Vector
 
 WURZEL = os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd()
 ZIEL = os.path.join(WURZEL, "app", "public", "szene.glb")
@@ -147,9 +147,59 @@ def _kachel_uv(obj, kachel):
             uv.data[li].uv = (u / kachel, w / kachel)
 
 
+# --- Primitive ohne bpy.ops -------------------------------------------------
+# Gemessen: ein bpy.ops.mesh.primitive_cube_add kostete im Schnitt 96 ms, weil
+# jeder Operator einen szenenweiten Abhaengigkeits-Update ausloest, der mit jedem
+# zusaetzlichen Objekt teurer wird — der Aufbau war dadurch faktisch quadratisch
+# (1172 Kaesten = 113 s, 408 Zylinder = 47 s von 197 s gesamt).
+# Statt selbst zu parametrisieren wird je Form EINE Vorlage ueber bpy.ops gebaut
+# und danach nur noch kopiert und skaliert. Das ist wichtig: Blender legt den
+# ersten Zylindervertex bei (0, 1, -1) an, also auf der +Y-Achse. Eine eigene
+# Parametrisierung ab 0 Grad wuerde alle Facetten verdrehen — bei 16-eckigen
+# Staplerraedern sichtbar, obwohl jede Boundingbox stimmt.
+_VORLAGEN = {}
+
+
+def _vorlage(schluessel, bauen):
+    if schluessel not in _VORLAGEN:
+        bauen()
+        tmp = bpy.context.active_object
+        daten = tmp.data
+        daten.use_fake_user = True  # ueberlebt das Loeschen des Hilfsobjekts
+        bpy.data.objects.remove(tmp, do_unlink=True)
+        _VORLAGEN[schluessel] = daten
+    return _VORLAGEN[schluessel]
+
+
+def _aus_vorlage(name, daten, skalierung, ort, drehung=None):
+    """Vorlage kopieren, Skalierung in die Vertices backen, Objekt einhaengen.
+
+    Die Skalierung wandert in die Koordinaten statt in obj.scale — damit entfaellt
+    das frueher noetige bpy.ops.object.transform_apply. matrix_world wird direkt
+    gesetzt, weil obj.location ohne Abhaengigkeits-Update nicht zuverlaessig in
+    matrix_world durchschlaegt und _kachel_uv genau darauf angewiesen ist."""
+    mesh = daten.copy()
+    mesh.name = name
+    sx, sy, sz = skalierung
+    if (sx, sy, sz) != (1.0, 1.0, 1.0):
+        for v in mesh.vertices:
+            v.co.x *= sx
+            v.co.y *= sy
+            v.co.z *= sz
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    m = Matrix.Translation(Vector(ort))
+    if drehung:
+        m = m @ Euler(drehung, "XYZ").to_matrix().to_4x4()
+    obj.matrix_world = m
+    # Aufrufstellen wie treppe(), rohr_mit_bogen() und gabelstapler() greifen
+    # direkt nach dem Helferaufruf auf bpy.context.active_object zu
+    bpy.context.view_layer.objects.active = obj
+    return obj
+
+
 def _abschliessen(obj, mat, fase):
-    """Skalierung einbrennen (gleichmaessige Fase) und Bevel-Modifier anlegen."""
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    """UV-Kachelung setzen und Bevel-Modifier anlegen."""
     _kachel_uv(obj, KACHEL.get(mat.name, 2.0))
     if fase > 0:
         mod = obj.modifiers.new("Fase", "BEVEL")
@@ -162,25 +212,21 @@ def _abschliessen(obj, mat, fase):
 
 def kasten(name, dx, dz, dy, x, y, z, mat, drehung=None, fase=0.02):
     """Quader in Three.js-Achsen: Groesse (dx, dz, dy), Mittelpunkt (x, y, z)."""
-    bpy.ops.mesh.primitive_cube_add(size=1, location=pos(x, y, z))
-    obj = bpy.context.active_object
-    obj.name = name
-    obj.scale = (dx, dz, dy)
-    if drehung:
-        obj.rotation_euler = drehung
+    daten = _vorlage("wuerfel", lambda: bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0)))
+    obj = _aus_vorlage(name, daten, (dx, dz, dy), pos(x, y, z), drehung)
     return _abschliessen(obj, mat, fase)
 
 
 def zylinder(name, radius, laenge, x, y, z, mat, achse="y", ecken=16, fase=0.0):
     """Zylinder; achse in Three.js: 'x' laengs, 'y' senkrecht, 'z' quer."""
-    bpy.ops.mesh.primitive_cylinder_add(vertices=ecken, radius=radius, depth=laenge,
-                                        location=pos(x, y, z))
-    obj = bpy.context.active_object
-    obj.name = name
+    daten = _vorlage(("zylinder", ecken), lambda: bpy.ops.mesh.primitive_cylinder_add(
+        vertices=ecken, radius=1.0, depth=1.0, location=(0, 0, 0)))
+    drehung = None
     if achse == "x":
-        obj.rotation_euler = (0, 1.5708, 0)
+        drehung = (0, 1.5708, 0)
     elif achse == "z":
-        obj.rotation_euler = (1.5708, 0, 0)
+        drehung = (1.5708, 0, 0)
+    obj = _aus_vorlage(name, daten, (radius, radius, laenge), pos(x, y, z), drehung)
     return _abschliessen(obj, mat, fase)
 
 
