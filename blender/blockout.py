@@ -893,6 +893,12 @@ def fuehrerstand(kennung, r):
     # Merkmal der Frontverglasung.
     kasten(f"Triebzug_Scheibenpfosten_{kennung}", 0.05, 0.09, 0.74, 0.5 + r * 8.008, 2.389, 0, m_zugweiss,
            fase=0, drehung=(0, -r * 0.46, 0))
+    # Eckverglasung: beim Vorbild laeuft das dunkle Glas um die Kabinenecke in die
+    # Flanke. Die Maske endet bei |z| 1.14, das Seitenband beginnt bei 1.21 — dazwischen
+    # stand Weiss. Diese Panele schliessen die Luecke.
+    for i, s in enumerate((-1, 1)):
+        kasten(f"Triebzug_Eckglas_{kennung}_{i}", 0.26, 0.12, 0.6, 0.5 + r * 8.1, 2.15,
+               s * 1.185, m_zugglas, fase=0.05)
     # Zugzielanzeige auf der Maskenflaeche (gegreekt — kein Text)
     kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.2, 0.1, 0.5 + r * 7.795, 2.63, 0, m_dunkel,
            fase=0, drehung=(0, -r * 0.46, 0))
@@ -903,6 +909,10 @@ def fuehrerstand(kennung, r):
     kasten(f"Triebzug_Wischer_{kennung}", 0.025, 0.07, 0.48, 0.5 + r * 8.02, 2.4, -0.28 * r, m_dunkel,
            fase=0, drehung=(0.5, -r * 0.46, 0))
     zylinder(f"Triebzug_Wischerlager_{kennung}", 0.045, 0.06, 0.5 + r * 8.06, 2.19, -0.36 * r, m_dunkel, achse="x")
+    # Zweiter Wischer auf der anderen Scheibenhaelfte — das Vorbild hat zwei
+    kasten(f"Triebzug_Wischer2_{kennung}", 0.025, 0.07, 0.48, 0.5 + r * 8.02, 2.4, 0.4 * r, m_dunkel,
+           fase=0, drehung=(0.5, -r * 0.46, 0))
+    zylinder(f"Triebzug_Wischerlager2_{kennung}", 0.045, 0.06, 0.5 + r * 8.06, 2.19, 0.48 * r, m_dunkel, achse="x")
 
     # ---- Leuchten sitzen auf der Bugschulter, nicht mehr auf einer senkrechten Stirn ----
     # Die Bugschicht 1 (Spitze 9.25, Eckachse 8.95, r 0.30) traegt sie: bei |z| 0.70 liegt
@@ -912,10 +922,10 @@ def fuehrerstand(kennung, r):
         # sie zusammen mit der Scheibe EIN dunkles Gesicht. Zwei kleine graue Kaestchen
         # lasen dagegen als Anbauteile. Die Nasenoberflaeche liegt bei |z| 0.62 und
         # y 1.62 auf x 9.70 (Halbzylinder r 1.050 um 8.842) — davor sitzt das Gehaeuse.
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.58, 0.34, 0.5 + r * 9.05, 1.62, s * 0.62, m_zugglas, fase=0.05)
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.21, 1.71, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.21, 1.53, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 9.21, 1.62, s * 0.79, m_zug, achse="x")
+        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.66, 0.3, 0.5 + r * 9.0, 1.62, s * 0.7, m_zugglas, fase=0.03)
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.16, 1.71, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.16, 1.53, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 9.14, 1.62, s * 0.88, m_zug, achse="x")
         # Lueftungsgitter auf der Bugflanke; |z| 1.075 steht knapp vor der dortigen
         # Woelbungsflaeche (1.0925), sonst verschwindet es darin.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 8.35, 1.79, s * 1.075, m_dunkel, fase=0)
