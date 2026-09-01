@@ -845,8 +845,7 @@ def fuehrerstand(kennung, r):
     import math as _m
 
 
-    # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x). Die
-    # Hoehen sind zugleich Ringgrenzen, damit die Farbwechsel auf Kanten fallen.
+    # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
     _TAB = ((0.60, 0.70, 9.20),
             (0.74, 0.84, 9.56),
             (0.88, 0.92, 9.78),
@@ -855,14 +854,16 @@ def fuehrerstand(kennung, r):
             (1.42, 1.025, 9.81),
             (1.68, 1.05, 9.68),
             (1.92, 1.075, 9.51),
-            (2.12, 1.09, 9.32),    # Scheibenunterkante
+            (2.12, 1.09, 9.32),
             (2.45, 1.10, 8.88),
-            (2.70, 1.08, 8.46),    # Scheibenoberkante
+            (2.70, 1.08, 8.46),
             (2.88, 1.03, 8.14),    # Dachanlauf
             (3.02, 0.90, 7.80))
-    # Fein dort, wo die geschwungene Bandgrenze und die Scheibengrenze schraeg ueber
-    # die Ringe laufen — eine schraege Materialgrenze treppt sonst.
-    _SEG = (3, 4, 6, 9, 11, 13, 9, 6, 14, 10, 4, 4)   # Unterringe je Intervall
+
+    _BOGEN = 30
+    _TAPER = 10
+    _RUECK = 7.30
+    _ELL = 0.62      # x-Halbachse der Bugellipse als Anteil der Halbbreite
 
     def _profil(y):
         """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
@@ -886,85 +887,104 @@ def fuehrerstand(kennung, r):
             return 1.20 - 0.02 * (y - 2.55) / 0.15
         return 1.18 - 0.12 * ((y - 2.70) / 0.32) ** 1.6
 
-    _hoehen = []
-    for _k in range(len(_TAB) - 1):
-        for _j in range(_SEG[_k]):
-            _hoehen.append(_TAB[_k][0] + (_TAB[_k + 1][0] - _TAB[_k][0]) * _j / _SEG[_k])
-    _hoehen.append(_TAB[-1][0])
+    _P = 2 * _TAPER + _BOGEN + 1     # Punkte je Ring
 
-    _BOGEN = 60
-    _TAPER = 12
-    _RUECK = 7.30
+    def _spalte(j):
+        """Spaltenparameter: (0, f, vorzeichen) fuer die Flanke, (1, theta, 0) fuer den Bug."""
+        if j <= _TAPER - 1:
+            return 0, j / _TAPER, 1.0
+        if j <= _TAPER + _BOGEN:
+            return 1, _m.pi / 2 - _m.pi * (j - _TAPER) / _BOGEN, 0.0
+        return 0, (_P - 1 - j) / _TAPER, -1.0
+
+    def _punkt(j, y):
+        """Punkt der Spalte j auf Hoehe y. Die Flanke laeuft mit Smoothstep von der
+        Wagenkastenbreite auf die Bugbreite zu; ohne diese Verjuengung stuende der
+        Kasten (Halbbreite 1.20 bis x 7.5) seitlich vor der Schale."""
+        _hw, _vor = _profil(y)
+        _a = _ELL * _hw
+        _xc = _vor - _a
+        _art, _p, _vz = _spalte(j)
+        if _art == 0:
+            _kb = _kastenbreite(y)
+            _z = _kb + (_hw - _kb) * _p * _p * (3 - 2 * _p)
+            return _RUECK + (_xc - _RUECK) * _p, _vz * _z
+        return _xc + _a * _m.cos(_p), _hw * _m.sin(_p)
+
+    # ---- Farbgrenzen sind NETZKANTEN, keine Auswahl auf waagerechten Ringen ----
+    # Vorher liefen die Ringe waagerecht und die rote Binde wurde als Flaechenauswahl
+    # darauf eingefaerbt. Eine schraege Grenze kann dann nur an Ring- UND Spaltenkanten
+    # springen und liest zwangslaeufig als Treppe — gemessen 4 cm Setzstufe je Spalte.
+    # Mehr Aufloesung macht die Treppe nur feiner, nie weg. Jetzt laufen die Ringe
+    # ENTLANG der Grenzen: je Spalte werden zehn Ebenen bestimmt, zwischen denen
+    # unterteilt wird. Die Grenze ist damit exakt, und das Netz wird dabei kleiner
+    # statt groesser (rund 2000 statt 7900 Vierecken je Kopf).
+    _zband = [abs(_punkt(_j, 1.40)[1]) for _j in range(_P)]   # Bezugsbreite Bauchbinde
+    _zsch = [abs(_punkt(_j, 2.40)[1]) for _j in range(_P)]    # Bezugsbreite Scheibe
+    _zleu = [abs(_punkt(_j, 1.88)[1]) for _j in range(_P)]    # Bezugsbreite Leuchtenfeld
+
+    def _ebenen(j):
+        """Zehn Hoehen je Spalte, streng steigend. Die Bindenmitte trifft in der Flanke
+        (z 1.20) genau den Zierstreifen des Wagenkastens auf 1.64, bleibt ueber die
+        Stirn aber nahezu waagerecht auf 1.10 — der Schwung entsteht also aus der Netzform selbst."""
+        _yc = 1.10 + 0.54 * (_zband[j] / 1.20) ** 5
+        _ys = 2.12 + 0.18 * (_zsch[j] / 1.10) ** 3
+        _b = _yc + 0.09
+        # Oben an der Flanke rueckt die Binde bis dicht unter 1.74; ohne diese
+        # Mindestabstaende entstuenden dort millimeterduenne Ringe.
+        return (0.60, 0.78, _yc - 0.09, _b,
+                max(1.74, _b + 0.06), max(2.02, _b + 0.34), _ys, 2.70, 2.88, 3.02)
+
+    _UNTER = (3, 7, 4, 6, 4, 3, 6, 3, 3)   # Unterringe je Ebenenintervall
+    _SLOT = (2, 0, 1, 0, 3, 0, 3, 0, 4)    # Grundmaterial je Intervall
+
+    _ebs = [_ebenen(_j) for _j in range(_P)]
     _verts, _ringe = [], []
-    for _y in _hoehen:
-        _hw, _spitze = _profil(_y)
-        _kb = _kastenbreite(_y)
-        # Der Bug ist im Grundriss eine ELLIPSE, nicht ein Halbkreis: die x-Halbachse
-        # betraegt nur 62 Prozent der Halbbreite. Damit wird die Stirn breit und stumpf
-        # wie beim Vorbild, statt spitz zuzulaufen.
-        _a = 0.62 * _hw
-        _xc = _spitze - _a
-        # Flanke: laeuft mit Smoothstep von der Wagenkastenbreite auf die Bugbreite zu.
-        # Ohne diese Verjuengung stand der Wagenkasten (Halbbreite 1.20) seitlich vor
-        # der Schale und erzeugte genau die Schulterkante, die den Kopf als
-        # aufgesetzte Beule lesen liess.
-        _flanke = []
-        for _u in range(1, _TAPER):
-            _f = _u / _TAPER
-            _flanke.append((_RUECK + (_xc - _RUECK) * _f,
-                            _kb + (_hw - _kb) * _f * _f * (3 - 2 * _f)))
-        _punkte = [(_RUECK, _kb)] + _flanke
-        for _k in range(_BOGEN + 1):
-            _th = _m.pi / 2 - _m.pi * _k / _BOGEN
-            _punkte.append((_xc + _a * _m.cos(_th), _hw * _m.sin(_th)))
-        _punkte += [(_px, -_pz) for _px, _pz in reversed(_flanke)]
-        _punkte.append((_RUECK, -_kb))
-        _ring = []
-        for _px, _pz in _punkte:
-            _ring.append(len(_verts))
-            # three.js (x, y hoch, z quer) -> Blender (x, -z, y)
-            _verts.append((0.5 + r * (_px - 0.5), -_pz, _y))
-        _ringe.append((_ring, _punkte))
+    for _k in range(len(_UNTER)):
+        for _t in range(_UNTER[_k]):
+            _f = _t / _UNTER[_k]
+            _ring = []
+            for _j in range(_P):
+                _y = _ebs[_j][_k] + (_ebs[_j][_k + 1] - _ebs[_j][_k]) * _f
+                _px, _pz = _punkt(_j, _y)
+                _ring.append(len(_verts))
+                # three.js (x, y hoch, z quer) -> Blender (x, -z, y)
+                _verts.append((0.5 + r * (_px - 0.5), -_pz, _y))
+            _ringe.append(_ring)
+    _ring = []
+    for _j in range(_P):
+        _px, _pz = _punkt(_j, _ebs[_j][-1])
+        _ring.append(len(_verts))
+        _verts.append((0.5 + r * (_px - 0.5), -_pz, _ebs[_j][-1]))
+    _ringe.append(_ring)
 
     _faces, _mats, _weich = [], [], []
-    _proRing = len(_ringe[0][0])
-    for _i in range(len(_ringe) - 1):
-        _ymit = (_hoehen[_i] + _hoehen[_i + 1]) / 2
-        _pa, _pb = _ringe[_i][1], _ringe[_i + 1][1]
-        for _j in range(_proRing):
-            _j2 = (_j + 1) % _proRing
-            _f = [_ringe[_i][0][_j], _ringe[_i][0][_j2],
-                  _ringe[_i + 1][0][_j2], _ringe[_i + 1][0][_j]]
-            _zm = (abs(_pa[_j][1]) + abs(_pa[_j2][1])
-                   + abs(_pb[_j][1]) + abs(_pb[_j2][1])) / 4
-            # Materialzonen auf der Flaeche statt aufgesetzter Bauteile:
-            if _ymit < 0.78:
-                _slot = 2                                    # dunkle Bugunterseite
-            elif abs(_ymit - (1.10 + 0.54 * (_zm / 1.20) ** 2)) < 0.09:
-                # Die rote Binde SCHWINGT: in der Flanke (zm 1.20) liegt ihre Mitte auf
-                # 1.64 und trifft damit genau den Zierstreifen des Wagenkastens, zur
-                # Bugmitte hin faellt sie auf 1.10 ab. Vorher war sie ein waagerechtes
-                # Band und vier gedrehte Kaesten mussten den Schwung nachbilden — die
-                # hingen an der schlanker gewordenen Flanke in der Luft.
-                _slot = 1
-            elif (2.12 + 0.18 * (_zm / 1.10) ** 3 <= _ymit < 2.70
-                    and _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1):
-                _slot = 3                                    # Frontscheibe, um die Ecke
-            elif 1.74 <= _ymit < 2.02 and 0.44 <= _zm <= 0.94                     and _TAPER <= _j <= _TAPER + _BOGEN:
-                _slot = 3                                    # Leuchtenfeld
-            elif _ymit >= 2.88:
-                _slot = 4                                    # Dach
-            else:
-                _slot = 0
-            _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
-            _mats.append(_slot)
-            # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart lassen,
-            # sonst schmiert die weiche Schattierung ueber die Kante.
-            _weich.append(_j != _proRing - 1)
+    _i = 0
+    for _k in range(len(_UNTER)):
+        for _t in range(_UNTER[_k]):
+            for _j in range(_P):
+                _j2 = (_j + 1) % _P
+                _f = [_ringe[_i][_j], _ringe[_i][_j2],
+                      _ringe[_i + 1][_j2], _ringe[_i + 1][_j]]
+                _slot = _SLOT[_k]
+                if _k == 4:
+                    # Leuchtenfeld nur auf dem Bug und nur im mittleren Querbereich
+                    _zl = (_zleu[_j] + _zleu[_j2]) / 2
+                    _slot = 3 if (0.44 <= _zl <= 0.94
+                                  and _TAPER <= _j <= _TAPER + _BOGEN) else 0
+                elif _k == 6:
+                    # Scheibe laeuft zwei Flankenspalten weit um die Ecke
+                    _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
+                _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
+                _mats.append(_slot)
+                # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart
+                # lassen, sonst schmiert die weiche Schattierung ueber die Kante.
+                _weich.append(_j != _P - 1)
+            _i += 1
 
     # Deckel oben und unten: die geloftete Schale ist ein offener Schlauch. Der obere
     # Deckel IST die Dachflaeche des Fuehrerhauses, der untere schliesst den Bug.
-    for _ring, _oben in ((_ringe[-1][0], True), (_ringe[0][0], False)):
+    for _ring, _oben in ((_ringe[-1], True), (_ringe[0], False)):
         _f = list(_ring) if _oben else list(reversed(_ring))
         _faces.append(_f[::-1] if r < 0 else _f)
         _mats.append(4 if _oben else 2)
@@ -1013,12 +1033,12 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist jetzt Teil der Schale (Materialzone y 1.50..1.74), nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.70 liegt die Haut auf x 9.349 (y 1.92) bzw. 9.432 (y 1.80),
-    # bei |z| 0.88 auf 9.266 (y 1.86).
+    # bei |z| 0.70 liegt die Haut auf x 9.303 (y 1.97) bzw. 9.439 (y 1.79),
+    # bei |z| 0.84 auf 9.286 (y 1.88).
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 8.859, 1.92, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 8.942, 1.80, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.06, 0.5 + r * 8.776, 1.86, s * 0.88, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.813, 1.97, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.949, 1.79, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.796, 1.88, s * 0.84, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
