@@ -832,7 +832,6 @@ def fuehrerstand(kennung, r):
     # Jede Schicht endet in zwei Viertelzylindern, deren Aussentangente die Schichtbreite
     # und deren Stirntangente die Schichtspitze trifft — die Flanke laeuft ohne Kante in
     # den Bug, im Grundriss entsteht eine Spitze.
-    kasten(f"Triebzug_Kopf_Korpus_{kennung}", 1.3, 2.4, 1.04, 0.5 + r * 7.05, 1.47, 0, m_zugweiss, fase=0.06)
     # Bugschale als EIN glattes Mesh statt gestapelter Schichten.
     # Die Schichtbauweise erzeugte an jeder Ringgrenze eine echte Kante — aus zwei
     # Metern lesen die als konzentrische Stufen auf der Nase, und mehr Schichten
@@ -842,77 +841,136 @@ def fuehrerstand(kennung, r):
     # Faces und folgt damit der Woelbung, statt als Kasten aufgesetzt zu sein.
     import math as _m
 
+    # Die Schale umfasst jetzt den GANZEN Kopf: vom Kinn (y 0.78) bis zur Dachkante
+    # (y 3.02). Vorher endete sie bei y 2.02 und darueber sass ein Quader mit flachem
+    # Dach, davor eine aufgesetzte Maske — im Profil las das als Kiste mit Beule.
+    # Beim Vorbild gibt es genau EINE Flaeche: das Dach faellt nach vorn ab, geht ohne
+    # Absatz in die Scheibe und weiter in den Bug ueber. Scheibe, Leuchtenfeld und rote
+    # Binde sind deshalb Materialzonen AUF dieser Flaeche, keine eigenen Koerper.
+    #
+    # ACHTUNG: _TAB und _profil() rechnen in WELT-x. kasten()/zylinder() erwarten
+    # dagegen 0.5 + u. Wer ein Teil auf die Haut setzt, braucht u = X_haut - 0.5.
+    # Stuetzstellen (Hoehe, vordere Halbbreite, vorderster Punkt). Die Hoehen sind
+    # zugleich Ringgrenzen, damit die Farbwechsel auf Kanten fallen.
+    _TAB = ((0.70, 0.62, 9.18),
+            (0.78, 0.80, 9.46),
+            (0.95, 1.00, 9.84),
+            (1.16, 1.07, 9.96),
+            (1.34, 1.10, 9.99),    # Scheitel auf Hoehe der roten Binde
+            (1.60, 1.115, 9.96),
+            (1.90, 1.13, 9.87),
+            (2.12, 1.14, 9.74),    # Scheibenunterkante
+            (2.45, 1.145, 9.30),
+            (2.70, 1.12, 8.80),    # Scheibenoberkante
+            (2.88, 1.05, 8.30),    # Dachanlauf
+            (3.02, 0.90, 7.85))
+    _SEG = (3, 4, 4, 3, 4, 5, 4, 12, 8, 4, 4)   # Unterringe je Intervall
+
     def _profil(y):
-        """Halbbreite und vorderster Punkt auf Hoehe y.
+        """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
+        if y <= _TAB[0][0]:
+            return _TAB[0][1], _TAB[0][2]
+        for _k in range(len(_TAB) - 1):
+            _y0, _w0, _x0 = _TAB[_k]
+            _y1, _w1, _x1 = _TAB[_k + 1]
+            if y <= _y1:
+                _t = (y - _y0) / (_y1 - _y0)
+                return _w0 + (_w1 - _w0) * _t, _x0 + (_x1 - _x0) * _t
+        return _TAB[-1][1], _TAB[-1][2]
 
-        ICE-Profil: vom Dach schraeg nach vorn-unten durchlaufend, unten eine runde
-        Spitze. Der vorderste Punkt liegt deshalb TIEF (y 1.02), nicht auf halber
-        Hoehe. Vorher lag er in der Mitte und die Flaeche wich nach oben UND unten
-        zurueck — das ergibt eine Geschossform, keine ICE-Nase. Oberhalb weicht sie
-        jetzt ueber einen vollen Meter um 0.85 zurueck (rund 40 Grad Schraege),
-        unterhalb rundet sie auf 24 cm schnell aus.
-        """
-        if y >= 1.02:
-            t = (y - 1.02) / 1.0
-            return 1.04 + 0.11 * t, 9.95 - 0.85 * t ** 1.6
-        s = (1.02 - y) / 0.24
-        return 1.04 - 0.22 * s, 9.95 - 0.35 * s ** 1.7
+    def _kastenbreite(y):
+        """Halbbreite an der Ringhinterkante — folgt exakt dem Wagenkasten (1.20) und
+        oberhalb 2.70 der Dachkrone w(t) = 1.18 - 0.12*t**1.6. Waere sie dort konstant
+        1.20 geblieben, stuende die Schale 7 cm breiter als das Dach dahinter."""
+        if y <= 2.55:
+            return 1.20
+        if y <= 2.70:
+            return 1.20 - 0.02 * (y - 2.55) / 0.15
+        return 1.18 - 0.12 * ((y - 2.70) / 0.32) ** 1.6
 
-    # Hoehenringe mit exakten Grenzen bei 0.95 / 1.16 / 1.34 / 1.50, damit die
-    # Farbwechsel auf Ringkanten fallen und die rote Linie scharf begrenzt ist.
     _hoehen = []
-    for _a, _b, _n in ((0.78, 1.02, 5), (1.02, 1.16, 2), (1.16, 1.34, 3),
-                       (1.34, 2.02, 16)):
-        for _k in range(_n):
-            _hoehen.append(_a + (_b - _a) * _k / _n)
-    _hoehen.append(2.02)
+    for _k in range(len(_TAB) - 1):
+        for _j in range(_SEG[_k]):
+            _hoehen.append(_TAB[_k][0] + (_TAB[_k + 1][0] - _TAB[_k][0]) * _j / _SEG[_k])
+    _hoehen.append(_TAB[-1][0])
 
-    _BOGEN = 22
-    _RUECK = 7.9
+    _BOGEN = 26
+    _TAPER = 6
+    _RUECK = 7.30
     _verts, _ringe = [], []
     for _y in _hoehen:
         _hw, _spitze = _profil(_y)
-        _xc = _spitze - _hw
-        _ring = []
-        _punkte = [(_RUECK, _hw)]
+        _kb = _kastenbreite(_y)
+        # Der Bug ist im Grundriss eine ELLIPSE, nicht ein Halbkreis: die x-Halbachse
+        # betraegt nur 55 Prozent der Halbbreite. Damit wird die Stirn breit und stumpf
+        # wie beim Vorbild, statt spitz zuzulaufen.
+        _a = 0.55 * _hw
+        _xc = _spitze - _a
+        # Flanke: laeuft mit Smoothstep von der Wagenkastenbreite auf die Bugbreite zu.
+        # Ohne diese Verjuengung stand der Wagenkasten (Halbbreite 1.20) seitlich vor
+        # der Schale und erzeugte genau die Schulterkante, die den Kopf als
+        # aufgesetzte Beule lesen liess.
+        _flanke = []
+        for _u in range(1, _TAPER):
+            _f = _u / _TAPER
+            _flanke.append((_RUECK + (_xc - _RUECK) * _f,
+                            _kb + (_hw - _kb) * _f * _f * (3 - 2 * _f)))
+        _punkte = [(_RUECK, _kb)] + _flanke
         for _k in range(_BOGEN + 1):
             _th = _m.pi / 2 - _m.pi * _k / _BOGEN
-            _punkte.append((_xc + _hw * _m.cos(_th), _hw * _m.sin(_th)))
-        _punkte.append((_RUECK, -_hw))
+            _punkte.append((_xc + _a * _m.cos(_th), _hw * _m.sin(_th)))
+        _punkte += [(_px, -_pz) for _px, _pz in reversed(_flanke)]
+        _punkte.append((_RUECK, -_kb))
+        _ring = []
         for _px, _pz in _punkte:
             _ring.append(len(_verts))
             # three.js (x, y hoch, z quer) -> Blender (x, -z, y)
             _verts.append((0.5 + r * (_px - 0.5), -_pz, _y))
-        _ringe.append(_ring)
+        _ringe.append((_ring, _punkte))
 
     _faces, _mats, _weich = [], [], []
-    _proRing = len(_ringe[0])
+    _proRing = len(_ringe[0][0])
     for _i in range(len(_ringe) - 1):
         _ymit = (_hoehen[_i] + _hoehen[_i + 1]) / 2
-        _slot = 2 if _ymit < 0.9 else (1 if 1.16 <= _ymit < 1.34 else 0)
+        _pa, _pb = _ringe[_i][1], _ringe[_i + 1][1]
         for _j in range(_proRing):
             _j2 = (_j + 1) % _proRing
-            _f = [_ringe[_i][_j], _ringe[_i][_j2], _ringe[_i + 1][_j2], _ringe[_i + 1][_j]]
+            _f = [_ringe[_i][0][_j], _ringe[_i][0][_j2],
+                  _ringe[_i + 1][0][_j2], _ringe[_i + 1][0][_j]]
+            _zm = (abs(_pa[_j][1]) + abs(_pa[_j2][1])
+                   + abs(_pb[_j][1]) + abs(_pb[_j2][1])) / 4
+            # Materialzonen auf der Flaeche statt aufgesetzter Bauteile:
+            if _ymit < 0.95:
+                _slot = 2                                    # dunkle Bugunterseite
+            elif 1.16 <= _ymit < 1.34:
+                _slot = 1                                    # rote Bauchbinde
+            elif (2.12 + 0.18 * (_zm / 1.15) ** 3 <= _ymit < 2.70
+                    and _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1):
+                _slot = 3                                    # Frontscheibe, um die Ecke
+            elif 1.74 <= _ymit < 2.02 and 0.46 <= _zm <= 0.98                     and _TAPER <= _j <= _TAPER + _BOGEN:
+                _slot = 3                                    # Leuchtenfeld
+            elif _ymit >= 2.88:
+                _slot = 4                                    # Dach
+            else:
+                _slot = 0
             _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
             _mats.append(_slot)
             # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart lassen,
             # sonst schmiert die weiche Schattierung ueber die Kante.
             _weich.append(_j != _proRing - 1)
 
-    # Deckel oben und unten: die geloftete Schale ist ein offener Schlauch. Oben
-    # deckt die Maske nur bis x 8.70 ab, dahinter klaffte bis 9.10 ein Loch, durch
-    # das man von schraeg oben ins Innere sah — die alten Vollkoerper-Schichten
-    # hatten das mit ihrer Deckflaeche geschlossen. Deckel bleiben hart schattiert.
-    for _ring, _oben in ((_ringe[-1], True), (_ringe[0], False)):
+    # Deckel oben und unten: die geloftete Schale ist ein offener Schlauch. Der obere
+    # Deckel IST die Dachflaeche des Fuehrerhauses, der untere schliesst den Bug.
+    for _ring, _oben in ((_ringe[-1][0], True), (_ringe[0][0], False)):
         _f = list(_ring) if _oben else list(reversed(_ring))
         _faces.append(_f[::-1] if r < 0 else _f)
-        _mats.append(0 if _oben else 2)
+        _mats.append(4 if _oben else 2)
         _weich.append(False)
 
     _mesh = bpy.data.meshes.new(f"Triebzug_Bugschale_{kennung}")
     _mesh.from_pydata(_verts, [], _faces)
     _mesh.update()
-    for _mat in (m_zugweiss, m_zug, m_unterflur):
+    for _mat in (m_zugweiss, m_zug, m_unterflur, m_zugglas, m_zugdach):
         _mesh.materials.append(_mat)
     for _p, _slot, _w in zip(_mesh.polygons, _mats, _weich):
         _p.material_index = _slot
@@ -921,68 +979,45 @@ def fuehrerstand(kennung, r):
     _schale = bpy.data.objects.new(f"Triebzug_Bugschale_{kennung}", _mesh)
     bpy.context.collection.objects.link(_schale)
     bpy.context.view_layer.objects.active = _schale
-    # Kabine sitzt auf dem Korpus; ihre Stirn (8.245) liegt auf der ganzen Hoehe
-    # y 1.99..2.70 zwischen Masken-Rueckflaeche (max 8.233) und Masken-Aussenflaeche
-    # (min 8.260) — nachgerechnet, damit weder eine Nut klafft noch die Kabine durchstoesst.
-    kasten(f"Triebzug_Kopf_Kabine_{kennung}", 1.3, 2.4, 0.71, 0.5 + r * 7.095, 2.345, 0, m_zugweiss, fase=0.05)
-    kasten(f"Triebzug_Kopf_Dach_{kennung}", 1.1, 2.3, 0.3, 0.5 + r * 7.35, 2.85, 0, m_zugdach, fase=0.06)
+    # Kabine und Dachklotz sind entfallen: der Wagenkasten reicht ohnehin bis x 7.5 und
+    # die Dachkrone bis 7.3, beide Kaesten lagen restlos darin. Die Schale beginnt bei
+    # 7.30 — 20 cm INNERHALB der Kastenstirn, damit ihre flache Rueckwand verdeckt ist.
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Kopf_Dachrand_{kennung}_{i}", 1.1, 0.09, 0.07, 0.5 + r * 7.35, 3.02, s * 1.11, m_stahlhell, fase=0.01)
-    kasten(f"Triebzug_Kopf_Makrofon_{kennung}", 0.3, 0.46, 0.1, 0.5 + r * 7.7, 3.05, 0, m_stahlhell, fase=0.02)
+        kasten(f"Triebzug_Kopf_Dachrand_{kennung}_{i}", 0.4, 0.09, 0.07, 0.5 + r * 7.0, 3.02, s * 1.11, m_stahlhell, fase=0.01)
+    kasten(f"Triebzug_Kopf_Makrofon_{kennung}", 0.3, 0.46, 0.1, 0.5 + r * 6.98, 3.07, 0, m_stahlhell, fase=0.02)
 
-    # ---- Maske: eine geneigte, fast schwarze Platte ueber die volle Kopfbreite ----
-    # Sie ist m_zugglas und NICHT m_zugdach: mit dem Dachmaterial waere der Kontrast zum
-    # Kopfdach exakt null gewesen und beide zu einem 1.04 m hohen dunklen Block
-    # verschmolzen. Jetzt trennt die Dachbraue zwei unterschiedlich helle Zonen.
-    kasten(f"Triebzug_Frontmaske_{kennung}", 0.34, 2.28, 1.02, 0.5 + r * 7.759, 2.28, 0, m_zugglas,
-           fase=0.14, drehung=(0, -r * 0.46, 0))
-    # Heller Rahmen — ohne ihn verschwindet schwarzes Glas in schwarzer Maske
-    kasten(f"Triebzug_Scheibenrahmen_{kennung}", 0.06, 2.14, 0.86, 0.5 + r * 7.938, 2.369, 0, m_stahlhell,
-           fase=0.1, drehung=(0, -r * 0.46, 0))
-    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.08, 2.02, 0.74, 0.5 + r * 7.978, 2.389, 0, m_zugglas,
-           fase=0.09, drehung=(0, -r * 0.46, 0))
-    # Mittelpfosten teilt die Scheibe in zwei Haelften — beim Vorbild das auffaelligste
-    # Merkmal der Frontverglasung.
-    kasten(f"Triebzug_Scheibenpfosten_{kennung}", 0.05, 0.09, 0.74, 0.5 + r * 8.008, 2.389, 0, m_zugweiss,
-           fase=0, drehung=(0, -r * 0.46, 0))
-    # Eckverglasung: beim Vorbild laeuft das dunkle Glas um die Kabinenecke in die
-    # Flanke. Die Maske endet bei |z| 1.14, das Seitenband beginnt bei 1.21 — dazwischen
-    # stand Weiss. Diese Panele schliessen die Luecke.
-    for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Eckglas_{kennung}_{i}", 0.26, 0.12, 0.6, 0.5 + r * 8.1, 2.15,
-               s * 1.185, m_zugglas, fase=0.05)
-    # Zugzielanzeige auf der Maskenflaeche (gegreekt — kein Text)
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.2, 0.1, 0.5 + r * 7.795, 2.63, 0, m_dunkel,
-           fase=0, drehung=(0, -r * 0.46, 0))
-    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.44, 0.045, 0.5 + r * 7.825, 2.63, -0.16 * r, m_markierung,
-           fase=0, drehung=(0, -r * 0.46, 0))
-    # x-Rolle bleibt konstant: unter der Spiegelkonvention der Szene dreht sie am Westende
-    # nicht mit, ein Faktor r waere hier ein Bruch ohne Gewinn.
-    kasten(f"Triebzug_Wischer_{kennung}", 0.025, 0.07, 0.48, 0.5 + r * 8.02, 2.4, -0.28 * r, m_dunkel,
-           fase=0, drehung=(0.5, -r * 0.46, 0))
-    zylinder(f"Triebzug_Wischerlager_{kennung}", 0.045, 0.06, 0.5 + r * 8.06, 2.19, -0.36 * r, m_dunkel, achse="x")
-    # Zweiter Wischer auf der anderen Scheibenhaelfte — das Vorbild hat zwei
-    kasten(f"Triebzug_Wischer2_{kennung}", 0.025, 0.07, 0.48, 0.5 + r * 8.02, 2.4, 0.4 * r, m_dunkel,
-           fase=0, drehung=(0.5, -r * 0.46, 0))
-    zylinder(f"Triebzug_Wischerlager2_{kennung}", 0.045, 0.06, 0.5 + r * 8.06, 2.19, 0.48 * r, m_dunkel, achse="x")
+    # ---- Details AUF der Schale ----
+    # Frontmaske, Scheibenrahmen, Frontscheibe, Mittelpfosten und Eckglas sind
+    # ersatzlos entfallen: die Scheibe ist jetzt die dunkle Materialzone der Schale
+    # (y 2.25..2.62) und laeuft dort um die Ecke, statt als geneigter Kasten vor
+    # einem Quader zu stehen. Aufgesetzte Kaesten wuerden in der Schale verschwinden
+    # (Vollkoerperregel) oder als Kante davorstehen.
+    # Zugzielanzeige liegt knapp ueber der Scheibenoberkante (Flaeche dort x 8.54).
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 8.21, 2.74, 0, m_dunkel,
+           fase=0, drehung=(0, -r * 1.24, 0))
+    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 8.235, 2.74, -0.14 * r, m_markierung,
+           fase=0, drehung=(0, -r * 1.05, 0))
+    # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
+    # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
+    # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
+    for i, wz in enumerate((-0.32, 0.44)):
+        kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * 8.96, 2.32, wz * r, m_dunkel,
+               fase=0, drehung=(0, -r * 1.05, 0))
+        zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * 8.99, 2.28, wz * r, m_dunkel, achse="x")
 
-    # ---- Leuchten sitzen auf der Bugschulter, nicht mehr auf einer senkrechten Stirn ----
-    # Die Bugschicht 1 (Spitze 9.25, Eckachse 8.95, r 0.30) traegt sie: bei |z| 0.70 liegt
-    # ihre Oberflaeche auf x 9.236, die Felder stehen dort buendig.
+    # ---- Leuchten im dunklen Feld der Schale ----
+    # Die grossen Gehaeusekaesten sind entfallen: auf einer gewoelbten Flaeche stand ein
+    # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
+    # Das dunkle Feld ist jetzt Teil der Schale (Materialzone y 1.50..1.74), nur die
+    # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
+    # bei |z| 0.70 liegt die Haut auf x 9.725 (y 1.92) bzw. 9.766 (y 1.80).
     for i, s in enumerate((-1, 1)):
-        # Grosse dunkle Scheinwerfergehaeuse an den Aussenkanten: beim Vorbild bilden
-        # sie zusammen mit der Scheibe EIN dunkles Gesicht. Zwei kleine graue Kaestchen
-        # lasen dagegen als Anbauteile. Die Nasenoberflaeche liegt bei |z| 0.62 und
-        # y 1.62 auf x 9.70 (Halbzylinder r 1.050 um 8.842) — davor sitzt das Gehaeuse.
-        # Nasenflaeche bei |z| 0.70 und y 1.62 liegt jetzt auf x 9.33 statt 9.70 —
-        # die Gehaeuse wandern mit zurueck, sonst schweben sie davor.
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.66, 0.3, 0.5 + r * 8.7, 1.62, s * 0.7, m_zugglas, fase=0.03)
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 8.86, 1.71, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 8.86, 1.53, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 8.8, 1.62, s * 0.88, m_zug, achse="x")
-        # Lueftungsgitter auf der Bugflanke; |z| 1.075 steht knapp vor der dortigen
-        # Woelbungsflaeche (1.0925), sonst verschwindet es darin.
-        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 7.55, 1.79, s * 1.115, m_dunkel, fase=0)
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 9.225, 1.92, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 9.266, 1.80, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.06, 0.5 + r * 9.150, 1.86, s * 0.88, m_zug, achse="x")
+        # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
+        # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
+        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
 
     # ---- Rote Bauchlinie ----
     # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
@@ -1006,17 +1041,17 @@ def fuehrerstand(kennung, r):
                 (0.35, 7.260, 1.440, 0.3588, 0.20),
                 (0.32, 7.560, 1.315, 0.4345, 0.21))):
             kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}_{n}", _l, 0.06, _b,
-                   0.5 + r * _u, _y, s * 1.23, m_zug, fase=0, drehung=(0, r * _w, 0))
+                   0.5 + r * _u, _y, s * 1.235, m_zug, fase=0, drehung=(0, r * _w, 0))
 
     # ---- Kabinenflanke: dunkles Band als Fortsetzung des Fensterbands ----
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Kopf_Seitenband_{kennung}_{i}", 1.66, 0.05, 0.58, 0.5 + r * 6.95, 2.15, s * 1.21, m_zugglas, fase=0)
+        kasten(f"Triebzug_Kopf_Seitenband_{kennung}_{i}", 1.08, 0.05, 0.58, 0.5 + r * 6.66, 2.15, s * 1.21, m_zugglas, fase=0)
         # Pfosten stehen 0.035 VOR dem Band (wie am Wagenkasten) — deckungsgleiche
         # Aussenflaechen haetten geflimmert
         for j, pu in enumerate((6.2, 7.02)):
             kasten(f"Triebzug_Kopf_Bandpfosten_{kennung}_{i}_{j}", 0.13, 0.06, 0.58, 0.5 + r * pu, 2.15, s * 1.24, m_zugweiss, fase=0)
-        kasten(f"Triebzug_Kopf_Dachfascie_{kennung}_{i}", 0.72, 0.12, 0.1, 0.5 + r * 7.36, 2.65, s * 1.22, m_zugdach, fase=0.03)
-        kasten(f"Triebzug_Kopf_Regenrinne_{kennung}_{i}", 0.72, 0.05, 0.03, 0.5 + r * 7.36, 2.585, s * 1.23, m_dunkel, fase=0)
+        kasten(f"Triebzug_Kopf_Dachfascie_{kennung}_{i}", 0.4, 0.12, 0.1, 0.5 + r * 7.0, 2.65, s * 1.22, m_zugdach, fase=0.03)
+        kasten(f"Triebzug_Kopf_Regenrinne_{kennung}_{i}", 0.4, 0.05, 0.03, 0.5 + r * 7.0, 2.585, s * 1.23, m_dunkel, fase=0)
         # Fuehrerraumtuer statt blosser Fuge
         kasten(f"Triebzug_Kopf_Tuer_{kennung}_{i}", 0.72, 0.05, 1.5, 0.5 + r * 6.75, 1.79, s * 1.215, m_zugweiss, fase=0)
         kasten(f"Triebzug_Kopf_Tuerfuge_{kennung}_{i}", 0.74, 0.035, 0.02, 0.5 + r * 6.75, 1.05, s * 1.2175, m_dunkel, fase=0)
@@ -1027,22 +1062,22 @@ def fuehrerstand(kennung, r):
     # ---- Unterbau, Schuerze, Kupplung ----
     # Schuerze und Frontanbauten sind mit der Nase nach vorn gewandert (+0.35), damit
     # unter dem 0.85 m laengeren Bug nicht ins Leere gegriffen wird.
-    kasten(f"Triebzug_Frontschuerze_{kennung}", 1.55, 2.1, 0.63, 0.5 + r * 8.175, 0.635, 0, m_unterflur, fase=0.05)
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 1.55, 1.9, 0.63, 0.5 + r * 8.175, 0.635, 0, m_unterflur, fase=0.05)
     kasten(f"Triebzug_Kopftraeger_{kennung}", 0.42, 1.3, 0.3, 0.5 + r * 7.18, 0.8, 0, m_unterflur)
     for i, bz in enumerate((-0.62, 0.62)):
         kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 9.005, 0.38, bz, m_unterflur, fase=0)
     for i, gz in enumerate((-0.82, 0.82)):
         kasten(f"Triebzug_Rangiertritt_{kennung}_{i}", 0.34, 0.24, 0.06, 0.5 + r * 8.7, 0.295, gz, m_riffel, fase=0)
-        zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.5, 0.5 + r * 8.995, 0.685, gz, m_stahlhell)
+        zylinder(f"Triebzug_Rangiergriff_{kennung}_{i}", 0.025, 0.42, 0.5 + r * 8.995, 0.395, gz, m_stahlhell)
     for i, cz in enumerate((-0.6, 0.6)):
-        kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.44, 0.5 + r * 8.995, 0.6, cz, m_dunkel, fase=0)
-        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 9.015, 0.79, cz * 0.77, m_stahlhell, fase=0)
+        kasten(f"Triebzug_Bugklappe_{kennung}_{i}", 0.05, 0.36, 0.36, 0.5 + r * 8.995, 0.6, cz, m_dunkel, fase=0)
+        kasten(f"Triebzug_Bugscharnier_{kennung}_{i}", 0.05, 0.12, 0.07, 0.5 + r * 9.015, 0.74, cz * 0.77, m_stahlhell, fase=0)
     kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 9.08, 0.5, 0, m_dunkel, fase=0)
     zylinder(f"Triebzug_Kuppelschaft_{kennung}", 0.075, 0.34, 0.5 + r * 9.3, 0.5, 0, m_stahl, achse="x")
     kasten(f"Triebzug_Kuppelkopf_{kennung}", 0.13, 0.46, 0.36, 0.5 + r * 9.435, 0.5, 0, m_stahl, fase=0.02)
     zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 9.51, 0.56, -0.11 * r, m_stahlhell, achse="x")
     zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 9.5, 0.56, 0.11 * r, m_dunkel, achse="x")
-    kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 9.43, 0.76, 0, m_stahlhell, fase=0.02)
+    kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 9.43, 0.70, 0, m_stahlhell, fase=0.02)
 
 fuehrerstand("ost", 1)
 fuehrerstand("west", -1)
