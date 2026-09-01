@@ -770,24 +770,34 @@ def fuehrerstand(kennung, r):
     # und deren Stirntangente die Schichtspitze trifft — die Flanke laeuft ohne Kante in
     # den Bug, im Grundriss entsteht eine Spitze.
     kasten(f"Triebzug_Kopf_Korpus_{kennung}", 1.3, 2.4, 1.04, 0.5 + r * 7.05, 1.47, 0, m_zugweiss, fase=0.06)
-    # Die Nase laeuft in Schichten aus, deren Vorderkanten nach oben immer staerker
-    # zuruecktreten (0.17 / 0.26 / 0.37) — flach an der Spitze, steiler nach oben, so
-    # wie sich eine Bugwoelbung verhaelt. Darunter zieht sich das Kinn zurueck.
-    # WICHTIG: die rote Bauchlinie ist EINE Schicht mit EINER Vorderkante. Ein Versuch
-    # mit zwei roten Schichten unterschiedlicher Tiefe hat die Binde in zwei Stufen
-    # zerlegt — der Bug las dann als Tortenetage statt als Woelbung.
+    # Bug als stufenlos gekruemmte Woelbung. Die Vorderkanten folgen jetzt einer Kurve
+    # statt fester Stufen: oberhalb der Bauchlinie x(t) = 9.95 - 0.85*t**1.8 (t = 0 an
+    # der Linie, 1 am Maskenansatz), unterhalb x(s) = 9.95 - 0.65*s**1.6. Bei 6.5 cm
+    # duennen Schichten liegen die Spruenge zwischen 1 und 6 cm und verschwinden hinter
+    # den Fasen. Die Schichten haben AUSDRUECKLICH keine Fase: mit 4 cm Fase warf jede
+    # Schicht eine Schattenfuge und der Bug las als Kuehlrippenpaket statt als Woelbung.
+    # WICHTIG: die rote Bauchlinie bleibt EINE Schicht mit EINER Vorderkante und steht
+    # 2 cm proud als Scheuerleiste. Ueber mehrere Schichten gelegt zerfaellt sie in
+    # Stufen und der ganze Bug liest wieder als Tortenetage.
     # (halbbreite, Eckradius, Spitze x, y-Mitte, dy, Material)
-    for i, (hw, er, spitze, yc, dy, mat) in enumerate((
-            (0.80, 0.34, 9.55, 0.865, 0.17, m_unterflur),  # Kinn, zieht sich zurueck
-            (0.98, 0.36, 9.95, 1.225, 0.55, m_zug),        # Bauchlinie, ganz vorn, ungestuft
-            (1.03, 0.34, 9.78, 1.600, 0.20, m_zugweiss),
-            (1.07, 0.32, 9.52, 1.780, 0.16, m_zugweiss),
-            (1.11, 0.29, 9.15, 1.940, 0.16, m_zugweiss))):
+    schichten = []
+    for j in range(8):  # oberhalb der Bauchlinie, Woelbung bis zum Maskenansatz
+        yc = 1.5325 + j * 0.065
+        t = (yc - 1.5) / 0.52
+        schichten.append((1.02 + 0.13 * t, 0.34 - 0.06 * t,
+                          9.95 - 0.85 * t ** 1.8, yc, 0.065, m_zugweiss))
+    schichten.append((1.04, 0.36, 9.95, 1.225, 0.55, m_zug))
+    for k in range(3):  # Kinn, zieht sich unter der Bauchlinie zurueck
+        yc = 0.9215 - k * 0.057
+        s = (0.95 - yc) / 0.171
+        schichten.append((1.02 - 0.2 * s, 0.34 - 0.04 * s,
+                          9.95 - 0.65 * s ** 1.6, yc, 0.057, m_unterflur))
+    for i, (hw, er, spitze, yc, dy, mat) in enumerate(schichten):
         ecke_x = spitze - er
         kasten(f"Triebzug_Bug_{kennung}_{i}", ecke_x - 7.9, 2 * hw, dy,
-               0.5 + r * ((7.9 + ecke_x) / 2 - 0.5), yc, 0, mat, fase=0.04)
+               0.5 + r * ((7.9 + ecke_x) / 2 - 0.5), yc, 0, mat, fase=0)
         kasten(f"Triebzug_Bug_{kennung}_{i}_stirn", er, 2 * (hw - er), dy,
-               0.5 + r * (ecke_x + er / 2 - 0.5), yc, 0, mat, fase=0.03)
+               0.5 + r * (ecke_x + er / 2 - 0.5), yc, 0, mat, fase=0)
         for j, s in enumerate((-1, 1)):
             zylinder(f"Triebzug_Bug_{kennung}_{i}_ecke_{j}", er, dy,
                      0.5 + r * (ecke_x - 0.5), yc, s * (hw - er), mat, ecken=24)
@@ -826,13 +836,15 @@ def fuehrerstand(kennung, r):
     # Die Bugschicht 1 (Spitze 9.25, Eckachse 8.95, r 0.30) traegt sie: bei |z| 0.70 liegt
     # ihre Oberflaeche auf x 9.236, die Felder stehen dort buendig.
     for i, s in enumerate((-1, 1)):
-        # Sitzen auf Schicht 2 (Spitze 9.78, Eckachse 9.44, r 0.34): bei |z| 0.66 liegt
-        # deren Oberflaeche auf x 9.779, die Felder stehen dort buendig.
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.24, 0.34, 0.16, 0.5 + r * 9.2, 1.6, s * 0.66, m_zugdach, fase=0.04)
-        kasten(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.05, 0.22, 0.1, 0.5 + r * 9.29, 1.62, s * 0.66, m_fenster, fase=0.01)
-        kasten(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.05, 0.1, 0.06, 0.5 + r * 9.29, 1.52, s * 0.66, m_zug, fase=0.01)
-        # Lueftungsgitter auf der Bugflanke statt auf einer Stirnflaeche
-        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 8.35, 1.79, s * 1.05, m_dunkel, fase=0)
+        # Ein dunkles Gehaeuse mit beiden Lampen, quer ueber Bauchlinie und erste
+        # Woelbungsschichten. Front 9.93: die Schichten dahinter liegen auf 9.95 bis
+        # 9.911, das Gehaeuse steht damit hoechstens 2 cm proud.
+        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.22, 0.34, 0.23, 0.5 + r * 9.32, 1.515, s * 0.66, m_zugdach, fase=0.04)
+        kasten(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.04, 0.22, 0.09, 0.5 + r * 9.43, 1.575, s * 0.66, m_fenster, fase=0.01)
+        kasten(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.14, 0.07, 0.5 + r * 9.43, 1.44, s * 0.66, m_zug, fase=0.01)
+        # Lueftungsgitter auf der Bugflanke; |z| 1.075 steht knapp vor der dortigen
+        # Woelbungsflaeche (1.0925), sonst verschwindet es darin.
+        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 8.35, 1.79, s * 1.075, m_dunkel, fase=0)
 
     # ---- Rote Bauchlinie ----
     # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
