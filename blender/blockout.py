@@ -363,7 +363,9 @@ m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.3, metall=0.25)
 # Dach dunkel absetzen: es lief bisher auf m_stahlhell (0.85) gegen den Kasten (0.90) —
 # fuenf Prozent Unterschied, aus Beamerabstand also gar keine Dachkante. Der Zug hatte
 # damit keine Oberkante und franste oben in die helle Halle aus.
-m_zugdach = material("ZugDach", (0.26, 0.28, 0.31), rauheit=0.55, metall=0.30)
+# Hellgrau wie beim Vorbild: ein dunkles Dach laesst den Zug als Regionaltriebwagen
+# lesen. Die Oberkante entsteht jetzt ueber die Dachwoelbung, nicht ueber Farbe.
+m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.5, metall=0.30)
 m_relief = material("WandRelief", WAND_RELIEF)
 m_decke = material("Decke", DECKE)
 # Unterflur-Staffelung: Schiene blank gefahren, Schwelle stumpfes Beton-Grau,
@@ -669,8 +671,10 @@ zylinder("Triebzug_UF_Lufttank", 0.17, 1.2, -0.1, 0.48, 0.7, m_stahl, achse="x")
 for s in (-1, 1):
     kasten(f"Triebzug_UF_Gitter_{s}", 1.1, 0.03, 0.26, -1.8, 0.46, s * 0.79, m_stahlhell, fase=0)
 kasten("Triebzug_Korpus", 14, 2.4, 1.75, ZUG_X, 1.825, 0, m_zugweiss, fase=0.06)
-kasten("Triebzug_Streifen_Nord", 14, 0.06, 0.55, ZUG_X, 1.225, -1.23, m_zug, fase=0)
-kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.55, ZUG_X, 1.225, 1.23, m_zug, fase=0)
+# Schmale hohe Linie statt breiter Bauchbinde: beim Vorbild sind es rund 10 Prozent
+# der Flankenhoehe knapp unter den Fenstern, unterhalb davon ist alles weiss.
+kasten("Triebzug_Streifen_Nord", 14, 0.06, 0.18, ZUG_X, 1.64, -1.23, m_zug, fase=0)
+kasten("Triebzug_Streifen_Sued", 14, 0.06, 0.18, ZUG_X, 1.64, 1.23, m_zug, fase=0)
 # Schmales Fensterband oben (viel Weiss darunter), Tueren stechen mit weissem Rahmen heraus
 # Flanke: die 0.77 m hohe, 14 m lange weisse Leerflaeche unter dem Fensterband bekommt
 # Lueftungsgitter, Wartungsklappen, Tankstutzen und zwei umlaufende Sicken. Die
@@ -703,16 +707,16 @@ for seite, sz in (("nord", -1.24), ("sued", 1.24)):
         kasten(f"Triebzug_Regenrinne_{seite}_{i}", dl, 0.05, 0.03, dcx, 2.585, sz * 0.9919, m_dunkel, fase=0)
     # Senkrechte Stossleisten gliedern die weisse Zone zwischen Bauchbinde und Band
     for i, lx in enumerate((-5.3, -3.6, -1.53, 0.45, 2.5, 5.9)):
-        kasten(f"Triebzug_Stossleiste_{seite}_{i}", 0.045, 0.05, 0.33, lx, 1.665, sz * 0.9879, m_zugweiss, fase=0)
+        kasten(f"Triebzug_Stossleiste_{seite}_{i}", 0.045, 0.05, 0.3, lx, 1.3, sz * 0.9879, m_zugweiss, fase=0)
     # Gitter zurueckgesetzt, Lamellen davor — vorher steckten die Lamellen dahinter
     for i, gx in enumerate((-4.6, -0.9, 6.4)):
-        kasten(f"Triebzug_Gitter_{seite}_{i}", 0.72, 0.03, 0.32, gx, 1.68, sz * 0.9758, m_dunkel, fase=0)
+        kasten(f"Triebzug_Gitter_{seite}_{i}", 0.72, 0.03, 0.32, gx, 1.28, sz * 0.9758, m_dunkel, fase=0)
         for j in range(4):
-            kasten(f"Triebzug_Gitterlamelle_{seite}_{i}_{j}", 0.68, 0.05, 0.035, gx, 1.5525 + j * 0.085, sz, m_stahlhell, fase=0)
+            kasten(f"Triebzug_Gitterlamelle_{seite}_{i}_{j}", 0.68, 0.05, 0.035, gx, 1.1525 + j * 0.085, sz, m_stahlhell, fase=0)
     for i, kx in enumerate((1.9, 4.0)):
-        kasten(f"Triebzug_Klappe_{seite}_{i}", 0.8, 0.025, 0.32, kx, 1.68, sz, m_zugweiss, fase=0)
-        kasten(f"Triebzug_Klappenfuge_{seite}_{i}", 0.82, 0.02, 0.02, kx, 1.52, sz, m_dunkel, fase=0)
-    zylinder(f"Triebzug_Tankstutzen_{seite}", 0.09, 0.06, -1.9, 1.66, sz, m_stahl, achse="z")
+        kasten(f"Triebzug_Klappe_{seite}_{i}", 0.8, 0.025, 0.32, kx, 1.28, sz, m_zugweiss, fase=0)
+        kasten(f"Triebzug_Klappenfuge_{seite}_{i}", 0.82, 0.02, 0.02, kx, 1.12, sz, m_dunkel, fase=0)
+    zylinder(f"Triebzug_Tankstutzen_{seite}", 0.09, 0.06, -1.9, 1.3, sz, m_stahl, achse="z")
     for i, tx in enumerate((-2.55, 5.15)):
         kasten(f"Triebzug_Tuerrahmen_{seite}_{i}", 1.06, 0.07, 1.75, tx, 1.825, sz, m_zugweiss, fase=0)
         kasten(f"Triebzug_Tuer_{seite}_{i}", 0.95, 0.09, 1.65, tx, 1.8, sz, m_stahl, fase=0)
@@ -846,7 +850,12 @@ def fuehrerstand(kennung, r):
         yc = 1.52167 + j * 0.043333
         t = (yc - 1.5) / 0.52
         schichten.append((1.02 + 0.13 * t, 9.95 - 0.85 * t ** 1.8, yc, 0.043333, m_zugweiss))
-    schichten.append((1.04, 9.95, 1.225, 0.55, m_zug))
+    # Bug weiss mit schmalem rotem Band, nicht rote Flaeche. Drei Schichten mit
+    # IDENTISCHER Vorderkante 9.95 — dieselbe Regel wie bisher: eine Linie darf nicht
+    # ueber Schichten unterschiedlicher Tiefe laufen, sonst zerfaellt sie in Stufen.
+    schichten.append((1.04, 9.95, 1.055, 0.21, m_zugweiss))
+    schichten.append((1.04, 9.95, 1.25, 0.18, m_zug))
+    schichten.append((1.04, 9.95, 1.42, 0.16, m_zugweiss))
     for k in range(4):  # Kinn, zieht sich unter der Bauchlinie zurueck
         yc = 0.928625 - k * 0.04275
         s_ = (0.95 - yc) / 0.171
@@ -908,8 +917,22 @@ def fuehrerstand(kennung, r):
     # ---- Rote Bauchlinie ----
     # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
     # setzt der Streifen sie bis zum Wagenkasten fort.
+    # Schwung: fuenf Abschnitte ueber die Kabinenflanke (x 6.90..8.20), die von der
+    # schmalen hohen Flankenlinie (1.55..1.73) auf die breite Bugstirn (0.95..1.50)
+    # abfallen und sich dabei verbreitern. Ohne Fase, damit sie verschmelzen.
     for i, s in enumerate((-1, 1)):
-        kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}", 1.30, 0.06, 0.55, 0.5 + r * 7.05, 1.225, s * 1.23, m_zug, fase=0)
+        # Vier GEDREHTE Abschnitte statt vieler kleiner Stufen: die Linie ist damit
+        # mathematisch glatt statt treppig. Gedreht wird um die mittlere Euler-Achse
+        # (Blender Y), weil die Flanke in der x-y-Ebene liegt; das Vorzeichen folgt r,
+        # damit der Schwung am Westende spiegelbildlich abfaellt.
+        # (Laenge, Mitte x als u, Mitte y, Winkel, Bandbreite)
+        for n, (_l, _u, _y, _w, _b) in enumerate((
+                (0.52, 6.65, 1.630, 0.0799, 0.18),
+                (0.49, 7.125, 1.560, 0.2450, 0.19),
+                (0.48, 7.625, 1.420, 0.3417, 0.21),
+                (0.45, 8.050, 1.290, 0.4429, 0.23))):
+            kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}_{n}", _l, 0.06, _b,
+                   0.5 + r * _u, _y, s * 1.23, m_zug, fase=0, drehung=(0, r * _w, 0))
 
     # ---- Kabinenflanke: dunkles Band als Fortsetzung des Fensterbands ----
     for i, s in enumerate((-1, 1)):
