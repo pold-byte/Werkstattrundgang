@@ -846,20 +846,20 @@ def fuehrerstand(kennung, r):
 
 
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
-    _TAB = ((0.60, 0.70, 9.63),
-            (0.74, 0.84, 9.97),
-            (0.88, 0.93, 10.08),  # Scheitel — GANZ unten, direkt ueber dem Kinn
-            (1.05, 0.97, 10.04),
-            (1.25, 1.00, 9.91),
-            (1.35, 1.01, 9.80),   # Ende der Spitzenrundung — ab hier ist die Schraege
-            (1.50, 1.03, 9.62),   # eine GERADE: alle Stuetzen bis zur
-            (1.75, 1.055, 9.33),  # Scheibenoberkante liegen kollinear (50 Grad)
-            (1.95, 1.075, 9.09),
-            (2.12, 1.09, 8.89),   # Scheibenunterkante — liegt AUF der Geraden
-            (2.45, 1.10, 8.50),
-            (2.70, 1.08, 8.20),   # Scheibenoberkante — Ende der Geraden
-            (2.88, 1.03, 7.92),    # Dachanlauf
-            (3.02, 0.90, 7.62))
+    _TAB = ((0.60, 0.70, 9.67),
+            (0.74, 0.84, 10.01),
+            (0.88, 0.93, 10.12),  # Scheitel — GANZ unten, direkt ueber dem Kinn
+            (1.05, 0.97, 10.08),
+            (1.25, 1.00, 9.93),
+            (1.35, 1.01, 9.81),   # Ende der Spitzenrundung — ab hier ist die Schraege
+            (1.50, 1.03, 9.61),   # eine GERADE: alle Stuetzen bis zur
+            (1.75, 1.055, 9.28),  # Scheibenoberkante liegen kollinear (53 Grad)
+            (1.95, 1.075, 9.01),
+            (2.12, 1.09, 8.79),   # Scheibenunterkante — liegt AUF der Geraden
+            (2.45, 1.10, 8.35),
+            (2.70, 1.08, 8.02),   # Scheibenoberkante — Ende der Geraden
+            (2.88, 1.03, 7.72),    # Dachanlauf
+            (3.02, 0.90, 7.45))
 
     _BOGEN = 30
     _TAPER = 10
@@ -987,6 +987,10 @@ def fuehrerstand(kennung, r):
                 elif _k == 6:
                     # Scheibe laeuft zwei Flankenspalten weit um die Ecke
                     _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
+                elif _k in (7, 8):
+                    # Beim Vorbild laeuft das dunkle Feld ueber die Scheibe hinaus
+                    # den Dachanlauf hinauf — das schwarze Dachpanel des ICE 4.
+                    _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else _SLOT[_k]
                 _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
                 _mats.append(_slot)
                 # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart
@@ -999,7 +1003,7 @@ def fuehrerstand(kennung, r):
     for _ring, _oben in ((_ringe[-1], True), (_ringe[0], False)):
         _f = list(_ring) if _oben else list(reversed(_ring))
         _faces.append(_f[::-1] if r < 0 else _f)
-        _mats.append(4 if _oben else 2)
+        _mats.append(3 if _oben else 2)
         _weich.append(False)
 
     _mesh = bpy.data.meshes.new(f"Triebzug_Bugschale_{kennung}")
@@ -1046,7 +1050,10 @@ def fuehrerstand(kennung, r):
     # 7.30 — 20 cm INNERHALB der Kastenstirn, damit ihre flache Rueckwand verdeckt ist.
     for i, s in enumerate((-1, 1)):
         kasten(f"Triebzug_Kopf_Dachrand_{kennung}_{i}", 0.4, 0.09, 0.07, 0.5 + r * 7.0, 3.02, s * 1.11, m_stahlhell, fase=0.01)
-    kasten(f"Triebzug_Kopf_Makrofon_{kennung}", 0.3, 0.46, 0.1, 0.5 + r * 6.98, 3.07, 0, m_stahlhell, fase=0.02)
+    kasten(f"Triebzug_Kopf_Makrofon_{kennung}", 0.3, 0.46, 0.1, 0.5 + r * 6.4, 3.07, 0, m_stahlhell, fase=0.02)
+    # Schwarzes Dachpanel: das dunkle Frontfeld endet beim Vorbild als gerundetes
+    # Feld AUF dem Kabinendach — es verbindet sich optisch mit der Scheibe.
+    kasten(f"Triebzug_Dachpanel_{kennung}", 0.55, 1.15, 0.03, 0.5 + r * 6.95, 3.03, 0, m_zugglas, fase=0.01)
 
     # ---- Details AUF der Schale ----
     # Frontmaske, Scheibenrahmen, Frontscheibe, Mittelpfosten und Eckglas sind
@@ -1054,33 +1061,32 @@ def fuehrerstand(kennung, r):
     # (y 2.25..2.62) und laeuft dort um die Ecke, statt als geneigter Kasten vor
     # einem Quader zu stehen. Aufgesetzte Kaesten wuerden in der Schale verschwinden
     # (Vollkoerperregel) oder als Kante davorstehen.
-    # Zugzielanzeige liegt knapp ueber der Scheibenoberkante (Flaeche dort x 8.54).
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 7.66, 2.74, 0, m_dunkel,
-           fase=0, drehung=(0, -r * 1.0, 0))
-    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 7.685, 2.74, -0.14 * r, m_markierung,
-           fase=0, drehung=(0, -r * 0.87, 0))
     # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
     # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
     # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
-    for i, (wz, wu, wl) in enumerate(((-0.32, 8.146, 8.204), (0.44, 8.140, 8.198))):
-        kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.32, wz * r, m_dunkel,
-               fase=0, drehung=(0, -r * 0.87, 0))
-        zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.28, wz * r, m_dunkel, achse="x")
+    # Wischer parken OBEN haengend am Scheibenkopf, Lager an der Scheibenoberkante —
+    # beim Vorbild haengen beide Arme aus dem dunklen Dachpanel herab.
+    for i, (wz, wu, wl) in enumerate(((-0.32, 7.777, 7.623), (0.44, 7.771, 7.617))):
+        kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.50, wz * r, m_dunkel,
+               fase=0, drehung=(0, -r * 0.93, 0))
+        zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.62, wz * r, m_dunkel, achse="x")
 
     # ---- Leuchten im dunklen Feld der Schale ----
     # Die grossen Gehaeusekaesten sind entfallen: auf einer gewoelbten Flaeche stand ein
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.62 liegt die Haut auf x 9.082 (y 1.93), bei 0.80 auf 8.983 (y 1.97),
-    # bei 0.50 auf 9.159 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
+    # bei |z| 0.62 liegt die Haut auf x 9.005 (y 1.93), bei 0.80 auf 8.901 (y 1.97),
+    # bei 0.50 auf 9.089 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.592, 1.93, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.493, 1.97, s * 0.80, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.669, 1.88, s * 0.50, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.515, 1.93, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.411, 1.97, s * 0.80, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.599, 1.88, s * 0.50, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
+    # Drittes Spitzenlicht mittig oben im dunklen Dachfeld (Haut dort x 7.643)
+    zylinder(f"Triebzug_Spitzenlicht3_{kennung}", 0.05, 0.06, 0.5 + r * 7.148, 2.92, 0, m_fenster, achse="x")
 
     # ---- Rote Bauchlinie ----
     # Sie ist vollstaendig Materialzone der Schale (siehe _slot == 1 oben). Die frueheren
