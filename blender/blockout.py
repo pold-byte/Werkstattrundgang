@@ -829,46 +829,88 @@ def fuehrerstand(kennung, r):
     # und deren Stirntangente die Schichtspitze trifft — die Flanke laeuft ohne Kante in
     # den Bug, im Grundriss entsteht eine Spitze.
     kasten(f"Triebzug_Kopf_Korpus_{kennung}", 1.3, 2.4, 1.04, 0.5 + r * 7.05, 1.47, 0, m_zugweiss, fase=0.06)
-    # Bug als stufenlos gekruemmte Woelbung. Die Vorderkanten folgen jetzt einer Kurve
-    # statt fester Stufen: oberhalb der Bauchlinie x(t) = 9.95 - 0.85*t**1.8 (t = 0 an
-    # der Linie, 1 am Maskenansatz), unterhalb x(s) = 9.95 - 0.65*s**1.6. Bei 6.5 cm
-    # duennen Schichten (3.25 cm oben, 2.85 cm am Kinn) liegen die Spruenge unter 3 cm
-    # und die waagerechten Absaetze werden so schmal, dass sie als Verlauf statt als
-    # Stufen lesen — vorher zeichneten sie sich in der Totale als konzentrische Boegen ab
-    # Der Eckradius ist fast so gross wie die halbe Breite (er = hw - 0.10): damit bleibt
-    # vorn nur eine 20 cm schmale Stirn und der Grundriss ist eine durchgehende Linie
-    # statt eines Rechtecks mit abgerundeten Ecken. ecken=64, weil bei so grossem Radius
-    # nur ein Viertelbogen sichtbar ist — mit 24 Segmenten waere der facettiert.
-    # Die Schichten haben AUSDRUECKLICH keine Fase: mit 4 cm Fase warf jede
-    # Schicht eine Schattenfuge und der Bug las als Kuehlrippenpaket statt als Woelbung.
-    # WICHTIG: die rote Bauchlinie bleibt EINE Schicht mit EINER Vorderkante und steht
-    # 2 cm proud als Scheuerleiste. Ueber mehrere Schichten gelegt zerfaellt sie in
-    # Stufen und der ganze Bug liest wieder als Tortenetage.
-    # (halbbreite, Eckradius, Spitze x, y-Mitte, dy, Material)
-    schichten = []
-    for j in range(12):  # oberhalb der Bauchlinie, Woelbung bis zum Maskenansatz
-        yc = 1.52167 + j * 0.043333
-        t = (yc - 1.5) / 0.52
-        schichten.append((1.02 + 0.13 * t, 9.95 - 0.85 * t ** 1.8, yc, 0.043333, m_zugweiss))
-    # Bug weiss mit schmalem rotem Band, nicht rote Flaeche. Drei Schichten mit
-    # IDENTISCHER Vorderkante 9.95 — dieselbe Regel wie bisher: eine Linie darf nicht
-    # ueber Schichten unterschiedlicher Tiefe laufen, sonst zerfaellt sie in Stufen.
-    schichten.append((1.04, 9.95, 1.055, 0.21, m_zugweiss))
-    schichten.append((1.04, 9.95, 1.25, 0.18, m_zug))
-    schichten.append((1.04, 9.95, 1.42, 0.16, m_zugweiss))
-    for k in range(4):  # Kinn, zieht sich unter der Bauchlinie zurueck
-        yc = 0.928625 - k * 0.04275
-        s_ = (0.95 - yc) / 0.171
-        schichten.append((1.02 - 0.2 * s_, 9.95 - 0.65 * s_ ** 1.6, yc, 0.04275, m_unterflur))
-    for i, (hw, spitze, yc, dy, mat) in enumerate(schichten):
-        # Ein Halbzylinder je Schicht statt Kasten plus zwei Eckzylinder: gleiche
-        # Aussenkontur (Aussentangente |z| = hw, Stirntangente = spitze), aber ein
-        # Drittel der Objekte. Bei 1810 Meshes war die Bildrate von 280 auf 64 fps
-        # gefallen — fuer eine Praesentation auf fremder Hardware zu wenig Reserve.
-        kasten(f"Triebzug_Bug_{kennung}_{i}", spitze - hw - 7.9, 2 * hw, dy,
-               0.5 + r * ((7.9 + spitze - hw) / 2 - 0.5), yc, 0, mat, fase=0)
-        zylinder(f"Triebzug_Bug_{kennung}_{i}_rund", hw, dy,
-                 0.5 + r * (spitze - hw - 0.5), yc, 0, mat, ecken=32)
+    # Bugschale als EIN glattes Mesh statt gestapelter Schichten.
+    # Die Schichtbauweise erzeugte an jeder Ringgrenze eine echte Kante — aus zwei
+    # Metern lesen die als konzentrische Stufen auf der Nase, und mehr Schichten
+    # machen sie nur feiner, nicht weg. Hier wird die Schale als Rotationskoerper
+    # geloftet und weich schattiert: die Normalen laufen ueber die Ringgrenzen durch,
+    # die Oberflaeche ist stufenlos. Die rote Linie ist eine Materialzuweisung an
+    # Faces und folgt damit der Woelbung, statt als Kasten aufgesetzt zu sein.
+    import math as _m
+
+    def _profil(y):
+        """Halbbreite und vorderster Punkt auf Hoehe y — dieselbe Kurve wie bisher."""
+        if y >= 1.5:
+            t = (y - 1.5) / 0.52
+            return 1.02 + 0.13 * t, 9.95 - 0.85 * t ** 1.8
+        if y >= 0.95:
+            return 1.02 + 0.02 * ((1.5 - y) / 0.55), 9.95
+        s = (0.95 - y) / 0.17
+        return 1.04 - 0.22 * s, 9.95 - 0.65 * s ** 1.6
+
+    # Hoehenringe mit exakten Grenzen bei 0.95 / 1.16 / 1.34 / 1.50, damit die
+    # Farbwechsel auf Ringkanten fallen und die rote Linie scharf begrenzt ist.
+    _hoehen = []
+    for _a, _b, _n in ((0.78, 0.95, 4), (0.95, 1.16, 3), (1.16, 1.34, 2),
+                       (1.34, 1.50, 2), (1.50, 2.02, 14)):
+        for _k in range(_n):
+            _hoehen.append(_a + (_b - _a) * _k / _n)
+    _hoehen.append(2.02)
+
+    _BOGEN = 22
+    _RUECK = 7.9
+    _verts, _ringe = [], []
+    for _y in _hoehen:
+        _hw, _spitze = _profil(_y)
+        _xc = _spitze - _hw
+        _ring = []
+        _punkte = [(_RUECK, _hw)]
+        for _k in range(_BOGEN + 1):
+            _th = _m.pi / 2 - _m.pi * _k / _BOGEN
+            _punkte.append((_xc + _hw * _m.cos(_th), _hw * _m.sin(_th)))
+        _punkte.append((_RUECK, -_hw))
+        for _px, _pz in _punkte:
+            _ring.append(len(_verts))
+            # three.js (x, y hoch, z quer) -> Blender (x, -z, y)
+            _verts.append((0.5 + r * (_px - 0.5), -_pz, _y))
+        _ringe.append(_ring)
+
+    _faces, _mats, _weich = [], [], []
+    _proRing = len(_ringe[0])
+    for _i in range(len(_ringe) - 1):
+        _ymit = (_hoehen[_i] + _hoehen[_i + 1]) / 2
+        _slot = 2 if _ymit < 0.95 else (1 if 1.16 <= _ymit < 1.34 else 0)
+        for _j in range(_proRing):
+            _j2 = (_j + 1) % _proRing
+            _f = [_ringe[_i][_j], _ringe[_i][_j2], _ringe[_i + 1][_j2], _ringe[_i + 1][_j]]
+            _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
+            _mats.append(_slot)
+            # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart lassen,
+            # sonst schmiert die weiche Schattierung ueber die Kante.
+            _weich.append(_j != _proRing - 1)
+
+    # Deckel oben und unten: die geloftete Schale ist ein offener Schlauch. Oben
+    # deckt die Maske nur bis x 8.70 ab, dahinter klaffte bis 9.10 ein Loch, durch
+    # das man von schraeg oben ins Innere sah — die alten Vollkoerper-Schichten
+    # hatten das mit ihrer Deckflaeche geschlossen. Deckel bleiben hart schattiert.
+    for _ring, _oben in ((_ringe[-1], True), (_ringe[0], False)):
+        _f = list(_ring) if _oben else list(reversed(_ring))
+        _faces.append(_f[::-1] if r < 0 else _f)
+        _mats.append(0 if _oben else 2)
+        _weich.append(False)
+
+    _mesh = bpy.data.meshes.new(f"Triebzug_Bugschale_{kennung}")
+    _mesh.from_pydata(_verts, [], _faces)
+    _mesh.update()
+    for _mat in (m_zugweiss, m_zug, m_unterflur):
+        _mesh.materials.append(_mat)
+    for _p, _slot, _w in zip(_mesh.polygons, _mats, _weich):
+        _p.material_index = _slot
+        _p.use_smooth = _w
+    _mesh.uv_layers.new(name="UVMap")
+    _schale = bpy.data.objects.new(f"Triebzug_Bugschale_{kennung}", _mesh)
+    bpy.context.collection.objects.link(_schale)
+    bpy.context.view_layer.objects.active = _schale
     # Kabine sitzt auf dem Korpus; ihre Stirn (8.245) liegt auf der ganzen Hoehe
     # y 1.99..2.70 zwischen Masken-Rueckflaeche (max 8.233) und Masken-Aussenflaeche
     # (min 8.260) — nachgerechnet, damit weder eine Nut klafft noch die Kabine durchstoesst.
