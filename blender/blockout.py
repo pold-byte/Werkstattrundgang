@@ -726,7 +726,17 @@ for seite, sz in (("nord", -1.24), ("sued", 1.24)):
         kasten(f"Triebzug_Tuerleuchte_{seite}_{i}", 0.16, 0.05, 0.05, tx, 2.57, sz * 1.028, m_gruen, fase=0)
     for i, ax in enumerate((-6.0, 3.0)):  # Anschriftenfelder (gegreekt, keine echten Nummern)
         kasten(f"Triebzug_Anschrift_{seite}_{i}", 0.6, 0.01, 0.12, ax, 1.6, sz * 1.008, m_dunkel, fase=0)
-kasten("Triebzug_Dach", 13.6, 2.3, 0.3, ZUG_X, 2.85, 0, m_zugdach, fase=0.06)
+# Dachkrone statt flacher Platte: acht duenne Schichten ziehen sich nach oben ein
+# (Halbbreite 1.18 -> 1.06 nach w(t) = 1.18 - 0.12*t**1.6). Aus dem Kasten mit
+# scharfer Kante wird im Querschnitt eine Roehre — das ist der Unterschied zwischen
+# Regionaltriebwagen und ICE. Die Verjuengung ist bewusst flach gewaehlt: bei |z| 1.09,
+# wo die sechs Klappbruecken aufsetzen, liegt die Dachflaeche weiterhin auf y 3.00,
+# sonst haetten die Bruecken im Leeren geendet.
+# Wie beim Bug ohne Fase — eine Fase je Schicht wuerde acht Schattenfugen werfen.
+for _j in range(8):
+    _yc = 2.71875 + _j * 0.0375
+    _t = (_yc - 2.7) / 0.3
+    kasten(f"Triebzug_Dach_{_j}", 13.6, 2 * (1.18 - 0.12 * _t ** 1.6), 0.0375, ZUG_X, _yc, 0, m_zugdach, fase=0)
 # Dachtechnik auf hellen Stahl umgestellt — auf dem jetzt dunklen Dach waere sie
 # in m_dunkel unsichtbar geworden. Kontrast dreht sich um, Geometrie bleibt.
 # Dachdurchfuehrung mit Kabel zum Stromabnehmer: die alte Dachleitung lief auf z -0.8
@@ -737,7 +747,6 @@ kasten("Triebzug_Dachdurchfuehrung_flansch", 0.3, 0.3, 0.05, -3.05, 3.025, -0.55
 rohr_mit_bogen("Triebzug_Dachkabel", [(-3.05, 3.34, -0.55), (-2.7, 3.4, -0.48), (-2.38, 3.33, -0.4)], 0.035, m_dunkel)
 # Dachrand, Laufstege und Blechstoesse — die sechs Klappbruecken endeten auf blankem Blech
 for seite, dz in (("nord", -1.0), ("sued", 1.0)):
-    kasten(f"Triebzug_Dachrand_{seite}", 13.6, 0.09, 0.07, ZUG_X, 3.02, dz * 1.11, m_stahlhell, fase=0.01)
     kasten(f"Triebzug_Laufsteg_{seite}", 12.8, 0.3, 0.02, ZUG_X, 3.01, dz * 0.95, m_riffel, fase=0)
 for i, nx in enumerate((-5.6, -2.55, -1.35, 2.05, 3.45, 6.3, 6.95)):
     kasten(f"Triebzug_Dachnaht_{i}", 0.05, 1.4, 0.012, nx, 3.006, 0, m_stahlhell, fase=0)
@@ -748,12 +757,12 @@ for i, lx in enumerate((3.2, 6.5)):
 # Klimaanlagen mit Sockelrahmen, Ansaug- und Ausblasgittern statt nackter Platten
 for i, kx in enumerate((-4, 0.5, 5)):
     kasten(f"Triebzug_Klima_{i}_sockel", 1.56, 1.46, 0.06, kx, 3.02, 0, m_dunkel, fase=0)
-    kasten(f"Triebzug_Klima_{i}", 1.44, 1.44, 0.38, kx, 3.17, 0, m_stahlhell)
+    kasten(f"Triebzug_Klima_{i}", 1.44, 1.44, 0.24, kx, 3.11, 0, m_stahlhell)
     for s in (-1, 1):
-        kasten(f"Triebzug_Klima_{i}_gitter_{s}", 0.05, 1.16, 0.2, kx + s * 0.72, 3.14, 0, m_dunkel, fase=0)
-    kasten(f"Triebzug_Klima_{i}_ausblas", 0.86, 0.86, 0.04, kx, 3.375, 0, m_dunkel, fase=0)
+        kasten(f"Triebzug_Klima_{i}_gitter_{s}", 0.05, 1.16, 0.14, kx + s * 0.72, 3.09, 0, m_dunkel, fase=0)
+    kasten(f"Triebzug_Klima_{i}_ausblas", 0.86, 0.86, 0.04, kx, 3.215, 0, m_dunkel, fase=0)
     for j in range(5):
-        kasten(f"Triebzug_Klima_{i}_steg_{j}", 0.82, 0.09, 0.03, kx, 3.392, -0.34 + j * 0.17, m_stahlhell, fase=0)
+        kasten(f"Triebzug_Klima_{i}_steg_{j}", 0.82, 0.09, 0.03, kx, 3.232, -0.34 + j * 0.17, m_stahlhell, fase=0)
 # Scherenstromabnehmer: er schwebte 0.23 m ueber dem Blech und kreuzte sich zum X, weil
 # Unter- und Oberarm gespiegelte Vorzeichen hatten. Jetzt tragen ihn vier Isolatoren, und
 # beide Arme teilen sich einen Gelenkpunkt (Knie bei x -2.78, y 3.78).
