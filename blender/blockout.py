@@ -852,10 +852,10 @@ def fuehrerstand(kennung, r):
             (1.02, 0.965, 9.90),   # Scheitel — bewusst TIEF, kurz ueber der Bauchbinde
             (1.20, 0.995, 9.88),
             (1.42, 1.025, 9.81),
-            (1.68, 1.05, 9.68),
-            (1.92, 1.075, 9.51),
-            (2.12, 1.09, 9.32),
-            (2.45, 1.10, 8.88),
+            (1.68, 1.05, 9.63),
+            (1.92, 1.075, 9.46),
+            (2.12, 1.09, 9.32),   # Scheibenunterkante — hier KNICKT die Silhouette
+            (2.45, 1.10, 8.83),
             (2.70, 1.08, 8.46),
             (2.88, 1.03, 8.14),    # Dachanlauf
             (3.02, 0.90, 7.80))
@@ -863,7 +863,10 @@ def fuehrerstand(kennung, r):
     _BOGEN = 30
     _TAPER = 10
     _RUECK = 7.30
-    _ELL = 0.62      # x-Halbachse der Bugellipse als Anteil der Halbbreite
+    _ELL = 0.62      # x-Halbachse des Bugbogens als Anteil der Halbbreite
+    _N = 2.8         # Superellipsen-Exponent: 2 waere eine Ellipse (Ei). 2.8 macht die
+                     # Stirn flach und zieht die Rundung in enge Schulterkanten — der
+                     # ICE ist im Grundriss KANTIG, eine Schaufel mit runden Ecken.
 
     def _profil(y):
         """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
@@ -909,7 +912,9 @@ def fuehrerstand(kennung, r):
             _kb = _kastenbreite(y)
             _z = _kb + (_hw - _kb) * _p * _p * (3 - 2 * _p)
             return _RUECK + (_xc - _RUECK) * _p, _vz * _z
-        return _xc + _a * _m.cos(_p), _hw * _m.sin(_p)
+        _cs = _m.cos(_p) ** (2.0 / _N)
+        _sn = _m.copysign(abs(_m.sin(_p)) ** (2.0 / _N), _m.sin(_p))
+        return _xc + _a * _cs, _hw * _sn
 
     # ---- Farbgrenzen sind NETZKANTEN, keine Auswahl auf waagerechten Ringen ----
     # Vorher liefen die Ringe waagerecht und die rote Binde wurde als Flaechenauswahl
@@ -998,6 +1003,28 @@ def fuehrerstand(kennung, r):
     for _p, _slot, _w in zip(_mesh.polygons, _mats, _weich):
         _p.material_index = _slot
         _p.use_smooth = _w
+    # ---- Sichtkanten ----
+    # "Kantiger": drei Kantenzuege sind ECHTE harte Kanten (sharp_edge-Attribut,
+    # von Blender in den Split-Normalen beruecksichtigt und vom glTF-Export
+    # uebernommen): Ober- und Unterkante der Scheibe sowie die beiden Schulterkanten
+    # vom Leuchtenband bis zur Scheibenoberkante. Zusammen mit der Superellipse liest
+    # der Bug damit als Flaechenverbund mit Kanten statt als Ei.
+    _rE, _acc = [], 0
+    for _u_ in _UNTER:
+        _rE.append(_acc)
+        _acc += _u_
+    _rE.append(_acc)   # _rE[k] = Ringindex der Ebene k
+    _scharf = set()
+    for _j in range(_TAPER - 2, _TAPER + _BOGEN + 2):
+        _scharf.add(frozenset((_ringe[_rE[6]][_j], _ringe[_rE[6]][_j + 1])))
+        _scharf.add(frozenset((_ringe[_rE[7]][_j], _ringe[_rE[7]][_j + 1])))
+    for _j in (_TAPER, _TAPER + _BOGEN):
+        for _i2 in range(_rE[4], _rE[7]):
+            _scharf.add(frozenset((_ringe[_i2][_j], _ringe[_i2 + 1][_j])))
+    _attr = _mesh.attributes.new("sharp_edge", "BOOLEAN", "EDGE")
+    for _ei, _e in enumerate(_mesh.edges):
+        if frozenset(_e.vertices) in _scharf:
+            _attr.data[_ei].value = True
     _mesh.uv_layers.new(name="UVMap")
     _schale = bpy.data.objects.new(f"Triebzug_Bugschale_{kennung}", _mesh)
     bpy.context.collection.objects.link(_schale)
@@ -1023,7 +1050,7 @@ def fuehrerstand(kennung, r):
     # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
     # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
     # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
-    for i, (wz, wu, wl) in enumerate(((-0.32, 8.539, 8.597), (0.44, 8.511, 8.569))):
+    for i, (wz, wu, wl) in enumerate(((-0.32, 8.510, 8.568), (0.44, 8.519, 8.577))):
         kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.32, wz * r, m_dunkel,
                fase=0, drehung=(0, -r * 1.05, 0))
         zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.28, wz * r, m_dunkel, achse="x")
@@ -1033,12 +1060,12 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist jetzt Teil der Schale (Materialzone y 1.50..1.74), nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.70 liegt die Haut auf x 9.303 (y 1.97) bzw. 9.439 (y 1.79),
-    # bei |z| 0.84 auf 9.286 (y 1.88).
+    # bei |z| 0.70 liegt die Haut auf x 9.346 (y 1.97) bzw. 9.470 (y 1.79),
+    # bei |z| 0.84 auf 9.340 (y 1.88) — Superellipse, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.813, 1.97, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.949, 1.79, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.796, 1.88, s * 0.84, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.856, 1.97, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.980, 1.79, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.850, 1.88, s * 0.84, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
