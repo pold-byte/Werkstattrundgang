@@ -13,9 +13,14 @@ from mathutils import Vector
 WURZEL = os.getcwd()
 KAMERA_RADIUS = 0.3
 
-with open(os.path.join(WURZEL, "blender", "blockout.py"), encoding="utf-8") as f:
-    code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
-exec(compile(code, "blockout.py", "exec"))
+# Szene nur bauen, wenn sie nicht schon steht. pruefe_alles.py baut einmal und
+# laesst alle drei Pruefungen darauf laufen — der Aufbau kostet 200 s, die
+# Pruefungen selbst nur Sekunden.
+if "SZENE_BEREIT" not in globals():
+    with open(os.path.join(WURZEL, "blender", "blockout.py"), encoding="utf-8") as f:
+        code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
+    exec(compile(code, "blockout.py", "exec"))
+    SZENE_BEREIT = True
 
 with open(os.path.join(WURZEL, "app", "src", "stationen.json"), encoding="utf-8") as f:
     daten = json.load(f)
@@ -42,8 +47,31 @@ def zu_blender(p):
     return Vector((p[0], -p[2], p[1]))
 
 
+# Raumraster ueber die x-Achse: ein Segment kann nur Boxen schneiden, deren Zelle es
+# beruehrt. Ohne diesen Vorfilter prueft der Kantenaufbau jede der 36315 Kandidaten-
+# verbindungen gegen alle rund 1650 Boxen — 60 Millionen Slab-Tests in reinem Python.
+# Das Raster plus ein billiger AABB-Vergleich davor laesst davon einen Bruchteil uebrig.
+# Beides ist eine konservative Vorauswahl: was der Slab-Test frueher gefunden haette,
+# findet er weiterhin.
+ZELLE = 2.0
+raster = {}
+for _bi, (_mn, _mx) in enumerate(boxen):
+    for _c in range(int(_mn.x // ZELLE), int(_mx.x // ZELLE) + 1):
+        raster.setdefault(_c, []).append(_bi)
+
+
 def segment_frei(a, b):
-    for mn, mx in boxen:
+    lo_x, hi_x = (a.x, b.x) if a.x <= b.x else (b.x, a.x)
+    lo_y, hi_y = (a.y, b.y) if a.y <= b.y else (b.y, a.y)
+    lo_z, hi_z = (a.z, b.z) if a.z <= b.z else (b.z, a.z)
+    kandidaten_boxen = set()
+    for c in range(int(lo_x // ZELLE), int(hi_x // ZELLE) + 1):
+        kandidaten_boxen.update(raster.get(c, ()))
+    for bi in kandidaten_boxen:
+        mn, mx = boxen[bi]
+        if (mx.x < lo_x or mn.x > hi_x or mx.y < lo_y or mn.y > hi_y
+                or mx.z < lo_z or mn.z > hi_z):
+            continue
         t0, t1 = 0.0, 1.0
         ok = True
         for i in range(3):

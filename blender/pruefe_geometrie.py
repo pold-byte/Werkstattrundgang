@@ -2,9 +2,14 @@
 import bpy
 from mathutils import Vector
 
-with open(r"C:\Users\Leopold\Werkstatrundgang\blender\blockout.py", encoding="utf-8") as f:
-    code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
-exec(compile(code, "blockout.py", "exec"))
+# Szene nur bauen, wenn sie nicht schon steht. pruefe_alles.py baut einmal und
+# laesst alle drei Pruefungen darauf laufen — der Aufbau kostet 200 s, die
+# Pruefungen selbst nur Sekunden.
+if "SZENE_BEREIT" not in globals():
+    with open(r"C:\Users\Leopold\Werkstatrundgang\blender\blockout.py", encoding="utf-8") as f:
+        code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
+    exec(compile(code, "blockout.py", "exec"))
+    SZENE_BEREIT = True
 
 EPS = 0.08
 HUELLE = ("Dach_", "Wand_", "Halle_", "Relief_", "Tor_Vorfeld", "Stuetze_", "Dachbinder", "Empore_", "Buehne_")
@@ -34,6 +39,31 @@ def familie(name):
     return name.split("_")[0].split(".")[0]
 
 
+
+def x_nachbarn(boxen, rand):
+    """Sweep-and-prune auf der x-Achse.
+
+    Zwei Boxen koennen sich nur beruehren oder durchdringen, wenn sich ihre
+    x-Intervalle (mit Toleranz rand) ueberlappen. Statt aller n*(n-1)/2 Paare
+    — bei 1700 Meshes 1.4 Millionen — sammelt ein Sweep nur diese ein. Die
+    Auswahl ist eine konservative Obermenge: keine Paarung, die die alte
+    Doppelschleife gefunden haette, faellt weg. Die Ergebnisse sind deshalb
+    identisch, nur die Laufzeit faellt von quadratisch auf nahezu linear."""
+    nachbarn = [[] for _ in boxen]
+    ordnung = sorted(range(len(boxen)), key=lambda i: boxen[i][1].x)
+    aktiv = []
+    for idx in ordnung:
+        mn_x = boxen[idx][1].x
+        aktiv = [a for a in aktiv if boxen[a][2].x >= mn_x - rand]
+        for a in aktiv:
+            nachbarn[a].append(idx)
+            nachbarn[idx].append(a)
+        aktiv.append(idx)
+    return nachbarn
+
+
+NACHBARN = x_nachbarn(boxen, EPS)
+
 # --- Schweber: kein Kontakt zu irgendetwas (inkl. Boden bei z~0, Blender-Z = hoch) ---
 print("=== SCHWEBER (kein Kontakt) ===")
 for i, (n, mn, mx) in enumerate(boxen):
@@ -42,9 +72,8 @@ for i, (n, mn, mx) in enumerate(boxen):
     if mn.z <= 0.06:  # steht auf dem Boden
         continue
     kontakt = False
-    for j, (n2, mn2, mx2) in enumerate(boxen):
-        if i == j:
-            continue
+    for j in NACHBARN[i]:
+        n2, mn2, mx2 = boxen[j]
         if ueberlappung(mn, mx, mn2, mx2, rand=EPS) > 0:
             kontakt = True
             break
@@ -58,7 +87,9 @@ for i in range(len(boxen)):
     n, mn, mx = boxen[i]
     if n.startswith(HUELLE):
         continue
-    for j in range(i + 1, len(boxen)):
+    # Reihenfolge i < j beibehalten, damit die Paarbenennung in der Ausgabe
+    # unveraendert bleibt
+    for j in sorted(k for k in NACHBARN[i] if k > i):
         n2, mn2, mx2 = boxen[j]
         if n2.startswith(HUELLE) or familie(n) == familie(n2):
             continue

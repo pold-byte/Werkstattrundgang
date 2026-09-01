@@ -10,9 +10,14 @@ from mathutils import Vector
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if "__file__" in dir() else os.getcwd()
 KAMERA_RADIUS = 0.3
 
-with open(os.path.join(WURZEL, "blender", "blockout.py"), encoding="utf-8") as f:
-    code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
-exec(compile(code, "blockout.py", "exec"))
+# Szene nur bauen, wenn sie nicht schon steht. pruefe_alles.py baut einmal und
+# laesst alle drei Pruefungen darauf laufen — der Aufbau kostet 200 s, die
+# Pruefungen selbst nur Sekunden.
+if "SZENE_BEREIT" not in globals():
+    with open(os.path.join(WURZEL, "blender", "blockout.py"), encoding="utf-8") as f:
+        code = f.read().replace("bpy.ops.export_scene.gltf(", "(lambda **kw: None)(")
+    exec(compile(code, "blockout.py", "exec"))
+    SZENE_BEREIT = True
 
 with open(os.path.join(WURZEL, "app", "src", "stationen.json"), encoding="utf-8") as f:
     daten = json.load(f)
