@@ -935,10 +935,11 @@ def fuehrerstand(kennung, r):
         _yc = 1.10 + 0.54 * (_zband[j] / 1.20) ** 5
         _ys = 2.12 + 0.18 * (_zsch[j] / 1.10) ** 3
         _b = _yc + 0.09
-        # Oben an der Flanke rueckt die Binde bis dicht unter 1.74; ohne diese
-        # Mindestabstaende entstuenden dort millimeterduenne Ringe.
-        return (0.60, 0.78, _yc - 0.09, _b,
-                max(1.74, _b + 0.06), max(2.02, _b + 0.34), _ys, 2.70, 2.88, 3.02)
+        # Das Leuchtenband folgt der Scheibenunterkante in konstantem Abstand (8 bis
+        # 36 cm darunter) und NEIGT sich damit wie sie: innen tief, aussen hoch. Beim
+        # Vorbild sitzen die Leuchten als geneigte Felder direkt unter den
+        # Scheibenecken — waagerechte Rechtecke lasen als aufgeklebte Pflaster.
+        return (0.60, 0.78, _yc - 0.09, _b, _ys - 0.36, _ys - 0.08, _ys, 2.70, 2.88, 3.02)
 
     _UNTER = (3, 7, 4, 6, 4, 3, 6, 3, 3)   # Unterringe je Ebenenintervall
     _SLOT = (2, 0, 1, 0, 3, 0, 3, 0, 4)    # Grundmaterial je Intervall
@@ -1021,6 +1022,11 @@ def fuehrerstand(kennung, r):
     for _j in (_TAPER, _TAPER + _BOGEN):
         for _i2 in range(_rE[4], _rE[7]):
             _scharf.add(frozenset((_ringe[_i2][_j], _ringe[_i2 + 1][_j])))
+    for _j in range(_P - 1):
+        _zl2 = (_zleu[_j] + _zleu[_j + 1]) / 2
+        if 0.44 <= _zl2 <= 0.94 and _TAPER <= _j <= _TAPER + _BOGEN:
+            _scharf.add(frozenset((_ringe[_rE[4]][_j], _ringe[_rE[4]][_j + 1])))
+            _scharf.add(frozenset((_ringe[_rE[5]][_j], _ringe[_rE[5]][_j + 1])))
     _attr = _mesh.attributes.new("sharp_edge", "BOOLEAN", "EDGE")
     for _ei, _e in enumerate(_mesh.edges):
         if frozenset(_e.vertices) in _scharf:
@@ -1058,14 +1064,14 @@ def fuehrerstand(kennung, r):
     # ---- Leuchten im dunklen Feld der Schale ----
     # Die grossen Gehaeusekaesten sind entfallen: auf einer gewoelbten Flaeche stand ein
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
-    # Das dunkle Feld ist jetzt Teil der Schale (Materialzone y 1.50..1.74), nur die
+    # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.70 liegt die Haut auf x 9.346 (y 1.97) bzw. 9.470 (y 1.79),
-    # bei |z| 0.84 auf 9.340 (y 1.88) — Superellipse, nicht Ellipse!
+    # bei |z| 0.62 liegt die Haut auf x 9.398 (y 1.93), bei 0.80 auf 9.302 (y 1.97),
+    # bei 0.50 auf 9.459 (y 1.88) — Superellipse, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.856, 1.97, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.980, 1.79, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.850, 1.88, s * 0.84, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.908, 1.93, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.812, 1.97, s * 0.80, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.969, 1.88, s * 0.50, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
