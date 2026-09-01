@@ -843,20 +843,26 @@ def fuehrerstand(kennung, r):
     import math as _m
 
     def _profil(y):
-        """Halbbreite und vorderster Punkt auf Hoehe y — dieselbe Kurve wie bisher."""
-        if y >= 1.5:
-            t = (y - 1.5) / 0.52
-            return 1.02 + 0.13 * t, 9.95 - 0.85 * t ** 1.8
-        if y >= 0.95:
-            return 1.02 + 0.02 * ((1.5 - y) / 0.55), 9.95
-        s = (0.95 - y) / 0.17
-        return 1.04 - 0.22 * s, 9.95 - 0.65 * s ** 1.6
+        """Halbbreite und vorderster Punkt auf Hoehe y.
+
+        ICE-Profil: vom Dach schraeg nach vorn-unten durchlaufend, unten eine runde
+        Spitze. Der vorderste Punkt liegt deshalb TIEF (y 1.02), nicht auf halber
+        Hoehe. Vorher lag er in der Mitte und die Flaeche wich nach oben UND unten
+        zurueck — das ergibt eine Geschossform, keine ICE-Nase. Oberhalb weicht sie
+        jetzt ueber einen vollen Meter um 0.85 zurueck (rund 40 Grad Schraege),
+        unterhalb rundet sie auf 24 cm schnell aus.
+        """
+        if y >= 1.02:
+            t = (y - 1.02) / 1.0
+            return 1.04 + 0.11 * t, 9.95 - 0.85 * t ** 1.6
+        s = (1.02 - y) / 0.24
+        return 1.04 - 0.22 * s, 9.95 - 0.35 * s ** 1.7
 
     # Hoehenringe mit exakten Grenzen bei 0.95 / 1.16 / 1.34 / 1.50, damit die
     # Farbwechsel auf Ringkanten fallen und die rote Linie scharf begrenzt ist.
     _hoehen = []
-    for _a, _b, _n in ((0.78, 0.95, 4), (0.95, 1.16, 3), (1.16, 1.34, 2),
-                       (1.34, 1.50, 2), (1.50, 2.02, 14)):
+    for _a, _b, _n in ((0.78, 1.02, 5), (1.02, 1.16, 2), (1.16, 1.34, 3),
+                       (1.34, 2.02, 16)):
         for _k in range(_n):
             _hoehen.append(_a + (_b - _a) * _k / _n)
     _hoehen.append(2.02)
@@ -883,7 +889,7 @@ def fuehrerstand(kennung, r):
     _proRing = len(_ringe[0])
     for _i in range(len(_ringe) - 1):
         _ymit = (_hoehen[_i] + _hoehen[_i + 1]) / 2
-        _slot = 2 if _ymit < 0.95 else (1 if 1.16 <= _ymit < 1.34 else 0)
+        _slot = 2 if _ymit < 0.9 else (1 if 1.16 <= _ymit < 1.34 else 0)
         for _j in range(_proRing):
             _j2 = (_j + 1) % _proRing
             _f = [_ringe[_i][_j], _ringe[_i][_j2], _ringe[_i + 1][_j2], _ringe[_i + 1][_j]]
@@ -968,13 +974,15 @@ def fuehrerstand(kennung, r):
         # sie zusammen mit der Scheibe EIN dunkles Gesicht. Zwei kleine graue Kaestchen
         # lasen dagegen als Anbauteile. Die Nasenoberflaeche liegt bei |z| 0.62 und
         # y 1.62 auf x 9.70 (Halbzylinder r 1.050 um 8.842) — davor sitzt das Gehaeuse.
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.66, 0.3, 0.5 + r * 9.0, 1.62, s * 0.7, m_zugglas, fase=0.03)
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.16, 1.71, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.16, 1.53, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 9.14, 1.62, s * 0.88, m_zug, achse="x")
+        # Nasenflaeche bei |z| 0.70 und y 1.62 liegt jetzt auf x 9.33 statt 9.70 —
+        # die Gehaeuse wandern mit zurueck, sonst schweben sie davor.
+        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.66, 0.3, 0.5 + r * 8.7, 1.62, s * 0.7, m_zugglas, fase=0.03)
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 8.86, 1.71, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 8.86, 1.53, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 8.8, 1.62, s * 0.88, m_zug, achse="x")
         # Lueftungsgitter auf der Bugflanke; |z| 1.075 steht knapp vor der dortigen
         # Woelbungsflaeche (1.0925), sonst verschwindet es darin.
-        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 8.35, 1.79, s * 1.075, m_dunkel, fase=0)
+        kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 7.55, 1.79, s * 1.115, m_dunkel, fase=0)
 
     # ---- Rote Bauchlinie ----
     # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
