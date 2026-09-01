@@ -882,13 +882,17 @@ def fuehrerstand(kennung, r):
     # Sie ist m_zugglas und NICHT m_zugdach: mit dem Dachmaterial waere der Kontrast zum
     # Kopfdach exakt null gewesen und beide zu einem 1.04 m hohen dunklen Block
     # verschmolzen. Jetzt trennt die Dachbraue zwei unterschiedlich helle Zonen.
-    kasten(f"Triebzug_Frontmaske_{kennung}", 0.34, 2.2, 0.87, 0.5 + r * 7.759, 2.32, 0, m_zugglas,
+    kasten(f"Triebzug_Frontmaske_{kennung}", 0.34, 2.28, 1.02, 0.5 + r * 7.759, 2.28, 0, m_zugglas,
            fase=0.14, drehung=(0, -r * 0.46, 0))
     # Heller Rahmen — ohne ihn verschwindet schwarzes Glas in schwarzer Maske
-    kasten(f"Triebzug_Scheibenrahmen_{kennung}", 0.06, 2.08, 0.7, 0.5 + r * 7.938, 2.409, 0, m_stahlhell,
+    kasten(f"Triebzug_Scheibenrahmen_{kennung}", 0.06, 2.14, 0.86, 0.5 + r * 7.938, 2.369, 0, m_stahlhell,
            fase=0.1, drehung=(0, -r * 0.46, 0))
-    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.08, 1.96, 0.58, 0.5 + r * 7.978, 2.429, 0, m_zugglas,
+    kasten(f"Triebzug_Frontscheibe_{kennung}", 0.08, 2.02, 0.74, 0.5 + r * 7.978, 2.389, 0, m_zugglas,
            fase=0.09, drehung=(0, -r * 0.46, 0))
+    # Mittelpfosten teilt die Scheibe in zwei Haelften — beim Vorbild das auffaelligste
+    # Merkmal der Frontverglasung.
+    kasten(f"Triebzug_Scheibenpfosten_{kennung}", 0.05, 0.09, 0.74, 0.5 + r * 8.008, 2.389, 0, m_zugweiss,
+           fase=0, drehung=(0, -r * 0.46, 0))
     # Zugzielanzeige auf der Maskenflaeche (gegreekt — kein Text)
     kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.2, 0.1, 0.5 + r * 7.795, 2.63, 0, m_dunkel,
            fase=0, drehung=(0, -r * 0.46, 0))
@@ -904,12 +908,14 @@ def fuehrerstand(kennung, r):
     # Die Bugschicht 1 (Spitze 9.25, Eckachse 8.95, r 0.30) traegt sie: bei |z| 0.70 liegt
     # ihre Oberflaeche auf x 9.236, die Felder stehen dort buendig.
     for i, s in enumerate((-1, 1)):
-        # Ein dunkles Gehaeuse mit beiden Lampen, quer ueber Bauchlinie und erste
-        # Woelbungsschichten. Front 9.93: die Schichten dahinter liegen auf 9.95 bis
-        # 9.911, das Gehaeuse steht damit hoechstens 2 cm proud.
-        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.22, 0.34, 0.23, 0.5 + r * 9.32, 1.515, s * 0.66, m_zugdach, fase=0.04)
-        kasten(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.04, 0.22, 0.09, 0.5 + r * 9.43, 1.575, s * 0.66, m_fenster, fase=0.01)
-        kasten(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.14, 0.07, 0.5 + r * 9.43, 1.44, s * 0.66, m_zug, fase=0.01)
+        # Grosse dunkle Scheinwerfergehaeuse an den Aussenkanten: beim Vorbild bilden
+        # sie zusammen mit der Scheibe EIN dunkles Gesicht. Zwei kleine graue Kaestchen
+        # lasen dagegen als Anbauteile. Die Nasenoberflaeche liegt bei |z| 0.62 und
+        # y 1.62 auf x 9.70 (Halbzylinder r 1.050 um 8.842) — davor sitzt das Gehaeuse.
+        kasten(f"Triebzug_Leuchtentraeger_{kennung}_{i}", 0.3, 0.58, 0.34, 0.5 + r * 9.05, 1.62, s * 0.62, m_zugglas, fase=0.05)
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.21, 1.71, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.05, 0.5 + r * 9.21, 1.53, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.05, 0.5 + r * 9.21, 1.62, s * 0.79, m_zug, achse="x")
         # Lueftungsgitter auf der Bugflanke; |z| 1.075 steht knapp vor der dortigen
         # Woelbungsflaeche (1.0925), sonst verschwindet es darin.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.45, 0.06, 0.09, 0.5 + r * 8.35, 1.79, s * 1.075, m_dunkel, fase=0)
@@ -926,11 +932,15 @@ def fuehrerstand(kennung, r):
         # (Blender Y), weil die Flanke in der x-y-Ebene liegt; das Vorzeichen folgt r,
         # damit der Schwung am Westende spiegelbildlich abfaellt.
         # (Laenge, Mitte x als u, Mitte y, Winkel, Bandbreite)
+        # Die Abschnitte enden an der Korpuskante x 8.20. Zuvor lief der letzte bis
+        # 8.78 bei |z| 1.23 — dort ist die Nase nur noch 2.08 breit, das Stueck hing
+        # frei in der Luft. Der Pruefer hatte es durchgewinkt, weil es sich am
+        # Nachbarabschnitt festhielt (dieselbe Falle wie beim Stromabnehmer).
         for n, (_l, _u, _y, _w, _b) in enumerate((
-                (0.52, 6.65, 1.630, 0.0799, 0.18),
-                (0.49, 7.125, 1.560, 0.2450, 0.19),
-                (0.48, 7.625, 1.420, 0.3417, 0.21),
-                (0.45, 8.050, 1.290, 0.4429, 0.23))):
+                (0.36, 6.575, 1.620, 0.1139, 0.18),
+                (0.37, 6.925, 1.550, 0.2783, 0.19),
+                (0.35, 7.260, 1.440, 0.3588, 0.20),
+                (0.32, 7.560, 1.315, 0.4345, 0.21))):
             kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}_{n}", _l, 0.06, _b,
                    0.5 + r * _u, _y, s * 1.23, m_zug, fase=0, drehung=(0, r * _w, 0))
 
