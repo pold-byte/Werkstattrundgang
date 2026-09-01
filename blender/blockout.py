@@ -636,7 +636,11 @@ ZUG_X = 0.5
 # Jetzt stehen die Raeder frei unter dem Wagen — die Voraussetzung dafuer, dass man
 # ueberhaupt ein Drehgestell erkennen kann.
 kasten("Triebzug_Unterbau", 14, 1.1, 0.3, ZUG_X, 0.8, 0, m_unterflur)
-for i, bx in enumerate((-4.5, 5.5)):
+# Drehzapfenabstand nach Vorbild: der ICE 4 hat 19.50 m bei 29.106 m Wagenlaenge,
+# also 67 Prozent, Ueberhang je Ende 16.5 Prozent. Unsere Drehgestelle standen auf
+# 10.0 m bei 18.9 m Laenge (53 Prozent, Ueberhang 23.5) — dadurch wirkte der Wagen
+# kuerzer und die Enden zu lang. Mit -5.9 / 6.9 sind es 12.8 m und 16.1 Prozent.
+for i, bx in enumerate((-5.9, 6.9)):
     # Aussenliegender Drehgestellrahmen mit Achslagern, Primaerfedern, Bremsscheiben
     # und Sandstreurohren — vorher war das eine dunkle Platte mit vier Scheiben davor.
     # Rahmen auf y 0.80..0.95 gehoben: vorher kappte er die Raeder 5.5 cm ueber der
@@ -653,8 +657,8 @@ for i, bx in enumerate((-4.5, 5.5)):
             kasten(f"Triebzug_DG_{i}_bremszange_{seite}_{j}", 0.12, 0.08, 0.28, bx + rx, 0.58, s * 0.505, m_stahl)
             zylinder(f"Triebzug_DG_{i}_feder_{seite}_{j}", 0.1, 0.14, bx + rx, 0.74, s * 1.06, m_stahlhell)
             zylinder(f"Triebzug_DG_{i}_sandrohr_{seite}_{j}", 0.03, 0.42, bx + rx, 0.4, s * 0.88, m_dunkel)
-            zylinder(f"Triebzug_Rad_{i}_{j}_{seite}", 0.38, 0.12, bx + rx, 0.535, s * 0.78, m_unterflur, achse="z")
-            zylinder(f"Triebzug_Radscheibe_{i}_{j}_{seite}", 0.22, 0.13, bx + rx, 0.535, s * 0.78, m_stahlhell, achse="z")
+            zylinder(f"Triebzug_Rad_{i}_{j}_{seite}", 0.4, 0.12, bx + rx, 0.535, s * 0.78, m_unterflur, achse="z")
+            zylinder(f"Triebzug_Radscheibe_{i}_{j}_{seite}", 0.24, 0.13, bx + rx, 0.535, s * 0.78, m_stahlhell, achse="z")
             zylinder(f"Triebzug_DG_{i}_bremsscheibe_{seite}_{j}", 0.24, 0.05, bx + rx, 0.535, s * 0.45, m_stahlhell, achse="z")
     for j, rx in enumerate((-0.7, 0.7)):
         zylinder(f"Triebzug_DG_{i}_welle_{j}", 0.06, 2.1, bx + rx, 0.535, 0, m_stahl, achse="z")
