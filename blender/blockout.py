@@ -808,63 +808,61 @@ for i, (ax, az) in enumerate(((3.2, 0.5), (-0.6, -0.5))):
 def fuehrerstand(kennung, r):
     """r = +1 fuer das Ost-Ende (Front), -1 fuer das West-Ende (Heck).
 
-    Kopfentwurf "Dunkle Maske", aus einem Vier-Entwurf-Panel als Sieger hervorgegangen
-    und um die vier von der Jury nachgerechneten Fehler korrigiert.
+    Der Kopf ist EINE geloftete Schale vom Bugboden bis zur Dachkante. Es gibt keine
+    Kabine, keine Maske und keine Nase als eigene Koerper mehr — beim Vorbild faellt
+    das Dach nach vorn ab, geht ohne Absatz in die Scheibe ueber und laeuft weiter in
+    den Bug. Frontscheibe, Leuchtenfeld, rote Bauchbinde und Dachblech sind deshalb
+    MATERIALZONEN auf dieser Flaeche, keine aufgesetzten Bauteile.
 
-    Grundgedanke: Der Kopf ist kein Stapel verschieden breiter Kloetze mehr, sondern EIN
-    Gesicht. Korpus, Kabine und Bauchbinde teilen sich exakt die Breiten des Wagenkastens
-    (|z| 1.20 bzw. 1.23), es gibt keine Breitenstufe mehr, ueber die der Blick stolpert.
-    Der Charakter kommt aus drei Dingen: einer um 0.46 rad zurueckgeneigten, fast schwarzen
-    Maske ueber die volle Kopfbreite, in der die Scheibe von einem hellen Rahmen gefasst
-    wird; zwei dunklen Ecksaeulen mit den Leuchten; und einer im Grundriss GERUNDETEN Nase
-    aus zwei Viertelzylindern, die dem Kopf die Silhouette gibt, die ein reiner Quader
-    nicht hat. Weiss bleibt genau ein Feld zwischen roter Binde und Maske.
+    VIER REGELN, die je einmal teuer verletzt wurden:
 
-    Zwei frueher gescheiterte Wege sind hier bewusst nicht wiederholt: eine "eingelassene"
-    Scheibe (verschwindet im Vollkoerper) und eine Grundriss-Verjuengung ueber gedrehte
-    Wangen (ergab helle Finnen neben zu schmaler Scheibe).
+    (1) KOORDINATEN. _TAB und _profil() rechnen in WELT-x, kasten() und zylinder()
+        dagegen in 0.5 + u. Wer ein Teil auf die Haut setzt, braucht u = X_haut - 0.5.
+        Ohne das stehen Lampen und Wischer einen halben Meter vor der Nase in der Luft —
+        und der Pruefer meldet es nicht, weil sie sich gegenseitig halten.
+
+    (2) ANSCHLUSS AN DEN WAGENKASTEN. Der Kasten reicht bis x 7.5 mit Halbbreite 1.20,
+        die Dachkrone bis 7.3. Die Schale muss INNERHALB davon beginnen und von 1.20
+        aus verjuengen. Beginnt sie weiter vorn oder schmaler, steht der Kasten seitlich
+        vor ihr und erzeugt genau die Schulterkante, die den Kopf als aufgesetzte Beule
+        lesen laesst.
+
+    (3) VOLLKOERPER. Ein Bauteil mit kleinerem |x| als die umgebende Schalenflaeche
+        verschwindet restlos darin (so wurde einmal die Frontscheibe unsichtbar). Die
+        rote Bauchbinde ist EINE Zone mit EINER Vorderkante; ueber zwei Schichten gelegt
+        zerfaellt sie in Stufen und der Bug liest als Tortenetage.
+
+    (4) MATERIALGRENZEN. Eine schraege Grenze kann nur entlang Ringkanten laufen und
+        treppt sonst. Gegenmittel ist Aufloesung — mehr Ringe und Bogenspalten —, nicht
+        eine flachere Kurve. Dieselbe Lehre wie frueher bei den gestapelten Nasenschichten,
+        wo eine Fase je Schicht acht Schattenfugen warf.
+
+    Formregel des Nutzers, die den Durchbruch brachte: es geht vom Dach schraeg herunter
+    und bildet unten eine runde Spitze. Der vorderste Punkt liegt also TIEF, nicht auf
+    halber Hoehe, und im Grundriss ist die Stirn breit und stumpf — eine Ellipse mit
+    kurzer x-Halbachse, kein Halbkreis, der zwangslaeufig spitz zulaeuft.
     """
-    # ---- Grundkoerper mit langer, tiefer Bugnase (ICE-Charakter) ----
-    # Der Kopf endete bisher als kurze Stirn bei x 8.70. Jetzt laeuft er in drei nach
-    # hinten gestaffelten Schichten bis x 9.55 aus: die unterste liegt am weitesten vorn
-    # und am tiefsten, darueber weicht die Nase zurueck. Im Profil ergibt das den langen,
-    # flach ansteigenden Bug eines Hochgeschwindigkeitszugs statt einer senkrechten Stirn.
-    # Jede Schicht endet in zwei Viertelzylindern, deren Aussentangente die Schichtbreite
-    # und deren Stirntangente die Schichtspitze trifft — die Flanke laeuft ohne Kante in
-    # den Bug, im Grundriss entsteht eine Spitze.
-    # Bugschale als EIN glattes Mesh statt gestapelter Schichten.
-    # Die Schichtbauweise erzeugte an jeder Ringgrenze eine echte Kante — aus zwei
-    # Metern lesen die als konzentrische Stufen auf der Nase, und mehr Schichten
-    # machen sie nur feiner, nicht weg. Hier wird die Schale als Rotationskoerper
-    # geloftet und weich schattiert: die Normalen laufen ueber die Ringgrenzen durch,
-    # die Oberflaeche ist stufenlos. Die rote Linie ist eine Materialzuweisung an
-    # Faces und folgt damit der Woelbung, statt als Kasten aufgesetzt zu sein.
     import math as _m
 
-    # Die Schale umfasst jetzt den GANZEN Kopf: vom Kinn (y 0.78) bis zur Dachkante
-    # (y 3.02). Vorher endete sie bei y 2.02 und darueber sass ein Quader mit flachem
-    # Dach, davor eine aufgesetzte Maske — im Profil las das als Kiste mit Beule.
-    # Beim Vorbild gibt es genau EINE Flaeche: das Dach faellt nach vorn ab, geht ohne
-    # Absatz in die Scheibe und weiter in den Bug ueber. Scheibe, Leuchtenfeld und rote
-    # Binde sind deshalb Materialzonen AUF dieser Flaeche, keine eigenen Koerper.
-    #
-    # ACHTUNG: _TAB und _profil() rechnen in WELT-x. kasten()/zylinder() erwarten
-    # dagegen 0.5 + u. Wer ein Teil auf die Haut setzt, braucht u = X_haut - 0.5.
-    # Stuetzstellen (Hoehe, vordere Halbbreite, vorderster Punkt). Die Hoehen sind
-    # zugleich Ringgrenzen, damit die Farbwechsel auf Kanten fallen.
-    _TAB = ((0.70, 0.62, 9.18),
-            (0.78, 0.80, 9.46),
-            (0.95, 1.00, 9.84),
-            (1.16, 1.07, 9.96),
-            (1.34, 1.10, 9.99),    # Scheitel auf Hoehe der roten Binde
-            (1.60, 1.115, 9.96),
-            (1.90, 1.13, 9.87),
-            (2.12, 1.14, 9.74),    # Scheibenunterkante
-            (2.45, 1.145, 9.30),
-            (2.70, 1.12, 8.80),    # Scheibenoberkante
-            (2.88, 1.05, 8.30),    # Dachanlauf
-            (3.02, 0.90, 7.85))
-    _SEG = (3, 4, 4, 3, 4, 5, 4, 12, 8, 4, 4)   # Unterringe je Intervall
+
+    # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x). Die
+    # Hoehen sind zugleich Ringgrenzen, damit die Farbwechsel auf Kanten fallen.
+    _TAB = ((0.60, 0.70, 9.20),
+            (0.74, 0.84, 9.56),
+            (0.88, 0.92, 9.78),
+            (1.02, 0.965, 9.90),   # Scheitel — bewusst TIEF, kurz ueber der Bauchbinde
+            (1.20, 0.995, 9.88),
+            (1.42, 1.025, 9.81),
+            (1.68, 1.05, 9.68),
+            (1.92, 1.075, 9.51),
+            (2.12, 1.09, 9.32),    # Scheibenunterkante
+            (2.45, 1.10, 8.88),
+            (2.70, 1.08, 8.46),    # Scheibenoberkante
+            (2.88, 1.03, 8.14),    # Dachanlauf
+            (3.02, 0.90, 7.80))
+    # Fein dort, wo die geschwungene Bandgrenze und die Scheibengrenze schraeg ueber
+    # die Ringe laufen — eine schraege Materialgrenze treppt sonst.
+    _SEG = (3, 4, 6, 9, 11, 13, 9, 6, 14, 10, 4, 4)   # Unterringe je Intervall
 
     def _profil(y):
         """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
@@ -894,17 +892,17 @@ def fuehrerstand(kennung, r):
             _hoehen.append(_TAB[_k][0] + (_TAB[_k + 1][0] - _TAB[_k][0]) * _j / _SEG[_k])
     _hoehen.append(_TAB[-1][0])
 
-    _BOGEN = 26
-    _TAPER = 6
+    _BOGEN = 60
+    _TAPER = 12
     _RUECK = 7.30
     _verts, _ringe = [], []
     for _y in _hoehen:
         _hw, _spitze = _profil(_y)
         _kb = _kastenbreite(_y)
         # Der Bug ist im Grundriss eine ELLIPSE, nicht ein Halbkreis: die x-Halbachse
-        # betraegt nur 55 Prozent der Halbbreite. Damit wird die Stirn breit und stumpf
+        # betraegt nur 62 Prozent der Halbbreite. Damit wird die Stirn breit und stumpf
         # wie beim Vorbild, statt spitz zuzulaufen.
-        _a = 0.55 * _hw
+        _a = 0.62 * _hw
         _xc = _spitze - _a
         # Flanke: laeuft mit Smoothstep von der Wagenkastenbreite auf die Bugbreite zu.
         # Ohne diese Verjuengung stand der Wagenkasten (Halbbreite 1.20) seitlich vor
@@ -940,14 +938,19 @@ def fuehrerstand(kennung, r):
             _zm = (abs(_pa[_j][1]) + abs(_pa[_j2][1])
                    + abs(_pb[_j][1]) + abs(_pb[_j2][1])) / 4
             # Materialzonen auf der Flaeche statt aufgesetzter Bauteile:
-            if _ymit < 0.95:
+            if _ymit < 0.78:
                 _slot = 2                                    # dunkle Bugunterseite
-            elif 1.16 <= _ymit < 1.34:
-                _slot = 1                                    # rote Bauchbinde
-            elif (2.12 + 0.18 * (_zm / 1.15) ** 3 <= _ymit < 2.70
+            elif abs(_ymit - (1.10 + 0.54 * (_zm / 1.20) ** 2)) < 0.09:
+                # Die rote Binde SCHWINGT: in der Flanke (zm 1.20) liegt ihre Mitte auf
+                # 1.64 und trifft damit genau den Zierstreifen des Wagenkastens, zur
+                # Bugmitte hin faellt sie auf 1.10 ab. Vorher war sie ein waagerechtes
+                # Band und vier gedrehte Kaesten mussten den Schwung nachbilden — die
+                # hingen an der schlanker gewordenen Flanke in der Luft.
+                _slot = 1
+            elif (2.12 + 0.18 * (_zm / 1.10) ** 3 <= _ymit < 2.70
                     and _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1):
                 _slot = 3                                    # Frontscheibe, um die Ecke
-            elif 1.74 <= _ymit < 2.02 and 0.46 <= _zm <= 0.98                     and _TAPER <= _j <= _TAPER + _BOGEN:
+            elif 1.74 <= _ymit < 2.02 and 0.44 <= _zm <= 0.94                     and _TAPER <= _j <= _TAPER + _BOGEN:
                 _slot = 3                                    # Leuchtenfeld
             elif _ymit >= 2.88:
                 _slot = 4                                    # Dach
@@ -993,56 +996,39 @@ def fuehrerstand(kennung, r):
     # einem Quader zu stehen. Aufgesetzte Kaesten wuerden in der Schale verschwinden
     # (Vollkoerperregel) oder als Kante davorstehen.
     # Zugzielanzeige liegt knapp ueber der Scheibenoberkante (Flaeche dort x 8.54).
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 8.21, 2.74, 0, m_dunkel,
-           fase=0, drehung=(0, -r * 1.24, 0))
-    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 8.235, 2.74, -0.14 * r, m_markierung,
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 7.91, 2.74, 0, m_dunkel,
+           fase=0, drehung=(0, -r * 1.06, 0))
+    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 7.935, 2.74, -0.14 * r, m_markierung,
            fase=0, drehung=(0, -r * 1.05, 0))
     # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
     # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
     # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
-    for i, wz in enumerate((-0.32, 0.44)):
-        kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * 8.96, 2.32, wz * r, m_dunkel,
+    for i, (wz, wu, wl) in enumerate(((-0.32, 8.539, 8.597), (0.44, 8.511, 8.569))):
+        kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.32, wz * r, m_dunkel,
                fase=0, drehung=(0, -r * 1.05, 0))
-        zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * 8.99, 2.28, wz * r, m_dunkel, achse="x")
+        zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.28, wz * r, m_dunkel, achse="x")
 
     # ---- Leuchten im dunklen Feld der Schale ----
     # Die grossen Gehaeusekaesten sind entfallen: auf einer gewoelbten Flaeche stand ein
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist jetzt Teil der Schale (Materialzone y 1.50..1.74), nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.70 liegt die Haut auf x 9.725 (y 1.92) bzw. 9.766 (y 1.80).
+    # bei |z| 0.70 liegt die Haut auf x 9.349 (y 1.92) bzw. 9.432 (y 1.80),
+    # bei |z| 0.88 auf 9.266 (y 1.86).
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 9.225, 1.92, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 9.266, 1.80, s * 0.7, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.06, 0.5 + r * 9.150, 1.86, s * 0.88, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 8.859, 1.92, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.075, 0.06, 0.5 + r * 8.942, 1.80, s * 0.7, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.045, 0.06, 0.5 + r * 8.776, 1.86, s * 0.88, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
 
     # ---- Rote Bauchlinie ----
-    # Die unterste Bugschicht IST rot und laeuft bis zur Spitze durch; auf der Flanke
-    # setzt der Streifen sie bis zum Wagenkasten fort.
-    # Schwung: fuenf Abschnitte ueber die Kabinenflanke (x 6.90..8.20), die von der
-    # schmalen hohen Flankenlinie (1.55..1.73) auf die breite Bugstirn (0.95..1.50)
-    # abfallen und sich dabei verbreitern. Ohne Fase, damit sie verschmelzen.
-    for i, s in enumerate((-1, 1)):
-        # Vier GEDREHTE Abschnitte statt vieler kleiner Stufen: die Linie ist damit
-        # mathematisch glatt statt treppig. Gedreht wird um die mittlere Euler-Achse
-        # (Blender Y), weil die Flanke in der x-y-Ebene liegt; das Vorzeichen folgt r,
-        # damit der Schwung am Westende spiegelbildlich abfaellt.
-        # (Laenge, Mitte x als u, Mitte y, Winkel, Bandbreite)
-        # Die Abschnitte enden an der Korpuskante x 8.20. Zuvor lief der letzte bis
-        # 8.78 bei |z| 1.23 — dort ist die Nase nur noch 2.08 breit, das Stueck hing
-        # frei in der Luft. Der Pruefer hatte es durchgewinkt, weil es sich am
-        # Nachbarabschnitt festhielt (dieselbe Falle wie beim Stromabnehmer).
-        for n, (_l, _u, _y, _w, _b) in enumerate((
-                (0.36, 6.575, 1.620, 0.1139, 0.18),
-                (0.37, 6.925, 1.550, 0.2783, 0.19),
-                (0.35, 7.260, 1.440, 0.3588, 0.20),
-                (0.32, 7.560, 1.315, 0.4345, 0.21))):
-            kasten(f"Triebzug_Kopf_Streifen_{kennung}_{i}_{n}", _l, 0.06, _b,
-                   0.5 + r * _u, _y, s * 1.235, m_zug, fase=0, drehung=(0, r * _w, 0))
-
+    # Sie ist vollstaendig Materialzone der Schale (siehe _slot == 1 oben). Die frueheren
+    # vier gedrehten Flankenabschnitte sind entfallen: sie sassen bei |z| 1.235, waehrend
+    # die Schale dort nach der Verschlankung nur noch rund 1.14 breit ist — sie haetten
+    # 7 cm vor der Haut gehangen und der Pruefer haette es durchgewinkt, weil sie sich
+    # gegenseitig hielten.
     # ---- Kabinenflanke: dunkles Band als Fortsetzung des Fensterbands ----
     for i, s in enumerate((-1, 1)):
         kasten(f"Triebzug_Kopf_Seitenband_{kennung}_{i}", 1.08, 0.05, 0.58, 0.5 + r * 6.66, 2.15, s * 1.21, m_zugglas, fase=0)
@@ -1062,7 +1048,7 @@ def fuehrerstand(kennung, r):
     # ---- Unterbau, Schuerze, Kupplung ----
     # Schuerze und Frontanbauten sind mit der Nase nach vorn gewandert (+0.35), damit
     # unter dem 0.85 m laengeren Bug nicht ins Leere gegriffen wird.
-    kasten(f"Triebzug_Frontschuerze_{kennung}", 1.55, 1.9, 0.63, 0.5 + r * 8.175, 0.635, 0, m_unterflur, fase=0.05)
+    kasten(f"Triebzug_Frontschuerze_{kennung}", 1.55, 1.6, 0.63, 0.5 + r * 8.175, 0.635, 0, m_unterflur, fase=0.05)
     kasten(f"Triebzug_Kopftraeger_{kennung}", 0.42, 1.3, 0.3, 0.5 + r * 7.18, 0.8, 0, m_unterflur)
     for i, bz in enumerate((-0.62, 0.62)):
         kasten(f"Triebzug_Bahnraeumer_{kennung}_{i}", 0.15, 0.5, 0.3, 0.5 + r * 9.005, 0.38, bz, m_unterflur, fase=0)
