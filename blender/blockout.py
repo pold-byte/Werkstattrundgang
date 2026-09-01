@@ -773,34 +773,38 @@ def fuehrerstand(kennung, r):
     # Bug als stufenlos gekruemmte Woelbung. Die Vorderkanten folgen jetzt einer Kurve
     # statt fester Stufen: oberhalb der Bauchlinie x(t) = 9.95 - 0.85*t**1.8 (t = 0 an
     # der Linie, 1 am Maskenansatz), unterhalb x(s) = 9.95 - 0.65*s**1.6. Bei 6.5 cm
-    # duennen Schichten liegen die Spruenge zwischen 1 und 6 cm und verschwinden hinter
-    # den Fasen. Die Schichten haben AUSDRUECKLICH keine Fase: mit 4 cm Fase warf jede
+    # duennen Schichten (3.25 cm oben, 2.85 cm am Kinn) liegen die Spruenge unter 3 cm
+    # und die waagerechten Absaetze werden so schmal, dass sie als Verlauf statt als
+    # Stufen lesen — vorher zeichneten sie sich in der Totale als konzentrische Boegen ab
+    # Der Eckradius ist fast so gross wie die halbe Breite (er = hw - 0.10): damit bleibt
+    # vorn nur eine 20 cm schmale Stirn und der Grundriss ist eine durchgehende Linie
+    # statt eines Rechtecks mit abgerundeten Ecken. ecken=64, weil bei so grossem Radius
+    # nur ein Viertelbogen sichtbar ist — mit 24 Segmenten waere der facettiert.
+    # Die Schichten haben AUSDRUECKLICH keine Fase: mit 4 cm Fase warf jede
     # Schicht eine Schattenfuge und der Bug las als Kuehlrippenpaket statt als Woelbung.
     # WICHTIG: die rote Bauchlinie bleibt EINE Schicht mit EINER Vorderkante und steht
     # 2 cm proud als Scheuerleiste. Ueber mehrere Schichten gelegt zerfaellt sie in
     # Stufen und der ganze Bug liest wieder als Tortenetage.
     # (halbbreite, Eckradius, Spitze x, y-Mitte, dy, Material)
     schichten = []
-    for j in range(8):  # oberhalb der Bauchlinie, Woelbung bis zum Maskenansatz
-        yc = 1.5325 + j * 0.065
+    for j in range(12):  # oberhalb der Bauchlinie, Woelbung bis zum Maskenansatz
+        yc = 1.52167 + j * 0.043333
         t = (yc - 1.5) / 0.52
-        schichten.append((1.02 + 0.13 * t, 0.34 - 0.06 * t,
-                          9.95 - 0.85 * t ** 1.8, yc, 0.065, m_zugweiss))
-    schichten.append((1.04, 0.36, 9.95, 1.225, 0.55, m_zug))
-    for k in range(3):  # Kinn, zieht sich unter der Bauchlinie zurueck
-        yc = 0.9215 - k * 0.057
-        s = (0.95 - yc) / 0.171
-        schichten.append((1.02 - 0.2 * s, 0.34 - 0.04 * s,
-                          9.95 - 0.65 * s ** 1.6, yc, 0.057, m_unterflur))
-    for i, (hw, er, spitze, yc, dy, mat) in enumerate(schichten):
-        ecke_x = spitze - er
-        kasten(f"Triebzug_Bug_{kennung}_{i}", ecke_x - 7.9, 2 * hw, dy,
-               0.5 + r * ((7.9 + ecke_x) / 2 - 0.5), yc, 0, mat, fase=0)
-        kasten(f"Triebzug_Bug_{kennung}_{i}_stirn", er, 2 * (hw - er), dy,
-               0.5 + r * (ecke_x + er / 2 - 0.5), yc, 0, mat, fase=0)
-        for j, s in enumerate((-1, 1)):
-            zylinder(f"Triebzug_Bug_{kennung}_{i}_ecke_{j}", er, dy,
-                     0.5 + r * (ecke_x - 0.5), yc, s * (hw - er), mat, ecken=24)
+        schichten.append((1.02 + 0.13 * t, 9.95 - 0.85 * t ** 1.8, yc, 0.043333, m_zugweiss))
+    schichten.append((1.04, 9.95, 1.225, 0.55, m_zug))
+    for k in range(4):  # Kinn, zieht sich unter der Bauchlinie zurueck
+        yc = 0.928625 - k * 0.04275
+        s_ = (0.95 - yc) / 0.171
+        schichten.append((1.02 - 0.2 * s_, 9.95 - 0.65 * s_ ** 1.6, yc, 0.04275, m_unterflur))
+    for i, (hw, spitze, yc, dy, mat) in enumerate(schichten):
+        # Ein Halbzylinder je Schicht statt Kasten plus zwei Eckzylinder: gleiche
+        # Aussenkontur (Aussentangente |z| = hw, Stirntangente = spitze), aber ein
+        # Drittel der Objekte. Bei 1810 Meshes war die Bildrate von 280 auf 64 fps
+        # gefallen — fuer eine Praesentation auf fremder Hardware zu wenig Reserve.
+        kasten(f"Triebzug_Bug_{kennung}_{i}", spitze - hw - 7.9, 2 * hw, dy,
+               0.5 + r * ((7.9 + spitze - hw) / 2 - 0.5), yc, 0, mat, fase=0)
+        zylinder(f"Triebzug_Bug_{kennung}_{i}_rund", hw, dy,
+                 0.5 + r * (spitze - hw - 0.5), yc, 0, mat, ecken=32)
     # Kabine sitzt auf dem Korpus; ihre Stirn (8.245) liegt auf der ganzen Hoehe
     # y 1.99..2.70 zwischen Masken-Rueckflaeche (max 8.233) und Masken-Aussenflaeche
     # (min 8.260) — nachgerechnet, damit weder eine Nut klafft noch die Kabine durchstoesst.
@@ -815,12 +819,12 @@ def fuehrerstand(kennung, r):
     # Kopfdach exakt null gewesen und beide zu einem 1.04 m hohen dunklen Block
     # verschmolzen. Jetzt trennt die Dachbraue zwei unterschiedlich helle Zonen.
     kasten(f"Triebzug_Frontmaske_{kennung}", 0.34, 2.2, 0.87, 0.5 + r * 7.759, 2.32, 0, m_zugglas,
-           fase=0.05, drehung=(0, -r * 0.46, 0))
+           fase=0.14, drehung=(0, -r * 0.46, 0))
     # Heller Rahmen — ohne ihn verschwindet schwarzes Glas in schwarzer Maske
     kasten(f"Triebzug_Scheibenrahmen_{kennung}", 0.06, 2.08, 0.7, 0.5 + r * 7.938, 2.409, 0, m_stahlhell,
-           fase=0, drehung=(0, -r * 0.46, 0))
+           fase=0.1, drehung=(0, -r * 0.46, 0))
     kasten(f"Triebzug_Frontscheibe_{kennung}", 0.08, 1.96, 0.58, 0.5 + r * 7.978, 2.429, 0, m_zugglas,
-           fase=0.02, drehung=(0, -r * 0.46, 0))
+           fase=0.09, drehung=(0, -r * 0.46, 0))
     # Zugzielanzeige auf der Maskenflaeche (gegreekt — kein Text)
     kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.2, 0.1, 0.5 + r * 7.795, 2.63, 0, m_dunkel,
            fase=0, drehung=(0, -r * 0.46, 0))
