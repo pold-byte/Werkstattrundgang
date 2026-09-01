@@ -846,27 +846,27 @@ def fuehrerstand(kennung, r):
 
 
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
-    _TAB = ((0.60, 0.70, 9.20),
-            (0.74, 0.84, 9.56),
-            (0.88, 0.92, 9.78),
+    _TAB = ((0.60, 0.70, 9.30),
+            (0.74, 0.84, 9.62),
+            (0.88, 0.92, 9.80),
             (1.02, 0.965, 9.90),   # Scheitel — bewusst TIEF, kurz ueber der Bauchbinde
-            (1.20, 0.995, 9.88),
-            (1.42, 1.025, 9.81),
-            (1.68, 1.05, 9.63),
-            (1.92, 1.075, 9.46),
-            (2.12, 1.09, 9.32),   # Scheibenunterkante — hier KNICKT die Silhouette
-            (2.45, 1.10, 8.83),
-            (2.70, 1.08, 8.46),
-            (2.88, 1.03, 8.14),    # Dachanlauf
+            (1.20, 0.995, 9.89),
+            (1.42, 1.025, 9.85),
+            (1.68, 1.05, 9.78),
+            (1.92, 1.075, 9.66),
+            (2.12, 1.09, 9.55),   # Scheibenunterkante — hier KNICKT die Silhouette
+            (2.45, 1.10, 8.98),
+            (2.70, 1.08, 8.52),
+            (2.88, 1.03, 8.16),    # Dachanlauf
             (3.02, 0.90, 7.80))
 
     _BOGEN = 30
     _TAPER = 10
     _RUECK = 7.30
     _ELL = 0.62      # x-Halbachse des Bugbogens als Anteil der Halbbreite
-    _N = 2.8         # Superellipsen-Exponent: 2 waere eine Ellipse (Ei). 2.8 macht die
-                     # Stirn flach und zieht die Rundung in enge Schulterkanten — der
-                     # ICE ist im Grundriss KANTIG, eine Schaufel mit runden Ecken.
+    _N = 3.4         # Superellipsen-Exponent: 2 waere eine Ellipse (Ei). 3.4 macht die
+                     # Stirn zum fast ebenen Schild und zieht die Rundung in enge
+                     # Schulterkanten — im Grundriss eine Schaufel mit runden Ecken.
 
     def _profil(y):
         """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
@@ -910,7 +910,12 @@ def fuehrerstand(kennung, r):
         _art, _p, _vz = _spalte(j)
         if _art == 0:
             _kb = _kastenbreite(y)
-            _z = _kb + (_hw - _kb) * _p * _p * (3 - 2 * _p)
+            # Spaete Verjuengung (p^1.7): die Flanke bleibt lange auf Kastenbreite
+            # und zieht erst kurz vor dem Bogen ein — flache Seitenwand, enge
+            # Schulter. Der symmetrische Smoothstep verteilte die Verjuengung ueber
+            # die ganze Kopflaenge und rundete die Seite sichtbar aus.
+            _g = _p ** 1.7
+            _z = _kb + (_hw - _kb) * _g * _g * (3 - 2 * _g)
             return _RUECK + (_xc - _RUECK) * _p, _vz * _z
         _cs = _m.cos(_p) ** (2.0 / _N)
         _sn = _m.copysign(abs(_m.sin(_p)) ** (2.0 / _N), _m.sin(_p))
@@ -1056,7 +1061,7 @@ def fuehrerstand(kennung, r):
     # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
     # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
     # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
-    for i, (wz, wu, wl) in enumerate(((-0.32, 8.510, 8.568), (0.44, 8.519, 8.577))):
+    for i, (wz, wu, wl) in enumerate(((-0.32, 8.696, 8.754), (0.44, 8.690, 8.748))):
         kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.32, wz * r, m_dunkel,
                fase=0, drehung=(0, -r * 1.05, 0))
         zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.28, wz * r, m_dunkel, achse="x")
@@ -1066,12 +1071,12 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.62 liegt die Haut auf x 9.398 (y 1.93), bei 0.80 auf 9.302 (y 1.97),
-    # bei 0.50 auf 9.459 (y 1.88) — Superellipse, nicht Ellipse!
+    # bei |z| 0.62 liegt die Haut auf x 9.623 (y 1.93), bei 0.80 auf 9.550 (y 1.97),
+    # bei 0.50 auf 9.665 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.908, 1.93, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.812, 1.97, s * 0.80, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.969, 1.88, s * 0.50, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 9.133, 1.93, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 9.060, 1.97, s * 0.80, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 9.175, 1.88, s * 0.50, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
