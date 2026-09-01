@@ -846,17 +846,17 @@ def fuehrerstand(kennung, r):
 
 
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
-    _TAB = ((0.60, 0.70, 9.30),
-            (0.74, 0.84, 9.62),
-            (0.88, 0.92, 9.80),
-            (1.02, 0.965, 9.90),   # Scheitel — bewusst TIEF, kurz ueber der Bauchbinde
-            (1.20, 0.995, 9.89),
-            (1.42, 1.025, 9.85),
-            (1.68, 1.05, 9.78),
-            (1.92, 1.075, 9.66),
-            (2.12, 1.09, 9.55),   # Scheibenunterkante — hier KNICKT die Silhouette
-            (2.45, 1.10, 8.98),
-            (2.70, 1.08, 8.52),
+    _TAB = ((0.60, 0.70, 9.42),
+            (0.74, 0.84, 9.72),
+            (0.88, 0.93, 9.93),   # Scheitel — GANZ unten, direkt ueber dem Kinn
+            (1.05, 0.97, 9.90),
+            (1.25, 1.00, 9.82),
+            (1.50, 1.03, 9.68),
+            (1.75, 1.055, 9.52),
+            (1.95, 1.075, 9.38),
+            (2.12, 1.09, 9.26),   # Scheibenunterkante — sanfter Knick
+            (2.45, 1.10, 8.86),
+            (2.70, 1.08, 8.50),
             (2.88, 1.03, 8.16),    # Dachanlauf
             (3.02, 0.90, 7.80))
 
@@ -1054,16 +1054,16 @@ def fuehrerstand(kennung, r):
     # einem Quader zu stehen. Aufgesetzte Kaesten wuerden in der Schale verschwinden
     # (Vollkoerperregel) oder als Kante davorstehen.
     # Zugzielanzeige liegt knapp ueber der Scheibenoberkante (Flaeche dort x 8.54).
-    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 7.91, 2.74, 0, m_dunkel,
+    kasten(f"Triebzug_Zielanzeige_{kennung}", 0.05, 1.0, 0.09, 0.5 + r * 7.945, 2.74, 0, m_dunkel,
            fase=0, drehung=(0, -r * 1.06, 0))
-    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 7.935, 2.74, -0.14 * r, m_markierung,
-           fase=0, drehung=(0, -r * 1.05, 0))
+    kasten(f"Triebzug_Zielanzeige_{kennung}_text", 0.04, 0.38, 0.04, 0.5 + r * 7.97, 2.74, -0.14 * r, m_markierung,
+           fase=0, drehung=(0, -r * 0.92, 0))
     # Wischer liegen flach auf der stark geneigten Scheibe (Neigung dort rund 61 Grad
     # gegen die Senkrechte), nicht mehr senkrecht davor. x-Rolle bleibt konstant:
     # unter der Spiegelkonvention der Szene dreht sie am Westende nicht mit.
-    for i, (wz, wu, wl) in enumerate(((-0.32, 8.696, 8.754), (0.44, 8.690, 8.748))):
+    for i, (wz, wu, wl) in enumerate(((-0.32, 8.510, 8.568), (0.44, 8.503, 8.561))):
         kasten(f"Triebzug_Wischer_{kennung}_{i}", 0.03, 0.06, 0.30, 0.5 + r * wu, 2.32, wz * r, m_dunkel,
-               fase=0, drehung=(0, -r * 1.05, 0))
+               fase=0, drehung=(0, -r * 0.92, 0))
         zylinder(f"Triebzug_Wischerlager_{kennung}_{i}", 0.04, 0.05, 0.5 + r * wl, 2.28, wz * r, m_dunkel, achse="x")
 
     # ---- Leuchten im dunklen Feld der Schale ----
@@ -1071,12 +1071,12 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.62 liegt die Haut auf x 9.623 (y 1.93), bei 0.80 auf 9.550 (y 1.97),
-    # bei 0.50 auf 9.665 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
+    # bei |z| 0.62 liegt die Haut auf x 9.362 (y 1.93), bei 0.80 auf 9.283 (y 1.97),
+    # bei 0.50 auf 9.414 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 9.133, 1.93, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 9.060, 1.97, s * 0.80, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 9.175, 1.88, s * 0.50, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.872, 1.93, s * 0.62, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.793, 1.97, s * 0.80, m_fenster, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.924, 1.88, s * 0.50, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
