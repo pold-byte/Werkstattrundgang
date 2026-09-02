@@ -1012,7 +1012,7 @@ def fuehrerstand(kennung, r):
                 elif _k in (7, 8):
                     # Das dunkle Feld laeuft in Scheibenbreite ueber den Dachanlauf
                     # — das schwarze Dachpanel des ICE 4.
-                    _slot = 3 if (_zs <= 0.72 and _TAPER <= _j <= _TAPER + _BOGEN) else _SLOT[_k]
+                    _slot = 3 if (_zs <= 0.55 and _TAPER <= _j <= _TAPER + _BOGEN) else _SLOT[_k]
                 _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
                 _mats.append(_slot)
                 # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart
@@ -1049,7 +1049,7 @@ def fuehrerstand(kennung, r):
     _rE.append(_acc)   # _rE[k] = Ringindex der Ebene k
     _scharf = set()
     for _j in range(_TAPER, _TAPER + _BOGEN):
-        if (_zsch[_j] + _zsch[_j + 1]) / 2 <= 0.80:
+        if (_zsch[_j] + _zsch[_j + 1]) / 2 <= 0.58:
             _scharf.add(frozenset((_ringe[_rE[6]][_j], _ringe[_rE[6]][_j + 1])))
             _scharf.add(frozenset((_ringe[_rE[7]][_j], _ringe[_rE[7]][_j + 1])))
     for _j in (_TAPER, _TAPER + _BOGEN):
@@ -1124,7 +1124,7 @@ def fuehrerstand(kennung, r):
     kasten(f"Triebzug_Kopf_Makrofon_{kennung}", 0.3, 0.46, 0.1, 0.5 + r * 6.4, 3.07, 0, m_stahlhell, fase=0.02)
     # Schwarzes Dachpanel: das dunkle Frontfeld endet beim Vorbild als gerundetes
     # Feld AUF dem Kabinendach — es verbindet sich optisch mit der Scheibe.
-    kasten(f"Triebzug_Dachpanel_{kennung}", 0.55, 1.15, 0.03, 0.5 + r * 6.95, 3.03, 0, m_zugglas, fase=0.01)
+    kasten(f"Triebzug_Dachpanel_{kennung}", 0.55, 1.0, 0.03, 0.5 + r * 6.95, 3.03, 0, m_zugglas, fase=0.01)
 
     # ---- Details AUF der Schale ----
     # Frontmaske, Scheibenrahmen, Frontscheibe, Mittelpfosten und Eckglas sind
