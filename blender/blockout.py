@@ -846,15 +846,15 @@ def fuehrerstand(kennung, r):
 
 
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
-    _TAB = ((0.60, 0.70, 9.67),
-            (0.74, 0.84, 10.01),
-            (0.88, 0.93, 10.12),  # Scheitel — GANZ unten, direkt ueber dem Kinn
-            (1.05, 0.97, 10.08),
-            (1.25, 1.00, 9.93),
-            (1.35, 1.01, 9.81),   # Ende der Spitzenrundung — ab hier ist die Schraege
-            (1.50, 1.03, 9.61),   # eine GERADE: alle Stuetzen bis zur
-            (1.75, 1.055, 9.28),  # Scheibenoberkante liegen kollinear (53 Grad)
-            (1.95, 1.075, 9.01),
+    _TAB = ((0.60, 0.82, 9.67),
+            (0.74, 0.95, 10.01),
+            (0.88, 1.01, 10.12),  # Scheitel — GANZ unten, direkt ueber dem Kinn
+            (1.05, 1.035, 10.08),
+            (1.25, 1.05, 9.93),
+            (1.35, 1.055, 9.81),  # Ende der Spitzenrundung — ab hier ist die Schraege
+            (1.50, 1.06, 9.61),   # eine GERADE: alle Stuetzen bis zur
+            (1.75, 1.07, 9.28),   # Scheibenoberkante liegen kollinear (53 Grad)
+            (1.95, 1.08, 9.01),
             (2.12, 1.09, 8.79),   # Scheibenunterkante — liegt AUF der Geraden
             (2.45, 1.10, 8.35),
             (2.70, 1.08, 8.02),   # Scheibenoberkante — Ende der Geraden
@@ -932,7 +932,6 @@ def fuehrerstand(kennung, r):
     # statt groesser (rund 2000 statt 7900 Vierecken je Kopf).
     _zband = [abs(_punkt(_j, 1.40)[1]) for _j in range(_P)]   # Bezugsbreite Bauchbinde
     _zsch = [abs(_punkt(_j, 2.40)[1]) for _j in range(_P)]    # Bezugsbreite Scheibe
-    _zleu = [abs(_punkt(_j, 1.88)[1]) for _j in range(_P)]    # Bezugsbreite Leuchtenfeld
 
     def _ebenen(j):
         """Zehn Hoehen je Spalte, streng steigend. Die Bindenmitte trifft in der Flanke
@@ -981,9 +980,11 @@ def fuehrerstand(kennung, r):
                 _slot = _SLOT[_k]
                 _zs = (_zsch[_j] + _zsch[_j2]) / 2
                 if _k == 4:
-                    # Leuchtenfeld nur auf dem Bug und nur im mittleren Querbereich
-                    _zl = (_zleu[_j] + _zleu[_j2]) / 2
-                    _slot = 3 if (0.34 <= _zl <= 0.94
+                    # Das dunkle Feld ist die FORTSETZUNG der Metallschiene nach
+                    # unten: dieselben Spalten (0.65..0.80), dieselbe Breite — die
+                    # Strebe endet in der Leuchteneinheit (Werkstattfoto). Dazwischen
+                    # bleibt die Stirn weiss.
+                    _slot = 3 if (0.65 < _zs <= 0.80
                                   and _TAPER <= _j <= _TAPER + _BOGEN) else 0
                 elif _k == 5:
                     # Schmale helle Schwelle direkt unter dem Glas
@@ -1045,8 +1046,8 @@ def fuehrerstand(kennung, r):
         for _i2 in range(_rE[4], _rE[7]):
             _scharf.add(frozenset((_ringe[_i2][_j], _ringe[_i2 + 1][_j])))
     for _j in range(_P - 1):
-        _zl2 = (_zleu[_j] + _zleu[_j + 1]) / 2
-        if 0.44 <= _zl2 <= 0.94 and _TAPER <= _j <= _TAPER + _BOGEN:
+        _zl2 = (_zsch[_j] + _zsch[_j + 1]) / 2
+        if 0.65 < _zl2 <= 0.80 and _TAPER <= _j <= _TAPER + _BOGEN:
             _scharf.add(frozenset((_ringe[_rE[4]][_j], _ringe[_rE[4]][_j + 1])))
             _scharf.add(frozenset((_ringe[_rE[5]][_j], _ringe[_rE[5]][_j + 1])))
     _attr = _mesh.attributes.new("sharp_edge", "BOOLEAN", "EDGE")
@@ -1136,17 +1137,17 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.52 liegt die Haut auf x 9.141 (y 1.84), bei 0.70 auf 9.054 (y 1.88),
-    # bei 0.40 auf 9.205 (y 1.80) — Superellipse Exponent 3.4, nicht Ellipse!
+    # bei |z| 0.71 liegt die Haut auf x 8.971 (y 1.94), bei 0.745 auf 9.122 (y 1.82),
+    # bei 0.665 auf 9.144 (y 1.82) — Superellipse Exponent 3.4, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.065, 0.06, 0.5 + r * 8.651, 1.84, s * 0.52, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.05, 0.06, 0.5 + r * 8.564, 1.88, s * 0.70, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.06, 0.06, 0.5 + r * 8.481, 1.94, s * 0.71, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.045, 0.06, 0.5 + r * 8.632, 1.82, s * 0.745, m_fenster, achse="x")
         # Lamellengitter im oberen Teil des dunklen Felds (Werkstattfoto: drei helle
         # Schlitze direkt unter der Scheibenecke). Haut je z nachgerechnet.
-        for gi, (gz, gu) in enumerate(((0.60, 8.389), (0.68, 8.373), (0.76, 8.350))):
+        for gi, (gz, gu) in enumerate(((0.675, 8.374), (0.75, 8.353))):
             kasten(f"Triebzug_Lamelle_{kennung}_{i}_{gi}", 0.02, 0.035, 0.14,
                    0.5 + r * gu, 2.03, s * gz, m_stahlhell, fase=0, drehung=(0, -r * 0.93, 0))
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.035, 0.06, 0.5 + r * 8.715, 1.80, s * 0.40, m_zug, achse="x")
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.03, 0.06, 0.5 + r * 8.654, 1.82, s * 0.665, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
