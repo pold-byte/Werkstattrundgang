@@ -846,8 +846,8 @@ def fuehrerstand(kennung, r):
 
 
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
-    _TAB = ((0.60, 0.82, 9.67),
-            (0.74, 0.95, 10.01),
+    _TAB = ((0.60, 0.82, 10.02),  # Kinn — die Spitze faellt SENKRECHT zum Boden
+            (0.74, 0.95, 10.09),
             (0.88, 1.01, 10.12),  # Scheitel — GANZ unten, direkt ueber dem Kinn
             (1.05, 1.035, 10.08),
             (1.25, 1.05, 9.93),
@@ -1173,7 +1173,7 @@ def fuehrerstand(kennung, r):
     # Neigung umgerechnet: dy = dv*cos(0.925), du = -dv*sin(0.925).
     _LOGO_W = 0.925
     _lsin, _lcos = _m.sin(_LOGO_W), _m.cos(_LOGO_W)
-    kasten(f"Triebzug_Logo_{kennung}", 0.016, 0.30, 0.20, 0.5 + r * 8.609, 1.88, 0,
+    kasten(f"Triebzug_Logo_{kennung}", 0.016, 0.46, 0.30, 0.5 + r * 8.609, 1.88, 0,
            m_zug, fase=0.007, drehung=(0, -r * _LOGO_W, 0))
 
     def _logo_strich(nr, za, dv, dzs, dvh):
@@ -1181,12 +1181,12 @@ def fuehrerstand(kennung, r):
                0.5 + r * (8.621 - dv * _lsin), 1.88 + dv * _lcos, za,
                m_zugweiss, fase=0, drehung=(0, -r * _LOGO_W, 0))
 
-    for _bi, _bz in ((0, r * 0.042), (1, -r * 0.042)):   # 0 = D (links), 1 = B (rechts)
-        _logo_strich(f"{_bi}l", _bz + 0.0275, 0, 0.02, 0.10)
-        _logo_strich(f"{_bi}r", _bz - 0.0275, 0, 0.02, 0.10)
-        _logo_strich(f"{_bi}o", _bz, 0.045, 0.075, 0.02)
-        _logo_strich(f"{_bi}u", _bz, -0.045, 0.075, 0.02)
-    _logo_strich("1m", -r * 0.042, 0, 0.045, 0.02)   # Mittelbalken macht das B
+    for _bi, _bz in ((0, r * 0.065), (1, -r * 0.065)):   # 0 = D (links), 1 = B (rechts)
+        _logo_strich(f"{_bi}l", _bz + 0.042, 0, 0.03, 0.15)
+        _logo_strich(f"{_bi}r", _bz - 0.042, 0, 0.03, 0.15)
+        _logo_strich(f"{_bi}o", _bz, 0.068, 0.115, 0.03)
+        _logo_strich(f"{_bi}u", _bz, -0.068, 0.115, 0.03)
+    _logo_strich("1m", -r * 0.065, 0, 0.07, 0.03)   # Mittelbalken macht das B
 
     # ---- Rote Bauchlinie ----
     # Sie ist vollstaendig Materialzone der Schale (siehe _slot == 1 oben). Die frueheren
@@ -1226,8 +1226,8 @@ def fuehrerstand(kennung, r):
     kasten(f"Triebzug_Kupplungskasten_{kennung}", 0.3, 0.5, 0.3, 0.5 + r * 9.08, 0.5, 0, m_dunkel, fase=0)
     zylinder(f"Triebzug_Kuppelschaft_{kennung}", 0.075, 0.34, 0.5 + r * 9.3, 0.5, 0, m_stahl, achse="x")
     kasten(f"Triebzug_Kuppelkopf_{kennung}", 0.13, 0.46, 0.36, 0.5 + r * 9.435, 0.5, 0, m_stahl, fase=0.02)
-    zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 9.51, 0.56, -0.11 * r, m_stahlhell, achse="x")
-    zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 9.5, 0.56, 0.11 * r, m_dunkel, achse="x")
+    zylinder(f"Triebzug_Kuppelkegel_{kennung}", 0.055, 0.12, 0.5 + r * 9.44, 0.56, -0.11 * r, m_stahlhell, achse="x")
+    zylinder(f"Triebzug_Kuppeltrichter_{kennung}", 0.075, 0.1, 0.5 + r * 9.43, 0.56, 0.11 * r, m_dunkel, achse="x")
     kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 9.43, 0.70, 0, m_stahlhell, fase=0.02)
 
 fuehrerstand("ost", 1)
