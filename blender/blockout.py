@@ -979,22 +979,29 @@ def fuehrerstand(kennung, r):
                 _f = [_ringe[_i][_j], _ringe[_i][_j2],
                       _ringe[_i + 1][_j2], _ringe[_i + 1][_j]]
                 _slot = _SLOT[_k]
+                _zs = (_zsch[_j] + _zsch[_j2]) / 2
                 if _k == 4:
                     # Leuchtenfeld nur auf dem Bug und nur im mittleren Querbereich
                     _zl = (_zleu[_j] + _zleu[_j2]) / 2
                     _slot = 3 if (0.34 <= _zl <= 0.94
                                   and _TAPER <= _j <= _TAPER + _BOGEN) else 0
                 elif _k == 5:
-                    # Schmale helle Schwelle direkt unter dem Glas — der
-                    # Scheibenrahmen aus dem Werkstattfoto.
-                    _slot = 5 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
+                    # Schmale helle Schwelle direkt unter dem Glas
+                    _slot = 5 if (_zs <= 0.80 and _TAPER <= _j <= _TAPER + _BOGEN) else 0
                 elif _k == 6:
-                    # Scheibe laeuft zwei Flankenspalten weit um die Ecke
-                    _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
+                    # Die Scheibe sitzt MITTIG (|z| bis 0.78) und wird links und
+                    # rechts von einer METALLSCHIENE gefasst (0.65..0.80) — wie im
+                    # Werkstattfoto. Vorher lief das Glas um die Kopfecke.
+                    if _zs <= 0.65 and _TAPER <= _j <= _TAPER + _BOGEN:
+                        _slot = 3
+                    elif _zs <= 0.80 and _TAPER <= _j <= _TAPER + _BOGEN:
+                        _slot = 5
+                    else:
+                        _slot = 0
                 elif _k in (7, 8):
-                    # Beim Vorbild laeuft das dunkle Feld ueber die Scheibe hinaus
-                    # den Dachanlauf hinauf — das schwarze Dachpanel des ICE 4.
-                    _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else _SLOT[_k]
+                    # Das dunkle Feld laeuft in Scheibenbreite ueber den Dachanlauf
+                    # — das schwarze Dachpanel des ICE 4.
+                    _slot = 3 if (_zs <= 0.80 and _TAPER <= _j <= _TAPER + _BOGEN) else _SLOT[_k]
                 _faces.append(_f[::-1] if r < 0 else _f)  # Spiegelung dreht die Wicklung
                 _mats.append(_slot)
                 # Die letzte Spalte ist die flache Rueckwand im Wagenkasten — hart
@@ -1030,9 +1037,10 @@ def fuehrerstand(kennung, r):
         _acc += _u_
     _rE.append(_acc)   # _rE[k] = Ringindex der Ebene k
     _scharf = set()
-    for _j in range(_TAPER - 2, _TAPER + _BOGEN + 2):
-        _scharf.add(frozenset((_ringe[_rE[6]][_j], _ringe[_rE[6]][_j + 1])))
-        _scharf.add(frozenset((_ringe[_rE[7]][_j], _ringe[_rE[7]][_j + 1])))
+    for _j in range(_TAPER, _TAPER + _BOGEN):
+        if (_zsch[_j] + _zsch[_j + 1]) / 2 <= 0.80:
+            _scharf.add(frozenset((_ringe[_rE[6]][_j], _ringe[_rE[6]][_j + 1])))
+            _scharf.add(frozenset((_ringe[_rE[7]][_j], _ringe[_rE[7]][_j + 1])))
     for _j in (_TAPER, _TAPER + _BOGEN):
         for _i2 in range(_rE[4], _rE[7]):
             _scharf.add(frozenset((_ringe[_i2][_j], _ringe[_i2 + 1][_j])))
