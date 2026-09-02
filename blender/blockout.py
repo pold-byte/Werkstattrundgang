@@ -1164,6 +1164,30 @@ def fuehrerstand(kennung, r):
     # Drittes Spitzenlicht mittig oben im dunklen Dachfeld (Haut dort x 7.643)
     zylinder(f"Triebzug_Spitzenlicht3_{kennung}", 0.05, 0.06, 0.5 + r * 7.148, 2.92, 0, m_fenster, achse="x")
 
+    # ---- DB-Logo auf der Stirn — ausdruecklicher Nutzerwunsch, die EINZIGE
+    # Ausnahme von der Greek-Regel (sonst keine Logos/Schrift in der Szene).
+    # Rote Tafel buendig auf der 53-Grad-Geraden (Haut bei y 1.88: x 9.1045),
+    # Buchstaben als blockige, SPIEGELSYMMETRISCHE Ringe: D = Ring, B = Ring mit
+    # Mittelbalken. So liest das gespiegelte Westende nicht seitenverkehrt; nur
+    # die Buchstabenplaetze tauschen ueber r. In-Ebene-Versatz dv wird ueber die
+    # Neigung umgerechnet: dy = dv*cos(0.925), du = -dv*sin(0.925).
+    _LOGO_W = 0.925
+    _lsin, _lcos = _m.sin(_LOGO_W), _m.cos(_LOGO_W)
+    kasten(f"Triebzug_Logo_{kennung}", 0.016, 0.30, 0.20, 0.5 + r * 8.609, 1.88, 0,
+           m_zug, fase=0.007, drehung=(0, -r * _LOGO_W, 0))
+
+    def _logo_strich(nr, za, dv, dzs, dvh):
+        kasten(f"Triebzug_Logo_{kennung}_{nr}", 0.014, dzs, dvh,
+               0.5 + r * (8.621 - dv * _lsin), 1.88 + dv * _lcos, za,
+               m_zugweiss, fase=0, drehung=(0, -r * _LOGO_W, 0))
+
+    for _bi, _bz in ((0, r * 0.042), (1, -r * 0.042)):   # 0 = D (links), 1 = B (rechts)
+        _logo_strich(f"{_bi}l", _bz + 0.0275, 0, 0.02, 0.10)
+        _logo_strich(f"{_bi}r", _bz - 0.0275, 0, 0.02, 0.10)
+        _logo_strich(f"{_bi}o", _bz, 0.045, 0.075, 0.02)
+        _logo_strich(f"{_bi}u", _bz, -0.045, 0.075, 0.02)
+    _logo_strich("1m", -r * 0.042, 0, 0.045, 0.02)   # Mittelbalken macht das B
+
     # ---- Rote Bauchlinie ----
     # Sie ist vollstaendig Materialzone der Schale (siehe _slot == 1 oben). Die frueheren
     # vier gedrehten Flankenabschnitte sind entfallen: sie sassen bei |z| 1.235, waehrend
