@@ -941,13 +941,13 @@ def fuehrerstand(kennung, r):
         _yc = 1.10 + 0.54 * (_zband[j] / 1.20) ** 5
         _ys = 2.12 + 0.18 * (_zsch[j] / 1.10) ** 3
         _b = _yc + 0.09
-        # Das Leuchtenband folgt der Scheibenunterkante in konstantem Abstand (8 bis
-        # 36 cm darunter) und NEIGT sich damit wie sie: innen tief, aussen hoch. Beim
+        # Das Leuchtenband folgt der Scheibenunterkante in konstantem Abstand (6 bis
+        # 42 cm darunter) und NEIGT sich damit wie sie: innen tief, aussen hoch. Beim
         # Vorbild sitzen die Leuchten als geneigte Felder direkt unter den
         # Scheibenecken — waagerechte Rechtecke lasen als aufgeklebte Pflaster.
-        return (0.60, 0.78, _yc - 0.09, _b, _ys - 0.36, _ys - 0.08, _ys, 2.70, 2.88, 3.02)
+        return (0.60, 0.78, _yc - 0.09, _b, _ys - 0.42, _ys - 0.06, _ys, 2.70, 2.88, 3.02)
 
-    _UNTER = (3, 7, 4, 6, 4, 3, 6, 3, 3)   # Unterringe je Ebenenintervall
+    _UNTER = (3, 7, 4, 6, 5, 2, 6, 3, 3)   # Unterringe je Ebenenintervall
     _SLOT = (2, 0, 1, 0, 3, 0, 3, 0, 4)    # Grundmaterial je Intervall
 
     _ebs = [_ebenen(_j) for _j in range(_P)]
@@ -982,8 +982,12 @@ def fuehrerstand(kennung, r):
                 if _k == 4:
                     # Leuchtenfeld nur auf dem Bug und nur im mittleren Querbereich
                     _zl = (_zleu[_j] + _zleu[_j2]) / 2
-                    _slot = 3 if (0.44 <= _zl <= 0.94
+                    _slot = 3 if (0.34 <= _zl <= 0.94
                                   and _TAPER <= _j <= _TAPER + _BOGEN) else 0
+                elif _k == 5:
+                    # Schmale helle Schwelle direkt unter dem Glas — der
+                    # Scheibenrahmen aus dem Werkstattfoto.
+                    _slot = 5 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
                 elif _k == 6:
                     # Scheibe laeuft zwei Flankenspalten weit um die Ecke
                     _slot = 3 if _TAPER - 2 <= _j <= _TAPER + _BOGEN + 1 else 0
@@ -1009,7 +1013,7 @@ def fuehrerstand(kennung, r):
     _mesh = bpy.data.meshes.new(f"Triebzug_Bugschale_{kennung}")
     _mesh.from_pydata(_verts, [], _faces)
     _mesh.update()
-    for _mat in (m_zugweiss, m_zug, m_unterflur, m_zugglas, m_zugdach):
+    for _mat in (m_zugweiss, m_zug, m_unterflur, m_zugglas, m_zugdach, m_stahlhell):
         _mesh.materials.append(_mat)
     for _p, _slot, _w in zip(_mesh.polygons, _mats, _weich):
         _p.material_index = _slot
@@ -1045,6 +1049,54 @@ def fuehrerstand(kennung, r):
     _schale = bpy.data.objects.new(f"Triebzug_Bugschale_{kennung}", _mesh)
     bpy.context.collection.objects.link(_schale)
     bpy.context.view_layer.objects.active = _schale
+
+    # ---- Grosse Bugklappe: aufgesetztes Feld mit Fugenschatten ----
+    # Beim Vorbild ist fast die ganze Stirn unterhalb der Leuchten EINE grosse
+    # Klappe (dahinter sitzt die Kupplung); ihre Fuge zeichnet das Werkstattfoto
+    # deutlich. Das Feld ist ein zweiter, um 18 mm vorgesetzter Ausschnitt der
+    # Schale (y 0.98..1.64, |z| bis 0.85); sein Rand faellt auf die Haut zurueck,
+    # die harte Randfacette liest als Fuge. Die rote Binde laeuft mit derselben
+    # Formel ueber die Klappe wie ueber die Schale — eine Kante, eine Linie.
+    _kSp = [_j for _j in range(_TAPER, _TAPER + _BOGEN + 1)
+            if abs(_punkt(_j, 1.30)[1]) <= 0.85]
+    _kNC = len(_kSp)
+    _kNR = 8
+    _kVerts, _kIdx = [], {}
+    for _cj, _j in enumerate(_kSp):
+        _yc2 = 1.10 + 0.54 * (_zband[_j] / 1.20) ** 5
+        _stufen = []
+        for _a2, _b2, _n2 in ((0.98, _yc2 - 0.09, 2),
+                              (_yc2 - 0.09, _yc2 + 0.09, 3),
+                              (_yc2 + 0.09, 1.64, 2)):
+            for _k2 in range(_n2):
+                _stufen.append(_a2 + (_b2 - _a2) * _k2 / _n2)
+        _stufen.append(1.64)
+        for _ri, _y in enumerate(_stufen):
+            _px, _pz = _punkt(_j, _y)
+            _rand = _ri in (0, _kNR - 1) or _cj in (0, _kNC - 1)
+            _off = 0.0 if _rand else 0.018
+            _kIdx[(_cj, _ri)] = len(_kVerts)
+            _kVerts.append((0.5 + r * (_px + _off - 0.5), -_pz, _y))
+    _kFaces, _kMats, _kWeich = [], [], []
+    for _cj in range(_kNC - 1):
+        for _ri in range(_kNR - 1):
+            _f = [_kIdx[(_cj, _ri)], _kIdx[(_cj + 1, _ri)],
+                  _kIdx[(_cj + 1, _ri + 1)], _kIdx[(_cj, _ri + 1)]]
+            _kFaces.append(_f[::-1] if r < 0 else _f)
+            _kMats.append(1 if _ri in (2, 3, 4) else 0)
+            _kWeich.append(not (_ri in (0, _kNR - 2) or _cj in (0, _kNC - 2)))
+    _kMesh = bpy.data.meshes.new(f"Triebzug_Bugklappe_gross_{kennung}")
+    _kMesh.from_pydata(_kVerts, [], _kFaces)
+    _kMesh.update()
+    for _mat in (m_zugweiss, m_zug):
+        _kMesh.materials.append(_mat)
+    for _p, _slot, _w in zip(_kMesh.polygons, _kMats, _kWeich):
+        _p.material_index = _slot
+        _p.use_smooth = _w
+    _kMesh.uv_layers.new(name="UVMap")
+    _kObj = bpy.data.objects.new(f"Triebzug_Bugklappe_gross_{kennung}", _kMesh)
+    bpy.context.collection.objects.link(_kObj)
+    bpy.context.view_layer.objects.active = _schale
     # Kabine und Dachklotz sind entfallen: der Wagenkasten reicht ohnehin bis x 7.5 und
     # die Dachkrone bis 7.3, beide Kaesten lagen restlos darin. Die Schale beginnt bei
     # 7.30 — 20 cm INNERHALB der Kastenstirn, damit ihre flache Rueckwand verdeckt ist.
@@ -1076,12 +1128,17 @@ def fuehrerstand(kennung, r):
     # flacher Quader am Aussenrand 28 cm vor der Haut und hing dort sichtbar frei.
     # Das dunkle Feld ist Teil der Schale und folgt der Scheibenunterkante; nur die
     # Lampen selbst sitzen als kurze Zylinder knapp davor. Flaechenwerte nachgerechnet:
-    # bei |z| 0.62 liegt die Haut auf x 9.005 (y 1.93), bei 0.80 auf 8.901 (y 1.97),
-    # bei 0.50 auf 9.089 (y 1.88) — Superellipse Exponent 3.4, nicht Ellipse!
+    # bei |z| 0.52 liegt die Haut auf x 9.141 (y 1.84), bei 0.70 auf 9.054 (y 1.88),
+    # bei 0.40 auf 9.205 (y 1.80) — Superellipse Exponent 3.4, nicht Ellipse!
     for i, s in enumerate((-1, 1)):
-        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.515, 1.93, s * 0.62, m_fenster, achse="x")
-        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.055, 0.06, 0.5 + r * 8.411, 1.97, s * 0.80, m_fenster, achse="x")
-        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.04, 0.06, 0.5 + r * 8.599, 1.88, s * 0.50, m_zug, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht_{kennung}_{i}", 0.065, 0.06, 0.5 + r * 8.651, 1.84, s * 0.52, m_fenster, achse="x")
+        zylinder(f"Triebzug_Spitzenlicht2_{kennung}_{i}", 0.05, 0.06, 0.5 + r * 8.564, 1.88, s * 0.70, m_fenster, achse="x")
+        # Lamellengitter im oberen Teil des dunklen Felds (Werkstattfoto: drei helle
+        # Schlitze direkt unter der Scheibenecke). Haut je z nachgerechnet.
+        for gi, (gz, gu) in enumerate(((0.60, 8.389), (0.68, 8.373), (0.76, 8.350))):
+            kasten(f"Triebzug_Lamelle_{kennung}_{i}_{gi}", 0.02, 0.035, 0.14,
+                   0.5 + r * gu, 2.03, s * gz, m_stahlhell, fase=0, drehung=(0, -r * 0.93, 0))
+        zylinder(f"Triebzug_Schlusslicht_{kennung}_{i}", 0.035, 0.06, 0.5 + r * 8.715, 1.80, s * 0.40, m_zug, achse="x")
         # Lueftungsgitter sitzt auf der Korpusflanke hinter der Schale (|z| 1.215),
         # nicht mehr auf der verjuengten Bugflanke, wo es darin verschwaende.
         kasten(f"Triebzug_Frontgitter_{kennung}_{i}", 0.4, 0.06, 0.09, 0.5 + r * 6.95, 1.79, s * 1.215, m_dunkel, fase=0)
