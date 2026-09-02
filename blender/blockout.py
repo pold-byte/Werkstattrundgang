@@ -865,9 +865,18 @@ def fuehrerstand(kennung, r):
     _TAPER = 10
     _RUECK = 7.30
     _ELL = 0.62      # x-Halbachse des Bugbogens als Anteil der Halbbreite
-    _N = 3.4         # Superellipsen-Exponent: 2 waere eine Ellipse (Ei). 3.4 macht die
-                     # Stirn zum fast ebenen Schild und zieht die Rundung in enge
-                     # Schulterkanten — im Grundriss eine Schaufel mit runden Ecken.
+    _N = 3.4         # Superellipsen-Exponent oben: 2 waere eine Ellipse (Ei). 3.4 macht
+                     # die Stirn zum fast ebenen Schild mit engen Schulterkanten.
+
+    def _n(y):
+        """Exponent je Hoehe: oben 3.4 (kantiges Schild), unterhalb der Binde weich
+        auf 2.1 (RUNDE Spitze wie im Werkstattfoto — dort ist der Bug unten eine
+        breite, weiche Rundung, kein Kasten). Uebergang zwischen 0.95 und 1.50."""
+        if y <= 0.95:
+            return 2.1
+        if y >= 1.50:
+            return _N
+        return 2.1 + (_N - 2.1) * (y - 0.95) / 0.55
 
     def _profil(y):
         """Vordere Halbbreite und vorderster Punkt auf Hoehe y (linear zwischen _TAB)."""
@@ -918,8 +927,9 @@ def fuehrerstand(kennung, r):
             _g = _p ** 1.7
             _z = _kb + (_hw - _kb) * _g * _g * (3 - 2 * _g)
             return _RUECK + (_xc - _RUECK) * _p, _vz * _z
-        _cs = _m.cos(_p) ** (2.0 / _N)
-        _sn = _m.copysign(abs(_m.sin(_p)) ** (2.0 / _N), _m.sin(_p))
+        _nn = _n(y)
+        _cs = _m.cos(_p) ** (2.0 / _nn)
+        _sn = _m.copysign(abs(_m.sin(_p)) ** (2.0 / _nn), _m.sin(_p))
         return _xc + _a * _cs, _hw * _sn
 
     # ---- Farbgrenzen sind NETZKANTEN, keine Auswahl auf waagerechten Ringen ----
