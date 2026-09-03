@@ -1686,6 +1686,54 @@ zylinder("Station_5_ablage_rolle", 0.09, 0.5, 5.5, 0.97, 5.2, m_gummi, achse="z"
 rohr_mit_bogen("Station_5_kabel", [(1.3, 0.1, 6.9), (1.2, 0.1, 8.6), (1.2, 0.45, 9.6)], 0.04, m_dunkel)
 kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 1.2, 0.9, 9.78, m_objekt)
 
+# ---- Datenspur: Werkstattdaten dort zeigen, wo sie entstehen ------------------
+# Die Dramaturgie ist eine Data-Science-Geschichte (eine Kennzahl von der Halle bis
+# in die Planungsrunde), aber die Requisiten waren rein physisch. Jetzt tragen die
+# Stationsposen ihre Datenquellen: Scanner und Tablet im Meisterbuero (Auftraege,
+# Stoermeldungen), Datenkatalog-Poster im Datenraum (Quellen -> Tabellen),
+# Messprotokoll, Messschieber und ein Datenlogger am Pruefling (Messwerte).
+# Alles gegreekt: Balken statt Schrift, keine Ziffern.
+
+# Station 1 — Handscanner und Tablet auf dem Schreibtisch (Platte x -9.38..-7.78,
+# z -5.32..-4.47, Oberkante 0.84 wie der Monitorfuss)
+kasten("Station_1_tablet", 0.27, 0.19, 0.012, -8.0, 0.846, -5.05, m_dunkel, fase=0)
+kasten("Station_1_tablet_schirm", 0.245, 0.165, 0.004, -8.0, 0.854, -5.05, m_stahlhell, fase=0)
+kasten("Station_1_tablet_zeile_0", 0.16, 0.02, 0.003, -8.03, 0.8575, -5.10, m_blau, fase=0)
+kasten("Station_1_tablet_zeile_1", 0.12, 0.02, 0.003, -8.05, 0.8575, -5.04, m_stahl, fase=0)
+kasten("Station_1_tablet_zeile_2", 0.14, 0.02, 0.003, -8.04, 0.8575, -4.98, m_stahl, fase=0)
+kasten("Station_1_scanner_griff", 0.045, 0.035, 0.11, -7.95, 0.895, -4.65, m_dunkel, fase=0.01)
+kasten("Station_1_scanner_kopf", 0.17, 0.075, 0.06, -7.92, 0.98, -4.65, m_dunkel, fase=0.015)
+kasten("Station_1_scanner_fenster", 0.02, 0.05, 0.03, -7.835, 0.98, -4.65, m_zug, fase=0)
+
+# Station 2 — Datenkatalog-Tafel an der oestlichen Regalwange (x -1.76), frontal zur
+# Datenraum-Kamera. An der Nordwand verschwand sie aus dieser Pose hinter dem
+# Lueftungskanal. Links (Betrachter: +z) verstreute Quellen, ein Uebergangsbalken,
+# rechts zwei geordnete Tabellenraster — Chaos wird Struktur, in einem Bild.
+kasten("Station_2_datenkatalog_rahmen", 0.02, 0.96, 0.66, -1.75, 1.45, -6.0, m_dunkel, fase=0)
+kasten("Station_2_datenkatalog", 0.03, 0.9, 0.6, -1.745, 1.45, -6.0, m_fenster, fase=0)
+for i, (qy, qz, qm) in enumerate(((1.62, -5.62, m_blau), (1.66, -5.78, m_zug), (1.52, -5.92, m_gruen),
+                                  (1.45, -5.66, m_orange), (1.34, -5.84, m_markierung),
+                                  (1.27, -5.98, m_stahl), (1.25, -5.62, m_blau))):
+    kasten(f"Station_2_datenkatalog_quelle_{i}", 0.02, 0.06, 0.06, -1.72, qy, qz, qm, fase=0)
+kasten("Station_2_datenkatalog_pfeil", 0.02, 0.08, 0.02, -1.72, 1.45, -6.03, m_stahl, fase=0)
+for t, ty in enumerate((1.66, 1.40)):
+    kasten(f"Station_2_datenkatalog_kopf_{t}", 0.02, 0.28, 0.025, -1.72, ty, -6.25, m_blau, fase=0)
+    for z, dy in enumerate((0.06, 0.11, 0.16)):
+        kasten(f"Station_2_datenkatalog_zeile_{t}_{z}", 0.02, 0.28, 0.015, -1.72, ty - dy, -6.25, m_stahl, fase=0)
+
+# Station 5 — Messprotokoll-Klemmbrett und Messschieber auf der Ablage (Oberkante 0.88),
+# Datenlogger mit gruener LED auf der Achse des Prueflings, Kabel in den Aufbau
+kasten("Station_5_klemmbrett", 0.32, 0.23, 0.01, 5.0, 0.885, 4.97, m_dunkel, fase=0)
+kasten("Station_5_klemmbrett_blatt", 0.29, 0.20, 0.004, 5.0, 0.892, 4.97, m_fenster, fase=0)
+for i, lz in enumerate((5.04, 5.00, 4.96, 4.92, 4.88)):
+    kasten(f"Station_5_klemmbrett_zeile_{i}", 0.20 if i % 2 else 0.24, 0.012, 0.003, 4.98, 0.8955, lz, m_stahl, fase=0)
+kasten("Station_5_klemmbrett_clip", 0.08, 0.04, 0.02, 5.13, 0.9, 4.97, m_stahlhell, fase=0)
+kasten("Station_5_messschieber", 0.22, 0.025, 0.008, 4.95, 0.884, 5.5, m_stahlhell, fase=0)
+kasten("Station_5_messschieber_schieber", 0.03, 0.05, 0.02, 4.9, 0.89, 5.5, m_stahl, fase=0)
+kasten("Station_5_logger", 0.08, 0.07, 0.06, 2.85, 1.386, 5.75, m_dunkel, fase=0.01)
+kasten("Station_5_logger_led", 0.015, 0.015, 0.008, 2.85, 1.42, 5.72, m_gruen, fase=0)
+rohr_mit_bogen("Station_5_logger_kabel", [(2.85, 1.37, 5.72), (2.85, 1.15, 5.62), (2.25, 1.0, 5.62)], 0.012, m_dunkel)
+
 # Schweissplatz an der Suedwand — ersetzt die orange Kenney-Haube, die als
 # unlesbarer Bogen die linke untere Ecke der Totale dominierte.
 for i, (wx, wz, wdx, wdz) in enumerate(((4.3, 9.7, 1.56, 0.06), (3.52, 9.25, 0.06, 0.9), (5.08, 9.25, 0.06, 0.9))):
