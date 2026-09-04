@@ -1605,7 +1605,7 @@ kasten("Station_3_terminal_saeule", 0.5, 0.5, 1.2, 7, 0.6, -4.3, m_dunkel)
 kasten("Station_3_terminal_gehaeuse", 1.0, 0.35, 0.65, 7, 1.35, -4.15, m_blau)
 kasten("Station_3_terminal_pult", 1.2, 0.5, 0.1, 7, 0.95, -3.95, m_stahl)
 kasten("Station_3_tastatur", 0.6, 0.28, 0.05, 7, 1.02, -3.9, m_dunkel, fase=0)
-kasten("Station_3_bodenplatte", 2.2, 1.6, 0.03, 7, 0.02, -4.0, m_gleiszone, fase=0)
+kasten("Station_3_bodenplatte", 2.2, 1.6, 0.03, 7, 0.02, -4.0, m_riffel, fase=0)  # hell: dunkel las als Loch
 bpy.ops.mesh.primitive_plane_add(size=1, location=pos(7, 1.35, -3.95))
 monitor = bpy.context.active_object
 monitor.name = "Monitor_Bildschirm"
@@ -1627,7 +1627,7 @@ kasten("Station_4_titelzeile", 1.8, 0.04, 0.2, 9.5, 2.74, 5.71, m_markierung, fa
 # Rueckseite mit Streben (Totale schaut von hinten drauf) + Standzone davor
 kasten("Station_4_strebe_1", 3.2, 0.05, 0.12, 9, 1.5, 5.92, m_stahlhell, fase=0)
 kasten("Station_4_strebe_2", 3.2, 0.05, 0.12, 9, 2.5, 5.92, m_stahlhell, fase=0)
-kasten("Station_4_bodenplatte", 2.4, 1.6, 0.03, 9, 0.02, 4.6, m_gleiszone, fase=0)
+kasten("Station_4_bodenplatte", 2.4, 1.6, 0.03, 9, 0.02, 4.6, m_riffel, fase=0)  # hell: dunkel las als Loch
 # Suedwand-Umfeld der Station 4 fuellen
 kasten("Station_4_werkzeugtafel", 1.6, 0.06, 1.0, 6.8, 1.7, 9.78, m_dunkel, fase=0)
 for i, (wx2, wy2, wm2) in enumerate(((6.3, 1.9, m_orange), (6.7, 1.8, m_stahl), (7.1, 1.95, m_orange), (7.3, 1.55, m_objekt))):

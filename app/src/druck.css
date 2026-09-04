@@ -34,6 +34,6 @@ body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; background: #f
 .kernaussage { font-size: 18pt; font-weight: bold; margin-bottom: 8mm; max-width: 230mm; }
 .seite ul { list-style: none; }
 .seite li { font-size: 15pt; padding: 2.5mm 0 2.5mm 8mm; position: relative; }
-.seite li::before { content: "—"; position: absolute; left: 0; color: #5a5a5a; }
+.seite li::before { content: ""; position: absolute; left: 0; top: 4.2mm; width: 2.4mm; height: 2.4mm; background: #5a5a5a; }
 .thumbnail { position: absolute; bottom: 10mm; left: 18mm; width: 60mm; border: 0.3mm solid #d0d0d0; }
 .kapitel { position: absolute; bottom: 10mm; right: 18mm; font-size: 10pt; color: #5a5a5a; }
