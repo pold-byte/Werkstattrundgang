@@ -330,20 +330,21 @@ bpy.ops.object.delete()
 # Iso-Referenz-Palette: helle Halle, satte Blau-/Orange-Akzente, Rot nur am Zug.
 GRAU_GLEISZONE = (0.48, 0.50, 0.52)
 GRAU_WAND = (0.80, 0.79, 0.76)
-GRAU_OBJEKT = (0.64, 0.65, 0.66)
+GRAU_OBJEKT = (0.72, 0.73, 0.72)      # RAL 7035 Lichtgrau, leicht gedeckt: Maschinen- und Geraetegrau
 GRAU_DUNKEL = (0.29, 0.30, 0.32)
 STAHL = (0.55, 0.57, 0.60)
 FENSTER = (0.87, 0.91, 0.96)
-BLAU = (0.30, 0.47, 0.75)
-ORANGE = (0.92, 0.48, 0.10)
-MARKIERUNG = (0.90, 0.76, 0.16)
+BLAU = (0.10, 0.33, 0.56)             # RAL 5010 Enziablau, der Maschinenlack der Werkstatt
+ORANGE = (0.89, 0.35, 0.13)           # RAL 2004 Reinorange, Faesser und Warnkoerper
+MARKIERUNG = (0.95, 0.72, 0.05)       # RAL 1023 Verkehrsgelb, Bodenmarkierung und Rammschutz
 STAHL_HELL = (0.85, 0.86, 0.88)
-GRUEN = (0.30, 0.55, 0.32)
+GRUEN = (0.12, 0.33, 0.26)            # RAL 6005 Moosgruen, Schweissschutzwaende
 GRUBE = (0.09, 0.10, 0.11)
 ROT_ZUG = (0.72, 0.12, 0.16)
 WEISS_ZUG = (0.90, 0.90, 0.91)
 WAND_RELIEF = (0.62, 0.61, 0.58)
 DECKE = (0.84, 0.83, 0.81)
+SOCKEL = (0.44, 0.45, 0.45)           # RAL 7037 Staubgrau: abwaschbarer Wandsockel
 
 # Materialien mit ablesbarer Materialitaet: Beton matt+fleckig (Textur), Stahl
 # metallisch-glaenzend (Metalness, Reflexe kommen aus der Environment-Map im Viewer),
@@ -368,6 +369,7 @@ m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.3, metall=0.25)
 m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.5, metall=0.30)
 m_relief = material("WandRelief", WAND_RELIEF)
 m_decke = material("Decke", DECKE)
+m_sockel = material("Sockel", SOCKEL, rauheit=0.75)
 # Unterflur-Staffelung: Schiene blank gefahren, Schwelle stumpfes Beton-Grau,
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
 # dadurch verschmolzen Rad, Rahmen, Schiene und Schwelle zu einem grauen Block.
@@ -455,7 +457,8 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, fx in enumerate(range(-16, 17, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.15, 0.3, 1.8, fx, 4.4, cz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", laenge, 0.24, 0.08, cx, 4.4, cz, m_stahl)
-        kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 0.4, cx, 0.2, cz + (-0.2 if cz > 0 else 0.2), m_relief)
+        # Abwaschbarer Sockelanstrich bis 1.2 m: die kraeftigste Horizontale jeder Werkstattwand
+        kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 1.2, cx, 0.6, cz + (-0.2 if cz > 0 else 0.2), m_sockel)
         kasten(f"Relief_{seite}_Traeger", laenge, 0.26, 0.55, cx, 3.55, cz + (-0.25 if cz > 0 else 0.25), m_relief)
         for i, px in enumerate(range(-15, 16, 3)):
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.28, 0.14, 3.3, px, 1.75, cz + (-0.2 if cz > 0 else 0.2), m_relief)
@@ -466,7 +469,7 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, fz in enumerate(range(-8, 9, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.3, 0.15, 1.8, cx, 4.4, fz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", 0.24, laenge, 0.08, cx, 4.4, cz, m_stahl)
-        kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 0.4, cx + 0.2, 0.2, cz, m_relief)
+        kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 1.2, cx + 0.2, 0.6, cz, m_sockel)
         kasten(f"Relief_{seite}_Traeger", 0.26, laenge, 0.55, cx + 0.25, 3.55, cz, m_relief)
         for i, pz in enumerate(range(-8, 9, 4)):
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.14, 0.28, 3.3, cx + 0.2, 1.75, pz, m_relief)
