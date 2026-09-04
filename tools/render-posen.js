@@ -25,7 +25,7 @@
   for (const [name, pos, ziel] of posen) {
     k.position.set(...pos); k.updateProjectionMatrix(); k.lookAt(...ziel); rn.render(s, k);
     const antwort = await fetch('http://localhost:5198/', { method: 'POST', body: JSON.stringify({ name, data: c.toDataURL('image/png') }) });
-    console.log(name, antwort.status);
+    console.log(name, antwort.status, await antwort.text());
   }
   console.log('fertig; Seite neu laden, um die App wieder normal zu betreiben');
 })();

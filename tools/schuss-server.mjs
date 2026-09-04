@@ -20,9 +20,11 @@ http.createServer((req, res) => {
       if (!/^[\w-]+$/.test(name)) throw new Error('unerlaubter Name');
       fs.writeFileSync(path.join(ZIEL, name + '.png'), Buffer.from(data.split(',')[1], 'base64'));
       console.log('OK ' + name);
+      res.end('ok');
     } catch (fehler) {
       console.log('FEHLER ' + fehler.message);
+      res.statusCode = 500;
+      res.end('FEHLER ' + fehler.message);
     }
-    res.end('ok');
   });
 }).listen(5198, () => console.log('Schuss-Server auf http://localhost:5198'));
