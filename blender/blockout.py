@@ -427,6 +427,15 @@ kasten("Halle_Gleiszone_GrubeNord", 7, 0.8, 0.006, -3.5, 0.003, -1.4, m_gleiszon
 kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.006, -3.5, 0.003, 1.4, m_gleiszone, fase=0)
 kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.012, -1.9, m_markierung, fase=0)
 kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.012, 1.9, m_markierung, fase=0)
+# Plattenraster mit Dehnfugen (5-m-Raster) und gelbe Sicherheitslinie 1.0 m neben der
+# Gleiszone: der Hallenboden liest sonst als eine einzige Betonflaeche.
+for i, fx in enumerate((-15.0, -10.0, -5.0, 5.0, 10.0, 15.0)):
+    for seite, z0, z1 in (("n", -9.85, -1.9), ("s", 1.9, 9.85)):
+        kasten(f"Bodenfuge_x_{i}_{seite}", 0.02, z1 - z0, 0.002, fx, 0.001, (z0 + z1) / 2, m_dunkel, fase=0)
+for i, fz in enumerate((-7.0, -4.0, 4.0, 7.0)):
+    kasten(f"Bodenfuge_z_{i}", 34.0, 0.02, 0.002, 0, 0.001, fz, m_dunkel, fase=0)
+for seite, sz in (("nord", -2.8), ("sued", 2.8)):
+    kasten(f"Sicherheitsabstand_{seite}", 30.0, 0.10, 0.002, 0, 0.001, sz, m_markierung, fase=0)
 # Fussweg liegt VOR Rammschutz und Maschinenfront (z -7.6..-6.5). Vorher lief er am
 # Wandfuss unter den Maschinen und durchs Meisterbuero. Luecke am Fuss der Buehnentreppe.
 kasten("Halle_Weg_Nord_W", 10.5, 1.1, 0.03, -3.05, 0.02, -7.05, m_weg, fase=0)
