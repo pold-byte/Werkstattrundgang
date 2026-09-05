@@ -1641,6 +1641,10 @@ kasten("Station_3_terminal_gehaeuse", 1.0, 0.35, 0.65, 7, 1.35, -4.15, m_blau)
 kasten("Station_3_terminal_pult", 1.2, 0.5, 0.1, 7, 0.95, -3.95, m_stahl)
 kasten("Station_3_tastatur", 0.6, 0.28, 0.05, 7, 1.02, -3.9, m_dunkel, fase=0)
 kasten("Station_3_bodenplatte", 2.2, 1.6, 0.03, 7, 0.02, -4.0, m_riffel, fase=0)  # hell: dunkel las als Loch
+# Das Terminal haengt am Nordwand-Kabelkanal: Kabel am Boden nach Norden, ueber den
+# Fussweg mit gelber Kabelbruecke (Stolperkante), an der Wand hoch in den Kanal.
+rohr_mit_bogen("Station_3_kabel", [(7.0, 0.03, -4.55), (7.0, 0.03, -9.7), (7.0, 1.43, -9.76)], 0.02, m_dunkel)
+kasten("Station_3_kabelbruecke", 0.5, 1.2, 0.05, 7.0, 0.06, -7.05, m_markierung, fase=0.015)
 bpy.ops.mesh.primitive_plane_add(size=1, location=pos(7, 1.35, -3.95))
 monitor = bpy.context.active_object
 monitor.name = "Monitor_Bildschirm"
@@ -1718,8 +1722,14 @@ kasten("Station_5_ablageplatte", 1.8, 0.75, 0.08, 5.0, 0.84, 5.2, m_dunkel)
 kasten("Station_5_ablage_kiste", 0.4, 0.4, 0.24, 4.5, 1.0, 5.2, m_blau)
 zylinder("Station_5_ablage_rolle", 0.09, 0.5, 5.5, 0.97, 5.2, m_gummi, achse="z")
 # Strom-/Kabelanbindung des Pruefstands zur Suedwand (westlich am Schweissplatz vorbei)
-rohr_mit_bogen("Station_5_kabel", [(1.3, 0.1, 6.9), (1.2, 0.1, 8.6), (1.2, 0.45, 9.6)], 0.04, m_dunkel)
+# Kabel laeuft am Boden zur Wand und dort senkrecht in den Schaltkasten (vorher eine
+# starre Schraege frei durch den Raum)
+rohr_mit_bogen("Station_5_kabel", [(1.3, 0.06, 6.9), (1.2, 0.06, 9.72), (1.2, 0.55, 9.76)], 0.04, m_dunkel)
 kasten("Station_5_anschluss", 0.5, 0.15, 0.7, 1.2, 0.9, 9.78, m_objekt)
+# Schaltkasten mit Tuerblatt, Not-Aus und gegreektem Schild statt Verbandkasten
+kasten("Station_5_anschluss_tuer", 0.42, 0.02, 0.6, 1.2, 0.9, 9.695, m_stahlhell, fase=0)
+zylinder("Station_5_notaus", 0.04, 0.03, 1.32, 1.15, 9.68, m_zug, achse="z", ecken=32)
+kasten("Station_5_anschluss_schild", 0.14, 0.01, 0.05, 1.1, 1.15, 9.68, m_markierung, fase=0)
 
 # ---- Datenspur: Werkstattdaten dort zeigen, wo sie entstehen ------------------
 # Die Dramaturgie ist eine Data-Science-Geschichte (eine Kennzahl von der Halle bis
