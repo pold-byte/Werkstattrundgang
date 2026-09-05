@@ -440,17 +440,6 @@ for seite, sz in (("nord", -2.8), ("sued", 2.8)):
 # Wandfuss unter den Maschinen und durchs Meisterbuero. Luecke am Fuss der Buehnentreppe.
 kasten("Halle_Weg_Nord_W", 10.5, 1.1, 0.03, -3.05, 0.02, -7.05, m_weg, fase=0)
 kasten("Halle_Weg_Nord_O", 13.1, 1.1, 0.03, 10.15, 0.02, -7.05, m_weg, fase=0)
-# Fugenraster: Querfugen alle 4 m, Laengsfugen ausserhalb der Gleiszone. Erst mit
-# dem abgedunkelten Gleiszonen-Material werden sie ueberhaupt sichtbar und geben
-# der 8.5 x 13 m grossen Bodenflaeche einen Massstab.
-for i, fx in enumerate(range(-16, 17, 4)):
-    if -7.0 < fx < 0.0:  # Grubenoeffnung aussparen, sonst schwebt die Fuge ueber dem Loch
-        for j, zm in enumerate((-5.4, 5.4)):
-            kasten(f"Bodenfuge_q{i}_{j}", 0.06, 8.6, 0.015, fx, 0.012, zm, m_gleiszone, fase=0)
-    else:
-        kasten(f"Bodenfuge_q{i}", 0.06, 19.4, 0.015, fx, 0.012, 0, m_gleiszone, fase=0)
-for i, fz in enumerate((-6.5, -3.5, 3.5, 6.5, 9.5)):
-    kasten(f"Bodenfuge_l{i}", 33.4, 0.06, 0.015, 0, 0.012, fz, m_gleiszone, fase=0)
 # Gebrauchsspuren: eine Werkstatt ist benutzt. Zwei Oelflecken in der Gleiszone
 # (Oberkante 0.04) und einer auf dem Hallenboden (Oberkante 0.0).
 zylinder("Oelfleck_1", 0.28, 0.012, -4.5, 0.012, 1.5, m_oelfleck)
