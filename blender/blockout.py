@@ -265,7 +265,7 @@ def i_traeger(name, laenge, hoehe, breite, x, y, z, mat, achse="x"):
 ASSETS = os.path.join(WURZEL, "blender", "assets", "kenney")
 
 
-def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=None, einfaerbung=None):
+def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=None, einfaerbung=None, fase=0.012):
     """Importiert ein CC0-Kenney-GLB und haengt es unter ein Anker-Empty.
 
     Die Hierarchie bleibt erhalten (geriggte Modelle wie der Roboterarm kollabieren
@@ -301,6 +301,15 @@ def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=No
         for o in meshes:
             for slot in o.material_slots:
                 slot.material = einfaerbung
+    if fase:
+        # Gleiche Kantensprache wie die gefasten Kaesten der Szene. Die Breite ist ein
+        # Weltmass; die Meshes haengen unter einem skalierten Anker, daher /faktor.
+        for o in meshes:
+            mod = o.modifiers.new("Fase", "BEVEL")
+            mod.width = fase / faktor
+            mod.segments = 2
+            mod.limit_method = "ANGLE"
+            mod.angle_limit = 0.61
     return anker
 
 
@@ -668,9 +677,12 @@ for i, bx in enumerate((-5.9, 6.9)):
     kasten(f"Triebzug_DG_{i}_quertraeger", 0.6, 2.0, 0.26, bx, 0.63, 0, m_stahl)
     zylinder(f"Triebzug_DG_{i}_motor", 0.2, 0.8, bx + 0.45, 0.62, 0, m_stahl, achse="z")
     for s, seite in ((-1, "nord"), (1, "sued")):
-        kasten(f"Triebzug_DG_{i}_rahmen_{seite}", 2.3, 0.16, 0.15, bx, 0.875, s * 0.98, m_stahl)
+        # Schlanker Langtraeger, die Raeder bleiben darunter sichtbar (vorher las das
+        # Drehgestell aus der Seitenansicht als ein Balken)
+        kasten(f"Triebzug_DG_{i}_rahmen_{seite}", 2.3, 0.14, 0.12, bx, 0.905, s * 0.98, m_stahl)
         for j, rx in enumerate((-0.7, 0.7)):
-            kasten(f"Triebzug_DG_{i}_achslager_{seite}_{j}", 0.3, 0.34, 0.24, bx + rx, 0.55, s * 1.0, m_unterflur)
+            kasten(f"Triebzug_DG_{i}_achslager_{seite}_{j}", 0.3, 0.34, 0.24, bx + rx, 0.55, s * 1.0, m_stahl)
+            zylinder(f"Triebzug_DG_{i}_achsdeckel_{seite}_{j}", 0.09, 0.03, bx + rx, 0.55, s * 1.185, m_stahlhell, achse="z", ecken=32)
             kasten(f"Triebzug_DG_{i}_fuehrung_{seite}_{j}", 0.14, 0.16, 0.22, bx + rx, 0.74, s * 0.98, m_stahl)
             kasten(f"Triebzug_DG_{i}_bremszange_{seite}_{j}", 0.12, 0.08, 0.28, bx + rx, 0.58, s * 0.505, m_stahl)
             zylinder(f"Triebzug_DG_{i}_feder_{seite}_{j}", 0.1, 0.14, bx + rx, 0.74, s * 1.06, m_stahlhell)
@@ -1333,10 +1345,11 @@ for s in (-1, 1):
         kasten(f"Trommel_Konsole_{seite}_{i}", 0.2, 0.7, 0.12, bx, 2.6, s * 2.35, m_stahl, fase=0)
         zylinder(f"Trommel_{seite}_{i}", 0.22, 0.34, bx, 2.6, s * 1.95, m_orange, achse="z", ecken=32)
         zylinder(f"Trommel_{seite}_{i}_schlauch", 0.03, 1.0, bx, 2.1, s * 1.75, m_gummi)
+    # 0.7 m vom Wagenkasten: 0.2 m waeren im Lichtraum des Fahrzeugs
     for i, gx in enumerate((-6.2, -3.5, -0.8)):
-        kasten(f"Medienstele_{seite}_{i}", 0.22, 0.22, 0.9, gx, 0.45, s * 1.5, m_stahlhell)
-        kasten(f"Medienstele_{seite}_{i}_kopf", 0.26, 0.26, 0.1, gx, 0.95, s * 1.5, m_blau, fase=0.02)
-        zylinder(f"Medienstele_{seite}_{i}_hahn", 0.04, 0.12, gx, 0.75, s * 1.63, m_zug, achse="z")
+        kasten(f"Medienstele_{seite}_{i}", 0.22, 0.22, 0.9, gx, 0.45, s * 1.9, m_stahlhell)
+        kasten(f"Medienstele_{seite}_{i}_kopf", 0.26, 0.26, 0.1, gx, 0.95, s * 1.9, m_blau, fase=0.02)
+        zylinder(f"Medienstele_{seite}_{i}_hahn", 0.04, 0.12, gx, 0.75, s * 2.03, m_zug, achse="z")
 
 # Echter Brueckenkran statt eines einzelnen Traegers im Deckengrau: zwei Kranbahnen
 # auf Konsolen an den Hallenstuetzen, dazwischen eine verfahrbare Bruecke mit Katze,
