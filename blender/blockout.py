@@ -535,13 +535,17 @@ kasten("Lueftung_Auslass", 0.78, 0.78, 0.25, -1.5, 2.6, -6.45, m_stahl)
 # Rohrlaeufe mit Boegen an Nord- und Ostwand
 rohr_mit_bogen("Rohrlauf_Nord", [(-16, 0.6, -9.7), (-16, 3.0, -9.7), (-6, 3.0, -9.7), (-6, 0.6, -9.7)], 0.07, m_stahlhell)
 rohr_mit_bogen("Rohrlauf_Ost", [(16.7, 0.6, -8.4), (16.7, 2.6, -8.4), (16.7, 2.6, -3.4), (16.7, 0.6, -3.4)], 0.06, m_stahlhell)
-# Kegel-Haengelampen
-for i, (lx, lz) in enumerate(((-12, 0), (-6, 1.6), (0, -1.6), (6, 1.6), (12, 0),
-                              (-9, -6.5), (-1, -6.5), (7, -6.5),
-                              (-8, 5.2), (1, 5.2), (10, 5.2))):
-    kegel(f"Lampe_{i}_schirm", 0.38, 0.45, lx, 4.85, lz, m_stahlhell)  # eine Halle, ein Leuchtentyp
-    zylinder(f"Lampe_{i}_glut", 0.16, 0.06, lx, 4.62, lz, m_fenster)
-    zylinder(f"Lampe_{i}_seil", 0.015, 1.2, lx, 5.65, lz, m_dunkel)
+# Lichtbaender statt Pendel-Kegel: eine Instandhaltungshalle wird mit durchgehenden
+# Leuchtenbaendern unter den Dachbindern beleuchtet. Vier Reihen auf den Rippen
+# 2/4/6/8 (z +-5.4, +-1.8), je drei Baender a 7 m; die Luecke bei x -12.9 haelt
+# die Kranbahnbruecke (y 4.47..5.09) frei, die Reihen +-1.8 halten die
+# Fahrleitungshaenger auf z 0 frei.
+for zi, lz in enumerate((-5.4, -1.8, 1.8, 5.4)):
+    for xi, lx in enumerate((-8.0, 0.0, 8.0)):
+        kasten(f"Lichtband_{zi}_{xi}", 7.0, 0.18, 0.10, lx, 4.95, lz, m_stahlhell, fase=0.01)
+        kasten(f"Lichtband_{zi}_{xi}_wanne", 6.8, 0.12, 0.02, lx, 4.89, lz, m_fenster, fase=0)
+        for k, hx in enumerate((lx - 3.0, lx + 3.0)):
+            zylinder(f"Lichtband_{zi}_{xi}_haenger_{k}", 0.012, 1.04, hx, 5.52, lz, m_dunkel)  # 5.00..6.04
 
 # ---- Empore an der Westwand mit Treppe --------------------------------------
 kasten("Empore_Plattform", 3.0, 10, 0.15, -15.5, 3.05, -5, m_riffel)
