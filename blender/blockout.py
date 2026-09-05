@@ -383,7 +383,6 @@ m_sockel = material("Sockel", SOCKEL, rauheit=0.75)
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
 # dadurch verschmolzen Rad, Rahmen, Schiene und Schwelle zu einem grauen Block.
 m_schiene = material("Schiene", (0.62, 0.58, 0.52), rauheit=0.30, metall=0.35)
-m_schwelle = material("Schwelle", (0.36, 0.35, 0.33), rauheit=0.95)
 m_gummi = material("Gummi", (0.085, 0.085, 0.095), rauheit=0.95)
 m_unterflur = material("Unterflur", (0.16, 0.17, 0.18), rauheit=0.70)
 # Hallenverglasung eigenstaendig, damit sie als Glas liest, ohne die vielen
@@ -436,8 +435,8 @@ kasten("Halle_Gleiszone_GrubeNord", 7, 0.8, 0.006, -3.5, 0.003, -1.4, m_gleiszon
 kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.006, -3.5, 0.003, 1.4, m_gleiszone, fase=0)
 kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.012, -1.9, m_markierung, fase=0)
 kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.012, 1.9, m_markierung, fase=0)
-# Plattenraster mit Dehnfugen (5-m-Raster) und gelbe Sicherheitslinie 1.0 m neben der
-# Gleiszone: der Hallenboden liest sonst als eine einzige Betonflaeche.
+# Plattenraster mit Dehnfugen (Querfugen im 5-m-Raster, Laengsfugen bei z +-4 und +-7) und
+# gelbe Sicherheitslinie 1.0 m neben der Gleiszone: der Boden liest sonst als eine Betonflaeche.
 for i, fx in enumerate((-15.0, -10.0, -5.0, 5.0, 10.0, 15.0)):
     for seite, z0, z1 in (("n", -9.85, -1.9), ("s", 1.9, 9.85)):
         kasten(f"Bodenfuge_x_{i}_{seite}", 0.02, z1 - z0, 0.002, fx, 0.001, (z0 + z1) / 2, m_dunkel, fase=0)
@@ -450,7 +449,7 @@ for seite, sz in (("nord", -2.8), ("sued", 2.8)):
 kasten("Halle_Weg_Nord_W", 10.5, 1.1, 0.03, -3.05, 0.02, -7.05, m_weg, fase=0)
 kasten("Halle_Weg_Nord_O", 13.1, 1.1, 0.03, 10.15, 0.02, -7.05, m_weg, fase=0)
 # Gebrauchsspuren: eine Werkstatt ist benutzt. Zwei Oelflecken in der Gleiszone
-# (Oberkante 0.04) und einer auf dem Hallenboden (Oberkante 0.0).
+# (Deckschicht-Oberkante 0.006) und einer auf dem Hallenboden (Oberkante 0.0).
 zylinder("Oelfleck_1", 0.28, 0.012, -4.5, 0.012, 1.5, m_oelfleck)
 zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.012, -1.2, m_oelfleck)
 zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
@@ -1311,7 +1310,7 @@ for i, tx in enumerate((-6.5, 4)):
 treppe("Buehne_Treppe", 2.9, -5.3, 3.3, richtung_z=-1, breite=0.85)
 # Klappbruecken von der Dacharbeitsbuehne auf das Zugdach — vorher endete die Buehne
 # 1.08 m vor dem Zug und niemand kam hinueber. Die Bruecke faellt von der Plattform
-# (Oberkante 3.30) auf die Dachkante (3.00); Winkel 0.218 rad, Vorzeichen folgt der
+# (Oberkante 3.30) auf die um GLEIS_SENKUNG abgesenkte Dachkante (2.86); Winkel 0.343 rad, Vorzeichen folgt der
 # Seite, weil pos() die three.js-z-Achse auf Blender -y abbildet.
 for s in (-1, 1):
     for i, bx in enumerate((-5.2, -2.6, 0.4)):
@@ -1346,7 +1345,8 @@ for s in (-1, 1):
         zylinder(f"Trommel_{seite}_{i}", 0.22, 0.34, bx, 2.6, s * 1.95, m_orange, achse="z", ecken=32)
         zylinder(f"Trommel_{seite}_{i}_schlauch", 0.03, 1.0, bx, 2.1, s * 1.75, m_gummi)
     # 0.7 m vom Wagenkasten: 0.2 m waeren im Lichtraum des Fahrzeugs
-    for i, gx in enumerate((-6.2, -3.5, -0.8)):
+    # 0.3 m ostwaerts: bei x -3.5 schnitt der Kopf der Suedstele den Holm von Rollgeruest_2
+    for i, gx in enumerate((-5.9, -3.2, -0.5)):
         kasten(f"Medienstele_{seite}_{i}", 0.22, 0.22, 0.9, gx, 0.45, s * 1.9, m_stahlhell)
         kasten(f"Medienstele_{seite}_{i}_kopf", 0.26, 0.26, 0.1, gx, 0.95, s * 1.9, m_blau, fase=0.02)
         zylinder(f"Medienstele_{seite}_{i}_hahn", 0.04, 0.12, gx, 0.75, s * 2.03, m_zug, achse="z")
@@ -1570,14 +1570,14 @@ kasten("Station_1_buerofenster", 0.06, 1.4, 0.9, -8.47, 1.9, -8.1, m_hallenglas,
 kasten("Station_1_buerotuer", 0.06, 0.8, 1.9, -8.44, 0.95, -6.6, m_blau, fase=0)   # 2.5 cm VOR dem Rahmen
 kasten("Station_1_buerotuer_rahmen", 0.05, 0.9, 2.0, -8.46, 1.0, -6.6, m_relief, fase=0)
 kasten("Station_1_tuerklinke", 0.06, 0.1, 0.04, -8.40, 1.0, -6.32, m_dunkel, fase=0)
-# Fenster und Tuer waren aufgesetzte Platten: ein Rahmen aus vier Leisten (5 mm vor
+# Fenster und Tuer waren aufgesetzte Platten: ein Rahmen aus vier Leisten (3 cm vor
 # dem Glas, damit er sichtbar bleibt), eine Fensterbank und eine Tuerschwelle geben
 # der Buerowand die Tiefe eines gebauten Raums.
 for kennung, dz, dy, y, z in (("o", 1.52, 0.06, 2.38, -8.1), ("u", 1.52, 0.06, 1.42, -8.1),
                               ("l", 0.06, 0.9, 1.9, -8.83), ("r", 0.06, 0.9, 1.9, -7.37)):
     kasten(f"Station_1_fensterrahmen_{kennung}", 0.05, dz, dy, -8.435, y, z, m_relief, fase=0)
 kasten("Station_1_fensterbank", 0.12, 1.6, 0.04, -8.44, 1.37, -8.1, m_stahlhell, fase=0)
-kasten("Station_1_tuerschwelle", 0.10, 0.9, 0.03, -8.44, 0.015, -6.6, m_dunkel, fase=0)
+kasten("Station_1_tuerschwelle", 0.10, 0.9, 0.03, -8.45, 0.015, -6.6, m_dunkel, fase=0)
 # Pinnwand haengt jetzt an der SUEDfront des Bueros, also frontal zur Stationskamera.
 # An der Ostflanke lag sie zu drei Vierteln hinter dem Text-Panel; das Buerofenster
 # ist dafuer auf die Ostflanke gewandert.
