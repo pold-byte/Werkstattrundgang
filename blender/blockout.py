@@ -1570,6 +1570,14 @@ kasten("Station_1_buerofenster", 0.06, 1.4, 0.9, -8.47, 1.9, -8.1, m_hallenglas,
 kasten("Station_1_buerotuer", 0.06, 0.8, 1.9, -8.44, 0.95, -6.6, m_blau, fase=0)   # 2.5 cm VOR dem Rahmen
 kasten("Station_1_buerotuer_rahmen", 0.05, 0.9, 2.0, -8.46, 1.0, -6.6, m_relief, fase=0)
 kasten("Station_1_tuerklinke", 0.06, 0.1, 0.04, -8.40, 1.0, -6.32, m_dunkel, fase=0)
+# Fenster und Tuer waren aufgesetzte Platten: ein Rahmen aus vier Leisten (5 mm vor
+# dem Glas, damit er sichtbar bleibt), eine Fensterbank und eine Tuerschwelle geben
+# der Buerowand die Tiefe eines gebauten Raums.
+for kennung, dz, dy, y, z in (("o", 1.52, 0.06, 2.38, -8.1), ("u", 1.52, 0.06, 1.42, -8.1),
+                              ("l", 0.06, 0.9, 1.9, -8.83), ("r", 0.06, 0.9, 1.9, -7.37)):
+    kasten(f"Station_1_fensterrahmen_{kennung}", 0.05, dz, dy, -8.435, y, z, m_relief, fase=0)
+kasten("Station_1_fensterbank", 0.12, 1.6, 0.04, -8.44, 1.37, -8.1, m_stahlhell, fase=0)
+kasten("Station_1_tuerschwelle", 0.10, 0.9, 0.03, -8.44, 0.015, -6.6, m_dunkel, fase=0)
 # Pinnwand haengt jetzt an der SUEDfront des Bueros, also frontal zur Stationskamera.
 # An der Ostflanke lag sie zu drei Vierteln hinter dem Text-Panel; das Buerofenster
 # ist dafuer auf die Ostflanke gewandert.
