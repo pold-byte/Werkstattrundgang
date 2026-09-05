@@ -421,12 +421,12 @@ kasten("Halle_Boden_West", 10, 20, 0.2, -12, -0.1, 0, m_boden, fase=0)
 kasten("Halle_Boden_Ost", 17, 20, 0.2, 8.5, -0.1, 0, m_boden, fase=0)
 kasten("Halle_Boden_GrubeNord", 7, 9, 0.2, -3.5, -0.1, -5.5, m_boden, fase=0)
 kasten("Halle_Boden_GrubeSued", 7, 9, 0.2, -3.5, -0.1, 5.5, m_boden, fase=0)
-kasten("Halle_Gleiszone_West", 10, 3.6, 0.04, -12, 0.02, 0, m_gleiszone, fase=0)
-kasten("Halle_Gleiszone_Ost", 17, 3.6, 0.04, 8.5, 0.02, 0, m_gleiszone, fase=0)
-kasten("Halle_Gleiszone_GrubeNord", 7, 0.8, 0.04, -3.5, 0.02, -1.4, m_gleiszone, fase=0)
-kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.04, -3.5, 0.02, 1.4, m_gleiszone, fase=0)
-kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.045, -1.9, m_markierung, fase=0)
-kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.045, 1.9, m_markierung, fase=0)
+kasten("Halle_Gleiszone_West", 10, 3.6, 0.006, -12, 0.003, 0, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_Ost", 17, 3.6, 0.006, 8.5, 0.003, 0, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_GrubeNord", 7, 0.8, 0.006, -3.5, 0.003, -1.4, m_gleiszone, fase=0)
+kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.006, -3.5, 0.003, 1.4, m_gleiszone, fase=0)
+kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.012, -1.9, m_markierung, fase=0)
+kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.012, 1.9, m_markierung, fase=0)
 # Fussweg liegt VOR Rammschutz und Maschinenfront (z -7.6..-6.5). Vorher lief er am
 # Wandfuss unter den Maschinen und durchs Meisterbuero. Luecke am Fuss der Buehnentreppe.
 kasten("Halle_Weg_Nord_W", 10.5, 1.1, 0.03, -3.05, 0.02, -7.05, m_weg, fase=0)
@@ -444,8 +444,8 @@ for i, fz in enumerate((-6.5, -3.5, 3.5, 6.5, 9.5)):
     kasten(f"Bodenfuge_l{i}", 33.4, 0.06, 0.015, 0, 0.012, fz, m_gleiszone, fase=0)
 # Gebrauchsspuren: eine Werkstatt ist benutzt. Zwei Oelflecken in der Gleiszone
 # (Oberkante 0.04) und einer auf dem Hallenboden (Oberkante 0.0).
-zylinder("Oelfleck_1", 0.28, 0.012, -4.5, 0.046, 1.5, m_oelfleck)
-zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.046, -1.2, m_oelfleck)
+zylinder("Oelfleck_1", 0.28, 0.012, -4.5, 0.012, 1.5, m_oelfleck)
+zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.012, -1.2, m_oelfleck)
 zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
 
 # ---- Waende mit Fensterbaendern (Nord, West, Sued), Ostwand mit Tor ---------
@@ -601,24 +601,25 @@ fass("UnterEmpore_Fass_1", -16.2, -1.3, 0, m_blau)
 fass("UnterEmpore_Fass_2", -15.8, -0.8, 0, m_dunkel)
 
 # ---- Gleis + Untersuchungsgrube ---------------------------------------------
-kasten("Gleis_Schiene_Nord", 38, 0.15, 0.15, 2, 0.08, -0.7, m_schiene, fase=0)
-kasten("Gleis_Schiene_Sued", 38, 0.15, 0.15, 2, 0.08, 0.7, m_schiene, fase=0)
+# Flachbodengleis: in einer Instandhaltungshalle liegen die Schienen BUENDIG im
+# Boden (Schienenkopf 6 mm ueber der Deckschicht), ohne Schotter und ohne
+# sichtbare Schwellen. Vorher lag die Schienenoberkante 15.5 cm ueber dem Boden
+# auf Schwellen wie auf freier Strecke.
+SCHIENE_OK = 0.012
+GLEIS_SENKUNG = 0.155 - SCHIENE_OK
+kasten("Gleis_Schiene_Nord", 38, 0.15, 0.15, 2, SCHIENE_OK - 0.075, -0.7, m_schiene, fase=0)
+kasten("Gleis_Schiene_Sued", 38, 0.15, 0.15, 2, SCHIENE_OK - 0.075, 0.7, m_schiene, fase=0)
 # Vorfeld-Platte hinter dem Tor, damit das Gleis nicht im Nichts endet
 kasten("Tor_Vorfeld", 5.0, 5.0, 0.2, 19.5, -0.1, 0, m_gleiszone, fase=0)
-for i in range(45):
-    sx = -14.5 + i * 0.8
-    if -7.0 < sx < 0.0:
-        continue  # ueber der Grube liegen die Schienen frei auf den Grubenwaenden
-    kasten(f"Gleis_Schwelle_{i}", 0.22, 1.8, 0.06, sx, 0.03, 0, m_schwelle, fase=0)
 
 # Grube liegt UNTER dem Zug — als ECHTE Vertiefung (Boden abgesenkt, Waende, Licht)
 kasten("Grube_Boden", 7, 2.0, 0.06, -3.5, -0.72, 0, m_grube, fase=0)
-kasten("Grube_Wand_Nord", 7, 0.1, 0.76, -3.5, -0.32, -0.95, m_grube, fase=0)
-kasten("Grube_Wand_Sued", 7, 0.1, 0.76, -3.5, -0.32, 0.95, m_grube, fase=0)
-kasten("Grube_Wand_West", 0.1, 1.8, 0.76, -6.95, -0.32, 0, m_grube, fase=0)
-kasten("Grube_Wand_Ost", 0.1, 1.8, 0.76, -0.05, -0.32, 0, m_grube, fase=0)
-kasten("Grube_Quersteg_1", 0.4, 1.9, 0.04, -5.3, 0.075, 0, m_stahl, fase=0)
-kasten("Grube_Quersteg_2", 0.4, 1.9, 0.04, -1.8, 0.075, 0, m_stahl, fase=0)
+kasten("Grube_Wand_Nord", 7, 0.1, 0.70, -3.5, -0.35, -0.95, m_grube, fase=0)   # Oberkante 0.000
+kasten("Grube_Wand_Sued", 7, 0.1, 0.70, -3.5, -0.35, 0.95, m_grube, fase=0)
+kasten("Grube_Wand_West", 0.1, 1.8, 0.70, -6.95, -0.35, 0, m_grube, fase=0)
+kasten("Grube_Wand_Ost", 0.1, 1.8, 0.70, -0.05, -0.35, 0, m_grube, fase=0)
+kasten("Grube_Quersteg_1", 0.4, 1.9, 0.04, -5.3, -0.015, 0, m_stahl, fase=0)   # Gitterrost buendig
+kasten("Grube_Quersteg_2", 0.4, 1.9, 0.04, -1.8, -0.015, 0, m_stahl, fase=0)
 kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, -0.25, -0.82, m_fenster, fase=0)
 kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_fenster, fase=0)
 # Grubenleiter fuehrt in die Vertiefung (an der Ost-Innenwand)
@@ -1269,6 +1270,14 @@ def fuehrerstand(kennung, r):
 fuehrerstand("ost", 1)
 fuehrerstand("west", -1)
 
+# Der Zug steht auf der Schiene: mit dem Flachbodengleis rueckt ALLES, was
+# Triebzug_ heisst, um die Senkung der Schienenoberkante nach unten. Ein Nachlauf
+# statt hunderter geaenderter y-Literale; wer Zugteile anlegt, tut das VOR dieser
+# Zeile, damit sie mitwandern.
+for _o in bpy.data.objects:
+    if _o.type == "MESH" and _o.name.startswith("Triebzug_"):
+        _o.matrix_world = Matrix.Translation((0, 0, -GLEIS_SENKUNG)) @ _o.matrix_world
+
 # ---- Dacharbeitsbuehnen, Kranbahn, Rollgerueste -----------------------------
 for i, bx in enumerate((-6.5, -3.9, 1.7, 4)):  # Luecke bei x~0: Sichtachse der Station-2-Kamera
     for j, bz in enumerate((-2.7, 2.7)):
@@ -1292,8 +1301,8 @@ treppe("Buehne_Treppe", 2.9, -5.3, 3.3, richtung_z=-1, breite=0.85)
 # Seite, weil pos() die three.js-z-Achse auf Blender -y abbildet.
 for s in (-1, 1):
     for i, bx in enumerate((-5.2, -2.6, 0.4)):
-        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.2, 0.05, bx, 3.15, s * 1.69,
-               m_riffel, fase=0, drehung=(-s * 0.218, 0, 0))
+        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.2, 0.05, bx, 3.08, s * 1.71,
+               m_riffel, fase=0, drehung=(-s * 0.343, 0, 0))
         zylinder(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}_scharnier", 0.05, 1.3, bx, 3.28, s * 2.26,
                  m_stahl, achse="x")
 # Druckluft-Ringleitung mit Schlauchtrommeln und Medienstelen: ohne Anschluesse
@@ -1302,13 +1311,13 @@ for s in (-1, 1):
 # abgehaengt. Ohne sie stand der ausgefahrene Stromabnehmer sinnlos in der Luft,
 # und in der Totale las das darueber liegende Druckluftrohr als Fahrdraht. Unterkante
 # 4.20, Schleifleiste endet bei 4.18: 2 cm Luft, kein Durchdringen.
-kasten("Fahrleitung_Schiene", 21, 0.08, 0.12, -1, 4.26, 0, m_stahl, fase=0)
+kasten("Fahrleitung_Schiene", 21, 0.08, 0.12, -1, 4.26 - GLEIS_SENKUNG, 0, m_stahl, fase=0)
 for i, s in enumerate((-1, 1)):
-    kasten(f"Fahrleitung_Horn_{i}", 0.6, 0.08, 0.06, -1 + s * 10.75, 4.31, 0, m_stahl, fase=0,
+    kasten(f"Fahrleitung_Horn_{i}", 0.6, 0.08, 0.06, -1 + s * 10.75, 4.31 - GLEIS_SENKUNG, 0, m_stahl, fase=0,
            drehung=(0, s * 0.25, 0))
 for i, hx in enumerate((-10, -4, 2, 8)):   # zwischen den Dachbindern
-    zylinder(f"Fahrleitung_Haenger_{i}", 0.025, 1.72, hx, 5.18, 0, m_stahl)
-    zylinder(f"Fahrleitung_Isolator_{i}", 0.06, 0.16, hx, 4.40, 0, m_objekt)
+    zylinder(f"Fahrleitung_Haenger_{i}", 0.025, 1.72 + GLEIS_SENKUNG, hx, 5.18 - GLEIS_SENKUNG / 2, 0, m_stahl)
+    zylinder(f"Fahrleitung_Isolator_{i}", 0.06, 0.16, hx, 4.40 - GLEIS_SENKUNG, 0, m_objekt)
 for s in (-1, 1):
     seite = "n" if s < 0 else "s"
     # Druckluft-Sammler direkt unter Dach_Rippe_3 bzw. _7 (z +-3.6); die Enden fuehren
