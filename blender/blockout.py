@@ -16,6 +16,7 @@ Objektnamen folgen dem Vertrag Station_<nr>_<id> bzw. Monitor_Bildschirm.
 """
 import bpy
 import os
+import math
 import random
 import struct
 import zlib
@@ -366,7 +367,6 @@ m_fenster = material("Fenster", FENSTER, rauheit=0.08)
 m_leuchte = material("Leuchte", (0.96, 0.97, 1.0), rauheit=0.6, emission=2.0)
 m_blau = material("Blau", BLAU, rauheit=0.5, metall=0.2)
 m_orange = material("Orange", ORANGE, rauheit=0.5, metall=0.2)
-m_markierung = material("Markierung", MARKIERUNG, rauheit=0.55, metall=0.15)
 m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.35, metall=0.7)
 m_gruen = material("Gruen", GRUEN, rauheit=0.5, metall=0.2)
 m_grube = material("Grube", GRUBE, rauheit=0.85)
@@ -383,6 +383,8 @@ m_relief = material("WandRelief", WAND_RELIEF)
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
 # dadurch verschmolzen Rad, Rahmen und Schiene zu einem grauen Block.
 m_schiene = material("Schiene", (0.62, 0.58, 0.52), rauheit=0.30, metall=0.35)
+m_schienenkopf = material("Schienenkopf", (0.66, 0.64, 0.60), rauheit=0.22, metall=0.9)   # blank gefahren
+m_schienenfuss = material("Schienenfuss", (0.30, 0.21, 0.16), rauheit=0.95, metall=0.1)  # Flugrost an Steg und Fuss
 m_gummi = material("Gummi", (0.085, 0.085, 0.095), rauheit=0.95)
 m_unterflur = material("Unterflur", (0.16, 0.17, 0.18), rauheit=0.70)
 # Hallenverglasung eigenstaendig, damit sie als Glas liest, ohne die vielen
@@ -424,12 +426,50 @@ def auffangwanne(name, x0, x1, z0, z1):
         kasten(f"{name}_{k}", dx, dz, 0.05, bx, 0.025, bz, m_markierung, fase=0)
 
 
+m_decal_dunkel = material("DecalDunkel", (0.10, 0.10, 0.10), rauheit=0.5)
+if hasattr(m_decal_dunkel, "blend_method"):          # Blender < 4.2
+    m_decal_dunkel.blend_method = "BLEND"
+if hasattr(m_decal_dunkel, "surface_render_method"):  # Blender >= 4.2 (EEVEE Next)
+    m_decal_dunkel.surface_render_method = "BLENDED"
+
+
+def _decal_material(alpha):
+    """Eigene Materialkopie je Deckkraft, damit der Exporter alphaMode BLEND mit baseColor-Alpha schreibt."""
+    name = f"DecalDunkel_{int(alpha * 100)}"
+    mat = bpy.data.materials.get(name)
+    if mat is None:
+        mat = m_decal_dunkel.copy()
+        mat.name = name
+        mat.node_tree.nodes["Principled BSDF"].inputs["Alpha"].default_value = alpha
+    return mat
+
+
+def decal_ellipse(name, x, z, rx, rz, alpha=0.6, y_boden=0.0):
+    """Flacher Fleck 2 mm ueber der Unterlage (Oel, Wasser, Abrieb)."""
+    zylinder(name, 1.0, 0.002, x, y_boden + 0.002, z, _decal_material(alpha), ecken=28)
+    o = bpy.data.objects[name]
+    o.scale = (rx, rz, o.scale.z)
+
+
+def fahrspur(name, x0, z0, x1, z1, breite=0.24, alpha=0.32, y_boden=0.0):
+    """Zwei dunkle Reifenspuren (Spurweite 0.9 m) entlang der Strecke (x0,z0)->(x1,z1)."""
+    dx, dz = x1 - x0, z1 - z0
+    laenge = (dx * dx + dz * dz) ** 0.5
+    winkel = math.atan2(dz, dx)
+    for i, off in enumerate((-0.45, 0.45)):
+        ox, oz = -math.sin(winkel) * off, math.cos(winkel) * off
+        kasten(f"{name}_{i}", laenge, breite, 0.002, (x0 + x1) / 2 + ox, y_boden + 0.001, (z0 + z1) / 2 + oz,
+               _decal_material(alpha), fase=0, drehung=(0, 0, -winkel))
+
+
 m_boden = material_pbr("Boden", (1, 1, 1), albedo=BETON + "_albedo.png", rauheit_png=BETON + "_rauheit.png", normal_png=BETON + "_normal.png", kachel=10.0, normal_staerke=0.6)
 m_gleiszone = material_pbr("Gleiszone", (1, 1, 1), albedo=GLEISBETON + "_albedo.png", rauheit_png=GLEISBETON + "_rauheit.png", normal_png=GLEISBETON + "_normal.png", kachel=4.0, normal_staerke=0.5)
 m_schotter = material("Schotter", (0.42, 0.41, 0.39), rauheit=0.98)
 m_schwelle = material("Schwelle", (0.36, 0.35, 0.33), rauheit=0.95)
 m_wand = material_pbr("Wand", (1, 1, 1), albedo=PUTZ + "_albedo.png", rauheit_png=PUTZ + "_rauheit.png", normal_png=PUTZ + "_normal.png", kachel=3.0, normal_staerke=0.35)
 m_sockel = material_pbr("Sockel", SOCKEL, rauheit_png=SOCKEL_RAUHEIT_PNG, kachel=2.0)
+# Verkehrsgelb leicht gedeckt; die Kratzer aus der Rauheitstextur lesen als Abrieb auf der Markierung.
+m_markierung = material_pbr("Markierung", (0.86, 0.66, 0.08), rauheit_png=LACK_RAUHEIT_PNG, metall=0.05, kachel=1.0)
 m_decke = material_pbr("Decke", DECKE, normal_png=DECKE_NORMAL_PNG, rauheit=0.6, metall=0.2, kachel=1.0, normal_staerke=0.8)
 m_riffel = material_mit_textur("Riffelblech", RIFFEL_PNG, rauheit=0.4, metall=0.7, kachel=0.5)
 
@@ -466,6 +506,18 @@ kasten("Halle_Weg_Nord_O", 13.1, 1.1, 0.03, 10.15, 0.02, -7.05, m_weg, fase=0)
 zylinder("Oelfleck_1", 0.28, 0.012, -4.5, 0.012, 1.5, m_oelfleck)
 zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.012, -1.2, m_oelfleck)
 zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
+# Weitere Gebrauchsspuren: Oel unter Pruefstand und Fasslager, Reifenspuren des Staplers
+# vom Stellplatz zur Palette und zum Osttor, Abrieb auf dem Fussweg vor der Buerotuer.
+# z um 0.5 m von 5.6 auf 5.1 verschoben (Brief-Regel: Endpunkte bis 0.5 m verschieben, wenn
+# eine Spur ein stehendes Objekt trifft) — bei 5.6 lag die gesamte Ellipse unter
+# Station_5_pruefstand (100% Durchdringung im Pruefer); bei 5.1 ragt sie zu zwei Dritteln
+# davor auf den offenen Boden und ist damit im Render ueberhaupt erst sichtbar.
+decal_ellipse("Oelfleck_4", 1.4, 5.1, 0.45, 0.30, alpha=0.55)
+decal_ellipse("Oelfleck_5", -9.4, 3.1, 0.32, 0.22, alpha=0.5)
+decal_ellipse("Oelfleck_6", 13.6, 8.2, 0.38, 0.26, alpha=0.5)
+fahrspur("Fahrspur_Stapler", -11.4, -3.6, -9.0, -3.6)   # gerade Spur vor der Buerofront, frei von Buero, Schreibtisch, Sicherheitslinie und Stapler
+fahrspur("Fahrspur_Tor", 8.5, 4.6, 16.4, 4.6, alpha=0.26)
+decal_ellipse("Abrieb_Tuer_Buero", -8.05, -6.6, 0.55, 0.40, alpha=0.22, y_boden=0.035)  # auf Halle_Weg_Nord_W
 
 # ---- Waende mit Fensterbaendern (Nord, West, Sued), Ostwand mit Tor ---------
 # Sockeloeffnungen (Aussenkanten der Tuerrahmen bzw. der Toroeffnung) je Wandseite
@@ -691,8 +743,10 @@ fass("UnterEmpore_Fass_2", -15.7, 3.87, 0, m_dunkel)
 # auf Schwellen wie auf freier Strecke.
 SCHIENE_OK = 0.012
 GLEIS_SENKUNG = 0.155 - SCHIENE_OK
-kasten("Gleis_Schiene_Nord", 62, 0.15, 0.15, -10, SCHIENE_OK - 0.075, -0.7, m_schiene, fase=0)
-kasten("Gleis_Schiene_Sued", 62, 0.15, 0.15, -10, SCHIENE_OK - 0.075, 0.7, m_schiene, fase=0)
+# Schiene zweiteilig: nur der Kopf (7 x 4 cm) ist blank, Steg und Fuss sind rostbraun matt
+for seite, sz in (("Nord", -0.7), ("Sued", 0.7)):
+    kasten(f"Gleis_Schiene_{seite}_fuss", 62, 0.15, 0.11, -10, SCHIENE_OK - 0.095, sz, m_schienenfuss, fase=0)
+    kasten(f"Gleis_Schiene_{seite}_kopf", 62, 0.07, 0.04, -10, SCHIENE_OK - 0.020, sz, m_schienenkopf, fase=0.004)
 # Vorfeld-Platte hinter dem Tor, damit das Gleis nicht im Nichts endet
 kasten("Tor_Vorfeld", 5.0, 5.0, 0.2, 19.5, -0.1, 0, m_gleiszone, fase=0)
 
