@@ -17,8 +17,6 @@ Objektnamen folgen dem Vertrag Station_<nr>_<id> bzw. Monitor_Bildschirm.
 import bpy
 import os
 import math
-import random
-import struct
 import zlib
 from mathutils import Euler, Matrix, Vector
 
