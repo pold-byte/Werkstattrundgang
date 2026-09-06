@@ -463,6 +463,10 @@ zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.012, -1.2, m_oelfleck)
 zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
 
 # ---- Waende mit Fensterbaendern (Nord, West, Sued), Ostwand mit Tor ---------
+# Sockeloeffnungen an den Personaltueren: Aussenkanten der Tuerrahmen je Wandseite
+SOCKEL_OEFFNUNG = {"Nord": (-5.17, -4.03), "West": (4.63, 5.77)}
+
+
 def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
     if entlang_x:
         kasten(f"Wand_{seite}_Unten", laenge, 0.3, 3.5, cx, 1.75, cz, m_wand)
@@ -472,10 +476,11 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.15, 0.3, 1.8, fx, 4.4, cz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", laenge, 0.24, 0.08, cx, 4.4, cz, m_stahl)
         # Abwaschbarer Sockelanstrich bis 1.2 m: die kraeftigste Horizontale jeder Werkstattwand.
-        # An der Personaltuer Nord (Rahmen x -5.17..-4.03) setzt er aus, sonst mauert er die Tuer ein.
+        # An den Personaltueren (SOCKEL_OEFFNUNG) setzt er aus, sonst mauert er die Tuer ein.
         _sz = cz + (-0.2 if cz > 0 else 0.2)
-        if cz < 0:
-            for _k, (_a, _b) in enumerate(((cx - laenge / 2, -5.17), (-4.03, cx + laenge / 2))):
+        _oe = SOCKEL_OEFFNUNG.get(seite)
+        if _oe:
+            for _k, (_a, _b) in enumerate(((cx - laenge / 2, _oe[0]), (_oe[1], cx + laenge / 2))):
                 kasten(f"Relief_{seite}_Sockel_{_k}", _b - _a, 0.08, 1.2, (_a + _b) / 2, 0.6, _sz, m_sockel)
         else:
             kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 1.2, cx, 0.6, _sz, m_sockel)
@@ -489,9 +494,10 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, fz in enumerate(range(-8, 9, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.3, 0.15, 1.8, cx, 4.4, fz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", 0.24, laenge, 0.08, cx, 4.4, cz, m_stahl)
-        # Westsockel setzt an der Personaltuer West (Rahmen z 4.63..5.77) aus.
-        if cx < 0:
-            for _k, (_a, _b) in enumerate(((cz - laenge / 2, 4.63), (5.77, cz + laenge / 2))):
+        # Sockeloeffnung an der Personaltuer West laut SOCKEL_OEFFNUNG.
+        _oe = SOCKEL_OEFFNUNG.get(seite)
+        if _oe:
+            for _k, (_a, _b) in enumerate(((cz - laenge / 2, _oe[0]), (_oe[1], cz + laenge / 2))):
                 kasten(f"Relief_{seite}_Sockel_{_k}", 0.08, _b - _a, 1.2, cx + 0.2, 0.6, (_a + _b) / 2, m_sockel)
         else:
             kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 1.2, cx + 0.2, 0.6, cz, m_sockel)
@@ -649,8 +655,8 @@ kasten("Grube_Wand_West", 0.1, 1.8, 0.70, -6.95, -0.35, 0, m_grube, fase=0)
 kasten("Grube_Wand_Ost", 0.1, 1.8, 0.70, -0.05, -0.35, 0, m_grube, fase=0)
 kasten("Grube_Quersteg_1", 0.4, 1.9, 0.04, -5.3, -0.015, 0, m_stahl, fase=0)   # Gitterrost buendig
 kasten("Grube_Quersteg_2", 0.4, 1.9, 0.04, -1.8, -0.015, 0, m_stahl, fase=0)
-kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, -0.25, -0.82, m_fenster, fase=0)
-kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_fenster, fase=0)
+kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, -0.25, -0.82, m_leuchte, fase=0)
+kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_leuchte, fase=0)
 # Grubenleiter fuehrt in die Vertiefung (an der Ost-Innenwand)
 for i, lz in enumerate((-0.35, 0.35)):
     kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 0.7, -0.18, -0.35, lz, m_orange, fase=0)
@@ -671,8 +677,8 @@ def warnstreifen(name, laenge, x, z, entlang_x=True, y_boden=0.0):
 
 warnstreifen("Grube_Kante_Nord", 7, -3.5, -1.12, y_boden=0.006)
 warnstreifen("Grube_Kante_Sued", 7, -3.5, 1.12, y_boden=0.006)
-warnstreifen("Grube_Kante_West", 2, -7.05, 0, entlang_x=False, y_boden=0.0)
-warnstreifen("Grube_Kante_Ost", 2, 0.05, 0, entlang_x=False, y_boden=0.0)
+warnstreifen("Grube_Kante_West", 2, -7.08, 0, entlang_x=False, y_boden=0.006)  # x -7.15..-7.01 auf Halle_Gleiszone_West
+warnstreifen("Grube_Kante_Ost", 2, 0.08, 0, entlang_x=False, y_boden=0.006)    # x 0.01..0.15 auf Halle_Gleiszone_Ost
 
 # ---- Triebzug v3: realistische Hoehe (3 m Dachkante), sichtbare Raeder ------
 m_zugglas = material("ZugGlas", (0.045, 0.06, 0.075), rauheit=0.06)
@@ -786,14 +792,14 @@ for seite, sz in (("nord", -1.24), ("sued", 1.24)):
 # Dachkrone statt flacher Platte: acht duenne Schichten ziehen sich nach oben ein
 # (Halbbreite 1.18 -> 1.06 nach w(t) = 1.18 - 0.12*t**1.6). Aus dem Kasten mit
 # scharfer Kante wird im Querschnitt eine Roehre — das ist der Unterschied zwischen
-# Regionaltriebwagen und ICE. Die Verjuengung ist bewusst flach gewaehlt: bei |z| 1.08,
-# wo die sechs Klappbruecken aufsetzen, liegt die Dachflaeche noch auf y 2.98 (2.84 nach der Senkung),
+# Regionaltriebwagen und ICE. Die Verjuengung ist bewusst flach gewaehlt: bei |z| 1.09,
+# wo die sechs Klappbruecken aufsetzen, liegt die Dachflaeche noch auf y 2.97 (2.83 nach der Senkung),
 # sonst haetten die Bruecken im Leeren geendet.
 # Wie beim Bug ohne Fase — eine Fase je Schicht wuerde acht Schattenfugen werfen.
 # Dachkrone als EINE glatte Schale. Vorher acht Schichten a 3.75 cm: aus der Totale
 # lasen die als Treppe, und direkt hinter dem geloftetem Kopf fiel das doppelt auf.
 # Gleiche Kurve w(t) = 1.18 - 0.12*t**1.6 wie bisher (die Kopfschale schliesst mit
-# exakt dieser Breite an, die Klappbruecken landen bei |z| 1.08 auf 2.98 bzw. 2.84 nach GLEIS_SENKUNG).
+# exakt dieser Breite an, die Klappbruecken landen bei |z| 1.09 auf 2.97 bzw. 2.83 nach GLEIS_SENKUNG).
 _DK_N = 14
 _dk_halb = [(1.18 - 0.12 * (_k / _DK_N) ** 1.6, 2.70 + 0.32 * (_k / _DK_N)) for _k in range(_DK_N + 1)]
 _dk_prof = [(-_z, _y) for _z, _y in _dk_halb] + [(_z, _y) for _z, _y in reversed(_dk_halb)]
@@ -1334,11 +1340,11 @@ for i, tx in enumerate((-6.5, 4)):
 treppe("Buehne_Treppe", 2.9, -5.3, 3.3, richtung_z=-1, breite=0.85)
 # Klappbruecken von der Dacharbeitsbuehne auf das Zugdach — vorher endete die Buehne
 # 1.08 m vor dem Zug und niemand kam hinueber. Die Bruecke faellt von der Plattform
-# (Oberkante 3.30) auf die Dachschulter bei |z| 1.08 (y 2.84 nach GLEIS_SENKUNG); Winkel 0.343 rad, Vorzeichen folgt der
+# (Oberkante 3.30) auf die Dachschulter bei |z| 1.09 (y 2.83 nach GLEIS_SENKUNG); Winkel 0.343 rad, Vorzeichen folgt der
 # Seite, weil pos() die three.js-z-Achse auf Blender -y abbildet.
 for s in (-1, 1):
     for i, bx in enumerate((-5.2, -2.6, 0.4)):
-        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.26, 0.05, bx, 3.07, s * 1.681,
+        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.27, 0.05, bx, 3.068, s * 1.676,
                m_riffel, fase=0, drehung=(-s * 0.343, 0, 0))
         zylinder(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}_scharnier", 0.05, 1.3, bx, 3.28, s * 2.26,
                  m_stahl, achse="x")
@@ -1482,8 +1488,14 @@ kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.78, 2.3, 2.0, m_gruen, fase=0
 kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.76, 2.3, 2.0, m_fenster, fase=0)
 kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell, fase=0)
 kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
-# Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone)
-kasten("Nordwand_Kabelkanal", 22, 0.06, 0.14, 3, 1.5, -9.8, m_dunkel, fase=0)
+# Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone).
+# Der Kanal steigt an der Personaltuer Nord ueber den Tuerrahmen (Oberkante 2.15) und
+# laeuft unter dem Rohr (Unterkante 2.35) weiter — vorher lief er mitten durch das Tuerblatt.
+kasten("Nordwand_Kabelkanal_w", 2.73, 0.06, 0.14, -6.635, 1.5, -9.8, m_dunkel, fase=0)   # x -8.00..-5.27
+kasten("Nordwand_Kabelkanal_o", 17.93, 0.06, 0.14, 5.035, 1.5, -9.8, m_dunkel, fase=0)   # x -3.93..14.00
+for kennung, kx in (("l", -5.22), ("r", -3.98)):
+    kasten(f"Nordwand_Kabelkanal_{kennung}", 0.10, 0.06, 0.86, kx, 1.86, -9.8, m_dunkel, fase=0)  # y 1.43..2.29, buendig am Rahmen
+kasten("Nordwand_Kabelkanal_ueber", 1.34, 0.06, 0.14, -4.6, 2.22, -9.8, m_dunkel, fase=0)  # x -5.27..-3.93, y 2.15..2.29 auf dem Rahmen
 zylinder("Nordwand_Rohr", 0.05, 22, 3, 2.4, -9.8, m_stahlhell, achse="x")
 
 # Personaltueren (die Halle hatte ausser dem Tor keine Tuer) mit Exit-Schild
