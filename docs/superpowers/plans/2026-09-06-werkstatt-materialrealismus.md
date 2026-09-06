@@ -603,8 +603,9 @@ Direkt nach der Definition von `WURZEL` (oben in `blockout.py`):
 import sys
 if os.path.join(WURZEL, "blender") not in sys.path:
     sys.path.insert(0, os.path.join(WURZEL, "blender"))
-from texturen import schreibe_pbr_set, schreibe_rillen_normal_png, schreibe_rauheit_png  # noqa: E402
+from texturen import png_speichern, schreibe_pbr_set, schreibe_rillen_normal_png, schreibe_rauheit_png  # noqa: E402
 ```
+Den Rumpf von `_png_speichern(pfad, groesse, pixelzeilen)` in `blockout.py` durch den Einzeiler `png_speichern(pfad, groesse, groesse, pixelzeilen)` ersetzen (ein PNG-Schreiber statt zwei; `schreibe_noise_png` und `schreibe_riffelblech_png` rufen weiter `_png_speichern` auf).
 Nach `material_mit_textur` einfügen:
 ```python
 def material_pbr(name, farbe, albedo=None, rauheit_png=None, normal_png=None,
@@ -732,8 +733,9 @@ Rechnung: Fuß y 0.012−0.095±0.055 = −0.138..−0.028; Kopf 0.012−0.020±
 Nach `def auffangwanne(...)`:
 ```python
 m_decal_dunkel = material("DecalDunkel", (0.10, 0.10, 0.10), rauheit=0.5)
-m_decal_dunkel.blend_method = "BLEND" if hasattr(m_decal_dunkel, "blend_method") else None
-if hasattr(m_decal_dunkel, "surface_render_method"):
+if hasattr(m_decal_dunkel, "blend_method"):          # Blender < 4.2
+    m_decal_dunkel.blend_method = "BLEND"
+if hasattr(m_decal_dunkel, "surface_render_method"):  # Blender >= 4.2 (EEVEE Next)
     m_decal_dunkel.surface_render_method = "BLENDED"
 
 
