@@ -567,8 +567,8 @@ for i, sx in enumerate((-13.6, -6.8, 0, 6.8, 13.6)):
     # gelber Anfahrschutz am Stuetzenfuss (Werkstatt-typische Kontur + Farbe)
     kasten(f"Stuetze_Nord_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, -9.7, m_markierung, fase=0.03)
     kasten(f"Stuetze_Sued_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, 9.7, m_markierung, fase=0.03)
-# Stuetzen flankieren die Toroeffnung (|z| 1.8): -2.5 / 2.5 statt einer Stuetze in Gleisachse
-for i, sz in enumerate((-6.7, -2.5, 2.5, 6.7)):
+# Zwei Stuetzen; die Mitte der Westwand traegt das Torportal (Pfosten + Balken), suedlich davon steht die Werkbankzone
+for i, sz in enumerate((-6.7, 6.7)):
     kasten(f"Stuetze_West_{i}", 0.3, 0.3, 6, -16.7, 3, sz, m_stahl)
     kasten(f"Stuetze_West_{i}_schutz", 0.38, 0.38, 0.55, -16.7, 0.275, sz, m_markierung, fase=0.03)
 
@@ -1566,8 +1566,8 @@ for i, (sx, sz) in enumerate(((-9.8, 1.6), (1, -1.6), (10.6, 1.6))):
     kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.32, sz, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor", 0.05, 0.5, 0.3, 16.78, 3.0, -2.6, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor_symbol", 0.06, 0.2, 0.06, 16.76, 3.0, -2.6, m_fenster, fase=0)
-kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.78, 2.3, 3.2, m_gruen, fase=0)
-kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.76, 2.3, 3.2, m_fenster, fase=0)
+kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.825, 4.75, 0, m_gruen, fase=0)        # auf dem Sturz ueber dem Westtor
+kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.77, 4.75, 0, m_fenster, fase=0)
 kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell, fase=0)
 kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
 # Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone).
@@ -1626,8 +1626,8 @@ for i, rx in enumerate((5.0, 8.4)):
 # Feuerloescher auch an Sued- und Westwand
 zylinder("Feuerloescher_sued", 0.07, 0.45, 0, 1.05, 9.46, m_zug)
 kasten("Feuerloescher_sued_schild", 0.2, 0.02, 0.25, 0, 1.42, 9.53, m_zug, fase=0)
-zylinder("Feuerloescher_west", 0.07, 0.45, -16.42, 1.05, 2.5, m_zug)
-kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.49, 1.42, 2.5, m_zug, fase=0)
+zylinder("Feuerloescher_west", 0.07, 0.45, -16.69, 1.05, 6.1, m_zug)               # haengt am Sockelband (Flaeche x -16.76)
+kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.835, 1.42, 6.1, m_zug, fase=0)  # ueber dem Sockel auf der Wandflaeche
 
 # Schalterkaesten neben den Personaltueren
 kasten("Schalter_Nord", 0.12, 0.05, 0.18, -3.85, 1.1, -9.735, m_dunkel, fase=0)
