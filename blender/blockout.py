@@ -1628,7 +1628,7 @@ for i in range(6):
     kasten(f"Station_1_zettel_{i}_zeile", 0.22, 0.035, 0.04, zx, zy + 0.07, -5.827, m_objekt, fase=0)
 lade_asset("furniture_desk.glb", "Station_1_schreibtisch", -7.8, 0, -5.3, dreh_y=3.14159, ziel_breite=1.6, einfaerbung=m_objekt)
 # Desk-Platte real: x -9.38..-7.78, z -5.32..-4.47, Oberkante 0.837 (Eckpivot)
-lade_asset("furniture_chairDesk.glb", "Station_1_buerostuhl", -8.55, 0, -4.2, ziel_hoehe=0.95, einfaerbung=m_blau)
+lade_asset("furniture_chairDesk.glb", "Station_1_buerostuhl", -8.09, 0, -4.37, dreh_y=3.14159, ziel_hoehe=0.95, einfaerbung=m_blau)
 lade_asset("furniture_computerScreen.glb", "Station_1_monitor", -8.6, 0.84, -5.1, ziel_hoehe=0.45, einfaerbung=m_dunkel)
 lade_asset("furniture_computerKeyboard.glb", "Station_1_tastatur", -8.35, 0.84, -4.72, ziel_breite=0.4, einfaerbung=m_dunkel)
 # Gemessen: der Schrank belegt ab dem Anker x +1.92 und z -0.60 (Kenney-Eckpivot).
