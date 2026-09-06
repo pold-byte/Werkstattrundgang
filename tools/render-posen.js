@@ -2,7 +2,7 @@
 // In die Browser-Konsole der laufenden App (http://localhost:5199) einfuegen.
 // Rendert die sieben Jury-Posen plus zwei freie Blickwinkel in 1600x900 und
 // schickt sie an tools/schuss-server.mjs. Braucht die DEV-Globals
-// window.__szene/__kamera/__renderer (main.js setzt sie nur im Dev-Modus).
+// window.__szene/__kamera/__renderer/__komposition (main.js setzt sie nur im Dev-Modus).
 (async () => {
   window.__rafOrig = window.__rafOrig || window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = () => 0; // App-Schleife anhalten, sonst ueberschreibt sie die Kamera
@@ -10,6 +10,7 @@
   const c = rn.domElement;
   Array.from(document.body.children).forEach((e) => { if (e !== c) e.style.visibility = 'hidden'; });
   rn.setSize(1600, 900, false); // verborgenes Panel meldet sonst 0x0 und toDataURL liefert 'data:,'
+  if (window.__komposition) window.__komposition.setSize(1600, 900);
   k.aspect = 16 / 9; k.fov = 50;
   const posen = [
     ['p_totale', [15, 4.6, 4.5], [-8, 0.5, 0.2]],
@@ -23,7 +24,8 @@
     ['p_hero_kranbahn', [-12, 5.5, 6], [4, 1.5, -1]],
   ];
   for (const [name, pos, ziel] of posen) {
-    k.position.set(...pos); k.updateProjectionMatrix(); k.lookAt(...ziel); rn.render(s, k);
+    k.position.set(...pos); k.updateProjectionMatrix(); k.lookAt(...ziel);
+    (window.__komposition ? window.__komposition.render() : rn.render(s, k));
     const antwort = await fetch('http://localhost:5198/', { method: 'POST', body: JSON.stringify({ name, data: c.toDataURL('image/png') }) });
     console.log(name, antwort.status, await antwort.text());
   }

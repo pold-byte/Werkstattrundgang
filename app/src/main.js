@@ -10,6 +10,7 @@ import { zeigePanel, versteckePanel, zeigeTitel, schalteSchwarzbild, schalteVide
 import { erzeugeRenderer, erzeugeSzene, bauePlatzhalter, ladeModell, base64ZuArrayBuffer } from './szene.js';
 import { aktiviereWaypointWerkzeug } from './waypoint-werkzeug.js';
 import { verbindeVideoTextur } from './videotextur.js';
+import { erzeugeKomposition, leseAoSchalter } from './komposition.js';
 
 const canvas = document.getElementById('buehne');
 const panelEl = document.getElementById('panel');
@@ -23,6 +24,7 @@ const videoTexturEl = document.getElementById('video-textur');
 const renderer = erzeugeRenderer(canvas);
 const szene = erzeugeSzene(renderer);
 const kamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+const komposition = erzeugeKomposition(renderer, szene, kamera, { ao: leseAoSchalter(window.location.search) });
 
 const schritte = baueSchritte(daten.stationen);
 const zustand = new Zustandsmaschine(schritte);
@@ -135,6 +137,7 @@ window.addEventListener('resize', () => {
   kamera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
+  komposition.setSize(window.innerWidth, window.innerHeight);
 });
 
 const uhr = new THREE.Clock();
@@ -148,7 +151,7 @@ function schleife() {
     if (aktuelleFahrt.fertig) beendeFahrt();
   }
   if (orbitAktiv) orbitAktiv.update();
-  renderer.render(szene, kamera);
+  komposition.render();
   requestAnimationFrame(schleife);
 }
 
@@ -182,7 +185,7 @@ async function start() {
   wendeAnsichtAn(true);
   bereit = true;
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
-  if (import.meta.env.DEV) Object.assign(window, { __szene: szene, __renderer: renderer, __kamera: kamera }); // Dev-Inspektion (im Build entfernt)
+  if (import.meta.env.DEV) Object.assign(window, { __szene: szene, __renderer: renderer, __kamera: kamera, __komposition: komposition }); // Dev-Inspektion (im Build entfernt)
   schleife();
 }
 

@@ -9,7 +9,7 @@ export function erzeugeRenderer(canvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // weiche Schatten fuer den Iso-Look
   renderer.toneMapping = THREE.ACESFilmicToneMapping; // filmische Abstufung — Materialien lesen sich besser
-  renderer.toneMappingExposure = 0.92;
+  renderer.toneMappingExposure = 1.0;
   return renderer;
 }
 
@@ -29,34 +29,53 @@ export function aktiviereSchatten(objekt) {
 
 export function erzeugeSzene(renderer) {
   const szene = new THREE.Scene();
-  szene.background = new THREE.Color(0xdfe3e6);
+  szene.background = erzeugeHimmelTextur();
   if (renderer) {
-    // Environment-Map: erst damit liest sich Metall als Metall (Reflexe auf Stahl,
-    // Zuglack und Riffelblech). RoomEnvironment ist eingebaut und laeuft offline.
     const pmrem = new THREE.PMREMGenerator(renderer);
     szene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    szene.environmentIntensity = 0.32;
+    szene.environmentIntensity = 0.45; // Reflexe auf Lack und Stahl, aber unter dem Sonnenlicht
   }
-  szene.add(new THREE.AmbientLight(0xffffff, 0.3));
-  // Himmel/Boden-Verlauf ersetzt einen Teil des Ambient — wirkt wie weiche AO.
-  szene.add(new THREE.HemisphereLight(0xf4f6f8, 0x878c90, 0.55));
-  const sonne = new THREE.DirectionalLight(0xffffff, 1.5);
-  sonne.position.set(12, 20, 8);
+  // Weniger Fuellung, mehr Richtung: die AO (komposition.js) uebernimmt die Fugen,
+  // das Hemisphaerenlicht bringt kuehlen Himmel von oben und warmen Bodenrueckschein.
+  szene.add(new THREE.AmbientLight(0xffffff, 0.12));
+  szene.add(new THREE.HemisphereLight(0xdfe6ee, 0x6a6560, 0.7));
+  const sonne = new THREE.DirectionalLight(0xfff1e0, 2.3); // Tageslicht durch Oberlichter, leicht warm
+  sonne.position.set(10, 24, 6);
   sonne.castShadow = true;
-  sonne.shadow.mapSize.set(2048, 2048);
+  sonne.shadow.mapSize.set(4096, 4096);
   sonne.shadow.camera.left = -24;
   sonne.shadow.camera.right = 24;
   sonne.shadow.camera.top = 24;
   sonne.shadow.camera.bottom = -24;
   sonne.shadow.camera.near = 1;
   sonne.shadow.camera.far = 70;
-  sonne.shadow.bias = -0.0004;
+  sonne.shadow.bias = -0.0002;
+  sonne.shadow.normalBias = 0.02;
+  sonne.shadow.radius = 3;
   szene.add(sonne);
-  // Fuelllicht von der Gegenseite: zeichnet die sonnenabgewandten Flaechen.
-  const fuelllicht = new THREE.DirectionalLight(0xdfe8ff, 0.4);
+  const fuelllicht = new THREE.DirectionalLight(0xd6e2f5, 0.25); // kuehle Gegenseite, ohne Schatten
   fuelllicht.position.set(-14, 10, -10);
   szene.add(fuelllicht);
   return szene;
+}
+
+// Vertikaler Himmelsverlauf als Hintergrund: Fenster und Tore zeigen Himmel statt Einheitsgrau.
+export function erzeugeHimmelTextur() {
+  const hoehe = 64;
+  const daten = new Uint8Array(hoehe * 4);
+  const zenit = [0xb9, 0xc6, 0xd4];
+  const horizont = [0xe8, 0xec, 0xef];
+  for (let i = 0; i < hoehe; i += 1) {
+    const t = i / (hoehe - 1); // 0 = unten (Horizont), 1 = oben (Zenit)
+    for (let c = 0; c < 3; c += 1) daten[i * 4 + c] = Math.round(horizont[c] + (zenit[c] - horizont[c]) * t);
+    daten[i * 4 + 3] = 255;
+  }
+  const tex = new THREE.DataTexture(daten, 1, hoehe);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
 }
 
 // Graue Boxen an den Blickzielen aus stationen.json, bis das Blender-Modell da ist.
