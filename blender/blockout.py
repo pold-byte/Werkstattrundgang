@@ -22,8 +22,11 @@ import zlib
 from mathutils import Euler, Matrix, Vector
 
 WURZEL = os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd()
+import sys
+if os.path.join(WURZEL, "blender") not in sys.path:
+    sys.path.insert(0, os.path.join(WURZEL, "blender"))
+from texturen import png_speichern, schreibe_pbr_set, schreibe_rillen_normal_png, schreibe_rauheit_png  # noqa: E402
 ZIEL = os.path.join(WURZEL, "app", "public", "szene.glb")
-BODEN_PNG = os.path.join(WURZEL, "blender", "gen_boden.png")
 
 
 def pos(x, y, z):
@@ -31,48 +34,7 @@ def pos(x, y, z):
 
 
 def _png_speichern(pfad, groesse, pixelzeilen):
-    def chunk(typ, daten):
-        return (struct.pack(">I", len(daten)) + typ + daten
-                + struct.pack(">I", zlib.crc32(typ + daten) & 0xFFFFFFFF))
-
-    png = b"\x89PNG\r\n\x1a\n"
-    png += chunk(b"IHDR", struct.pack(">IIBBBBB", groesse, groesse, 8, 2, 0, 0, 0))
-    png += chunk(b"IDAT", zlib.compress(pixelzeilen))
-    png += chunk(b"IEND", b"")
-    with open(pfad, "wb") as f:
-        f.write(png)
-
-
-def schreibe_noise_png(pfad, groesse=256, basis=(178, 180, 182), spann=10, seed=7, koernung=0):
-    """Material-Textur als Value-Noise-PNG (zwei Oktaven Flecken + feine Koernung)."""
-    random.seed(seed)
-
-    def gitter(g):
-        return [[random.random() for _ in range(g)] for _ in range(g)]
-
-    def wert(knoten, g, u, v):
-        x = u * (g - 1)
-        y = v * (g - 1)
-        x0, y0 = int(x), int(y)
-        fx, fy = x - x0, y - y0
-        x1, y1 = min(x0 + 1, g - 1), min(y0 + 1, g - 1)
-        a = knoten[y0][x0] * (1 - fx) + knoten[y0][x1] * fx
-        b = knoten[y1][x0] * (1 - fx) + knoten[y1][x1] * fx
-        return a * (1 - fy) + b * fy
-
-    grob, fein = gitter(9), gitter(33)
-    zeilen = b""
-    for j in range(groesse):
-        zeile = b"\x00"
-        for i in range(groesse):
-            u, v = i / groesse, j / groesse
-            n = 0.65 * wert(grob, 9, u, v) + 0.35 * wert(fein, 33, u, v)
-            f = int((n - 0.5) * 2 * spann)
-            if koernung:
-                f += random.randint(-koernung, koernung)
-            zeile += bytes(max(0, min(255, c + f)) for c in basis)
-        zeilen += zeile
-    _png_speichern(pfad, groesse, zeilen)
+    png_speichern(pfad, groesse, groesse, pixelzeilen)
 
 
 def schreibe_riffelblech_png(pfad, groesse=128, basis=214, raster=16):
@@ -117,6 +79,41 @@ def material_mit_textur(name, pfad, rauheit=0.9, metall=0.0, kachel=2.0):
     tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
     tex.image = bpy.data.images.load(pfad)
     mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    KACHEL[name] = kachel
+    return mat
+
+
+def material_pbr(name, farbe, albedo=None, rauheit_png=None, normal_png=None,
+                 rauheit=0.85, metall=0.0, kachel=2.0, normal_staerke=1.0):
+    """Principled BSDF mit optionalen Texturen in der Verdrahtung, die der glTF-Exporter
+    als baseColorTexture / metallicRoughnessTexture (G-Kanal) / normalTexture erkennt."""
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (*farbe, 1.0)
+    bsdf.inputs["Roughness"].default_value = rauheit
+    bsdf.inputs["Metallic"].default_value = metall
+    if albedo:
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = bpy.data.images.load(albedo, check_existing=True)
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    if rauheit_png:
+        rt = nt.nodes.new("ShaderNodeTexImage")
+        rt.image = bpy.data.images.load(rauheit_png, check_existing=True)
+        rt.image.colorspace_settings.name = "Non-Color"
+        sep = nt.nodes.new("ShaderNodeSeparateColor")
+        nt.links.new(rt.outputs["Color"], sep.inputs["Color"])
+        nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"])
+        bsdf.inputs["Roughness"].default_value = 1.0  # Faktor 1, die Textur traegt den Wert
+    if normal_png:
+        nm = nt.nodes.new("ShaderNodeTexImage")
+        nm.image = bpy.data.images.load(normal_png, check_existing=True)
+        nm.image.colorspace_settings.name = "Non-Color"
+        nmap = nt.nodes.new("ShaderNodeNormalMap")
+        nmap.inputs["Strength"].default_value = normal_staerke
+        nt.links.new(nm.outputs["Color"], nmap.inputs["Color"])
+        nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
     KACHEL[name] = kachel
     return mat
 
@@ -382,8 +379,6 @@ m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.3, metall=0.25)
 # lesen. Die Oberkante entsteht jetzt ueber die Dachwoelbung, nicht ueber Farbe.
 m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.5, metall=0.30)
 m_relief = material("WandRelief", WAND_RELIEF)
-m_decke = material("Decke", DECKE)
-m_sockel = material("Sockel", SOCKEL, rauheit=0.75)
 # Unterflur-Staffelung: Schiene blank gefahren,
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
 # dadurch verschmolzen Rad, Rahmen und Schiene zu einem grauen Block.
@@ -397,15 +392,21 @@ m_hallenglas = material("Hallenglas", (0.78, 0.85, 0.92), rauheit=0.05)
 m_weg = material("Weg", (0.20, 0.42, 0.28), rauheit=0.9)
 m_oelfleck = material("Oelfleck", (0.16, 0.15, 0.14), rauheit=0.35)
 
-GLEIS_PNG = os.path.join(WURZEL, "blender", "gen_gleiszone.png")
-WAND_PNG = os.path.join(WURZEL, "blender", "gen_wand.png")
 RIFFEL_PNG = os.path.join(WURZEL, "blender", "gen_riffelblech.png")
-# Beton deutlich abgedunkelt: der Boden war die hellste grosse Flaeche der Halle und
-# zog dadurch alle Aufmerksamkeit; echter Werkstattbeton liegt klar unter den Waenden.
-schreibe_noise_png(BODEN_PNG, basis=(104, 106, 110), spann=30, seed=7, koernung=6)
-schreibe_noise_png(GLEIS_PNG, basis=(74, 76, 80), spann=22, seed=11, koernung=8)
-schreibe_noise_png(WAND_PNG, basis=(206, 202, 194), spann=7, seed=5, koernung=2)
 schreibe_riffelblech_png(RIFFEL_PNG)
+BETON = os.path.join(WURZEL, "blender", "gen_beton")
+GLEISBETON = os.path.join(WURZEL, "blender", "gen_gleisbeton")
+PUTZ = os.path.join(WURZEL, "blender", "gen_putz")
+LACK_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_lack_rauheit.png")
+SOCKEL_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_sockel_rauheit.png")
+DECKE_NORMAL_PNG = os.path.join(WURZEL, "blender", "gen_decke_normal.png")
+# Boden: 10-m-Kachel mit 2 x 2 Platten = 5-m-Plattenraster wie die Dehnfugen (Task 4 des Vorplans)
+schreibe_pbr_set(BETON, groesse=768, basis_rgb=(112, 113, 116), spann=16, seed=7, platten=(2, 0.035), koernung=5, normal_staerke=0.6, rauheit_basis=0.88, rauheit_spann=0.08)
+schreibe_pbr_set(GLEISBETON, groesse=512, basis_rgb=(70, 71, 74), spann=20, seed=11, koernung=7, normal_staerke=0.5, rauheit_basis=0.72, rauheit_spann=0.18)
+schreibe_pbr_set(PUTZ, groesse=512, basis_rgb=(204, 200, 192), spann=9, seed=5, koernung=3, normal_staerke=0.35, rauheit_basis=0.9, rauheit_spann=0.05)
+schreibe_rauheit_png(LACK_RAUHEIT_PNG, groesse=256, basis=0.42, spann=0.18, seed=3, kratzer=0.004)
+schreibe_rauheit_png(SOCKEL_RAUHEIT_PNG, groesse=256, basis=0.6, spann=0.2, seed=9, kratzer=0.01)
+schreibe_rillen_normal_png(DECKE_NORMAL_PNG, groesse=256, periode=32, tiefe=0.6)
 def fass(name, x, z, y_boden, farbe):
     """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
     zylinder(f"{name}", 0.23, 0.62, x, y_boden + 0.31, z, farbe, ecken=32)
@@ -423,11 +424,13 @@ def auffangwanne(name, x0, x1, z0, z1):
         kasten(f"{name}_{k}", dx, dz, 0.05, bx, 0.025, bz, m_markierung, fase=0)
 
 
-m_boden = material_mit_textur("Boden", BODEN_PNG, rauheit=0.92, kachel=4.0)
-m_gleiszone = material_mit_textur("Gleiszone", GLEIS_PNG, rauheit=0.92, kachel=3.0)
+m_boden = material_pbr("Boden", (1, 1, 1), albedo=BETON + "_albedo.png", rauheit_png=BETON + "_rauheit.png", normal_png=BETON + "_normal.png", kachel=10.0, normal_staerke=0.6)
+m_gleiszone = material_pbr("Gleiszone", (1, 1, 1), albedo=GLEISBETON + "_albedo.png", rauheit_png=GLEISBETON + "_rauheit.png", normal_png=GLEISBETON + "_normal.png", kachel=4.0, normal_staerke=0.5)
 m_schotter = material("Schotter", (0.42, 0.41, 0.39), rauheit=0.98)
 m_schwelle = material("Schwelle", (0.36, 0.35, 0.33), rauheit=0.95)
-m_wand = material_mit_textur("Wand", WAND_PNG, rauheit=0.85, kachel=3.0)
+m_wand = material_pbr("Wand", (1, 1, 1), albedo=PUTZ + "_albedo.png", rauheit_png=PUTZ + "_rauheit.png", normal_png=PUTZ + "_normal.png", kachel=3.0, normal_staerke=0.35)
+m_sockel = material_pbr("Sockel", SOCKEL, rauheit_png=SOCKEL_RAUHEIT_PNG, kachel=2.0)
+m_decke = material_pbr("Decke", DECKE, normal_png=DECKE_NORMAL_PNG, rauheit=0.6, metall=0.2, kachel=1.0, normal_staerke=0.8)
 m_riffel = material_mit_textur("Riffelblech", RIFFEL_PNG, rauheit=0.4, metall=0.7, kachel=0.5)
 
 # ---- Halle: Boden, Gleiszone, Markierungen ----------------------------------
