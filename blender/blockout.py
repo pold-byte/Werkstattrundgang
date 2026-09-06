@@ -91,13 +91,17 @@ def schreibe_riffelblech_png(pfad, groesse=128, basis=214, raster=16):
     _png_speichern(pfad, groesse, zeilen)
 
 
-def material(name, farbe, rauheit=0.85, metall=0.0):
+def material(name, farbe, rauheit=0.85, metall=0.0, emission=0.0):
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = (*farbe, 1.0)
     bsdf.inputs["Roughness"].default_value = rauheit
     bsdf.inputs["Metallic"].default_value = metall
+    if emission:
+        # glTF schreibt KHR_materials_emissive_strength; three.js zeigt die Flaeche selbstleuchtend
+        bsdf.inputs["Emission Color"].default_value = (*farbe, 1.0)
+        bsdf.inputs["Emission Strength"].default_value = emission
     return mat
 
 
@@ -362,6 +366,7 @@ m_objekt = material("Objekt", GRAU_OBJEKT, rauheit=0.7, metall=0.15)
 m_dunkel = material("Dunkel", GRAU_DUNKEL, rauheit=0.5, metall=0.25)
 m_stahl = material("Stahl", STAHL, rauheit=0.45, metall=0.85)
 m_fenster = material("Fenster", FENSTER, rauheit=0.08)
+m_leuchte = material("Leuchte", (0.96, 0.97, 1.0), rauheit=0.6, emission=2.0)
 m_blau = material("Blau", BLAU, rauheit=0.5, metall=0.2)
 m_orange = material("Orange", ORANGE, rauheit=0.5, metall=0.2)
 m_markierung = material("Markierung", MARKIERUNG, rauheit=0.55, metall=0.15)
@@ -379,9 +384,9 @@ m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.5, metall=0.30)
 m_relief = material("WandRelief", WAND_RELIEF)
 m_decke = material("Decke", DECKE)
 m_sockel = material("Sockel", SOCKEL, rauheit=0.75)
-# Unterflur-Staffelung: Schiene blank gefahren, Schwelle stumpfes Beton-Grau,
+# Unterflur-Staffelung: Schiene blank gefahren,
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
-# dadurch verschmolzen Rad, Rahmen, Schiene und Schwelle zu einem grauen Block.
+# dadurch verschmolzen Rad, Rahmen und Schiene zu einem grauen Block.
 m_schiene = material("Schiene", (0.62, 0.58, 0.52), rauheit=0.30, metall=0.35)
 m_gummi = material("Gummi", (0.085, 0.085, 0.095), rauheit=0.95)
 m_unterflur = material("Unterflur", (0.16, 0.17, 0.18), rauheit=0.70)
@@ -436,14 +441,17 @@ kasten("Halle_Gleiszone_GrubeSued", 7, 0.8, 0.006, -3.5, 0.003, 1.4, m_gleiszone
 kasten("Halle_Markierung_Nord", 30, 0.12, 0.02, 0, 0.012, -1.9, m_markierung, fase=0)
 kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.012, 1.9, m_markierung, fase=0)
 # Plattenraster mit Dehnfugen (Querfugen im 5-m-Raster, Laengsfugen bei z +-4 und +-7) und
-# gelbe Sicherheitslinie 1.0 m neben der Gleiszone: der Boden liest sonst als eine Betonflaeche.
+# gelbe Sicherheitslinie 1.15 m neben der Gleiszone: der Boden liest sonst als eine Betonflaeche.
 for i, fx in enumerate((-15.0, -10.0, -5.0, 5.0, 10.0, 15.0)):
     for seite, z0, z1 in (("n", -9.85, -1.9), ("s", 1.9, 9.85)):
         kasten(f"Bodenfuge_x_{i}_{seite}", 0.02, z1 - z0, 0.002, fx, 0.001, (z0 + z1) / 2, m_dunkel, fase=0)
 for i, fz in enumerate((-7.0, -4.0, 4.0, 7.0)):
     kasten(f"Bodenfuge_z_{i}", 34.0, 0.02, 0.002, 0, 0.001, fz, m_dunkel, fase=0)
-for seite, sz in (("nord", -2.8), ("sued", 2.8)):
-    kasten(f"Sicherheitsabstand_{seite}", 30.0, 0.10, 0.002, 0, 0.001, sz, m_markierung, fase=0)
+# Sicherheitslinie 1.15 m neben der Gleiszone, frei von den Buehnenfuessen (|z| 2.57..2.83);
+# die Suedlinie setzt am Radsatzlager (x -2.3..1.1) aus wie eine Markierung um ein festes Regal.
+kasten("Sicherheitsabstand_nord", 30.0, 0.10, 0.002, 0, 0.001, -2.95, m_markierung, fase=0)
+for kennung, x0, x1 in (("w", -15.0, -2.45), ("o", 1.25, 15.0)):
+    kasten(f"Sicherheitsabstand_sued_{kennung}", x1 - x0, 0.10, 0.002, (x0 + x1) / 2, 0.001, 2.95, m_markierung, fase=0)
 # Fussweg liegt VOR Rammschutz und Maschinenfront (z -7.6..-6.5). Vorher lief er am
 # Wandfuss unter den Maschinen und durchs Meisterbuero. Luecke am Fuss der Buehnentreppe.
 kasten("Halle_Weg_Nord_W", 10.5, 1.1, 0.03, -3.05, 0.02, -7.05, m_weg, fase=0)
@@ -463,8 +471,14 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, fx in enumerate(range(-16, 17, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.15, 0.3, 1.8, fx, 4.4, cz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", laenge, 0.24, 0.08, cx, 4.4, cz, m_stahl)
-        # Abwaschbarer Sockelanstrich bis 1.2 m: die kraeftigste Horizontale jeder Werkstattwand
-        kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 1.2, cx, 0.6, cz + (-0.2 if cz > 0 else 0.2), m_sockel)
+        # Abwaschbarer Sockelanstrich bis 1.2 m: die kraeftigste Horizontale jeder Werkstattwand.
+        # An der Personaltuer Nord (Rahmen x -5.17..-4.03) setzt er aus, sonst mauert er die Tuer ein.
+        _sz = cz + (-0.2 if cz > 0 else 0.2)
+        if cz < 0:
+            for _k, (_a, _b) in enumerate(((cx - laenge / 2, -5.17), (-4.03, cx + laenge / 2))):
+                kasten(f"Relief_{seite}_Sockel_{_k}", _b - _a, 0.08, 1.2, (_a + _b) / 2, 0.6, _sz, m_sockel)
+        else:
+            kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 1.2, cx, 0.6, _sz, m_sockel)
         kasten(f"Relief_{seite}_Traeger", laenge, 0.26, 0.55, cx, 3.55, cz + (-0.25 if cz > 0 else 0.25), m_relief)
         for i, px in enumerate(range(-15, 16, 3)):
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.28, 0.14, 3.3, px, 1.75, cz + (-0.2 if cz > 0 else 0.2), m_relief)
@@ -475,7 +489,12 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, fz in enumerate(range(-8, 9, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.3, 0.15, 1.8, cx, 4.4, fz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", 0.24, laenge, 0.08, cx, 4.4, cz, m_stahl)
-        kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 1.2, cx + 0.2, 0.6, cz, m_sockel)
+        # Westsockel setzt an der Personaltuer West (Rahmen z 4.63..5.77) aus.
+        if cx < 0:
+            for _k, (_a, _b) in enumerate(((cz - laenge / 2, 4.63), (5.77, cz + laenge / 2))):
+                kasten(f"Relief_{seite}_Sockel_{_k}", 0.08, _b - _a, 1.2, cx + 0.2, 0.6, (_a + _b) / 2, m_sockel)
+        else:
+            kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 1.2, cx + 0.2, 0.6, cz, m_sockel)
         kasten(f"Relief_{seite}_Traeger", 0.26, laenge, 0.55, cx + 0.25, 3.55, cz, m_relief)
         for i, pz in enumerate(range(-8, 9, 4)):
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.14, 0.28, 3.3, cx + 0.2, 1.75, pz, m_relief)
@@ -549,7 +568,7 @@ rohr_mit_bogen("Rohrlauf_Ost", [(16.7, 0.6, -8.4), (16.7, 2.6, -8.4), (16.7, 2.6
 for zi, lz in enumerate((-5.4, -1.8, 1.8, 5.4)):
     for xi, lx in enumerate((-8.0, 0.0, 8.0)):
         kasten(f"Lichtband_{zi}_{xi}", 7.0, 0.18, 0.10, lx, 4.95, lz, m_stahlhell, fase=0.01)
-        kasten(f"Lichtband_{zi}_{xi}_wanne", 6.8, 0.12, 0.02, lx, 4.89, lz, m_fenster, fase=0)
+        kasten(f"Lichtband_{zi}_{xi}_wanne", 6.8, 0.16, 0.03, lx, 4.885, lz, m_leuchte, fase=0)
         for k, hx in enumerate((lx - 3.0, lx + 3.0)):
             zylinder(f"Lichtband_{zi}_{xi}_haenger_{k}", 0.012, 1.04, hx, 5.52, lz, m_dunkel)  # 5.00..6.04
 
@@ -634,25 +653,26 @@ kasten("Grube_Leuchte_Nord", 5.5, 0.06, 0.06, -3.5, -0.25, -0.82, m_fenster, fas
 kasten("Grube_Leuchte_Sued", 5.5, 0.06, 0.06, -3.5, -0.25, 0.82, m_fenster, fase=0)
 # Grubenleiter fuehrt in die Vertiefung (an der Ost-Innenwand)
 for i, lz in enumerate((-0.35, 0.35)):
-    kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 1.4, -0.18, 0.0, lz, m_orange, fase=0)
-for i in range(4):
-    kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.66, 0.04, -0.18, -0.55 + i * 0.28, 0, m_orange, fase=0)
+    kasten(f"Grube_Leiter_holm_{i}", 0.05, 0.05, 0.7, -0.18, -0.35, lz, m_orange, fase=0)
+for i in range(3):
+    kasten(f"Grube_Leiter_sprosse_{i}", 0.04, 0.66, 0.04, -0.18, -0.58 + i * 0.26, 0, m_orange, fase=0)
 
 
-def warnstreifen(name, laenge, x, z, entlang_x=True):
+def warnstreifen(name, laenge, x, z, entlang_x=True, y_boden=0.0):
+    """y_boden = Oberkante der Unterlage (Hallenboden 0.0, Gleiszonen-Deck 0.006)."""
     n = int(laenge / 0.5)
     for i in range(n):
         m = m_markierung if i % 2 == 0 else m_dunkel
         if entlang_x:
-            kasten(f"{name}_{i}", 0.5, 0.14, 0.012, x - laenge / 2 + 0.25 + i * 0.5, 0.04, z, m, fase=0)
+            kasten(f"{name}_{i}", 0.5, 0.14, 0.012, x - laenge / 2 + 0.25 + i * 0.5, y_boden + 0.006, z, m, fase=0)
         else:
-            kasten(f"{name}_{i}", 0.14, 0.5, 0.012, x, 0.04, z - laenge / 2 + 0.25 + i * 0.5, m, fase=0)
+            kasten(f"{name}_{i}", 0.14, 0.5, 0.012, x, y_boden + 0.006, z - laenge / 2 + 0.25 + i * 0.5, m, fase=0)
 
 
-warnstreifen("Grube_Kante_Nord", 7, -3.5, -1.12)
-warnstreifen("Grube_Kante_Sued", 7, -3.5, 1.12)
-warnstreifen("Grube_Kante_West", 2, -7.05, 0, entlang_x=False)
-warnstreifen("Grube_Kante_Ost", 2, 0.05, 0, entlang_x=False)
+warnstreifen("Grube_Kante_Nord", 7, -3.5, -1.12, y_boden=0.006)
+warnstreifen("Grube_Kante_Sued", 7, -3.5, 1.12, y_boden=0.006)
+warnstreifen("Grube_Kante_West", 2, -7.05, 0, entlang_x=False, y_boden=0.0)
+warnstreifen("Grube_Kante_Ost", 2, 0.05, 0, entlang_x=False, y_boden=0.0)
 
 # ---- Triebzug v3: realistische Hoehe (3 m Dachkante), sichtbare Raeder ------
 m_zugglas = material("ZugGlas", (0.045, 0.06, 0.075), rauheit=0.06)
@@ -669,7 +689,7 @@ kasten("Triebzug_Unterbau", 14, 1.1, 0.3, ZUG_X, 0.8, 0, m_unterflur)
 for i, bx in enumerate((-5.9, 6.9)):
     # Aussenliegender Drehgestellrahmen mit Achslagern, Primaerfedern, Bremsscheiben
     # und Sandstreurohren — vorher war das eine dunkle Platte mit vier Scheiben davor.
-    # Rahmen auf y 0.80..0.95 gehoben: vorher kappte er die Raeder 5.5 cm ueber der
+    # Rahmen auf y 0.845..0.965 gehoben (schlanker Langtraeger, siehe unten): vorher kappte er die Raeder 5.5 cm ueber der
     # Radmitte und sie lasen als Hufeisen. Die Achsfuehrung ueberbrueckt die Luecke
     # zum Achslager — ohne sie waere der Rahmen ein Schweber. In der Mitte sitzen
     # jetzt Fahrmotor und Bremszangen statt eines Durchblicks.
@@ -766,14 +786,14 @@ for seite, sz in (("nord", -1.24), ("sued", 1.24)):
 # Dachkrone statt flacher Platte: acht duenne Schichten ziehen sich nach oben ein
 # (Halbbreite 1.18 -> 1.06 nach w(t) = 1.18 - 0.12*t**1.6). Aus dem Kasten mit
 # scharfer Kante wird im Querschnitt eine Roehre — das ist der Unterschied zwischen
-# Regionaltriebwagen und ICE. Die Verjuengung ist bewusst flach gewaehlt: bei |z| 1.09,
-# wo die sechs Klappbruecken aufsetzen, liegt die Dachflaeche weiterhin auf y 3.00,
+# Regionaltriebwagen und ICE. Die Verjuengung ist bewusst flach gewaehlt: bei |z| 1.08,
+# wo die sechs Klappbruecken aufsetzen, liegt die Dachflaeche noch auf y 2.98 (2.84 nach der Senkung),
 # sonst haetten die Bruecken im Leeren geendet.
 # Wie beim Bug ohne Fase — eine Fase je Schicht wuerde acht Schattenfugen werfen.
 # Dachkrone als EINE glatte Schale. Vorher acht Schichten a 3.75 cm: aus der Totale
 # lasen die als Treppe, und direkt hinter dem geloftetem Kopf fiel das doppelt auf.
 # Gleiche Kurve w(t) = 1.18 - 0.12*t**1.6 wie bisher (die Kopfschale schliesst mit
-# exakt dieser Breite an, die Klappbruecken landen weiterhin bei |z| 1.09 auf ~2.96).
+# exakt dieser Breite an, die Klappbruecken landen bei |z| 1.08 auf 2.98 bzw. 2.84 nach GLEIS_SENKUNG).
 _DK_N = 14
 _dk_halb = [(1.18 - 0.12 * (_k / _DK_N) ** 1.6, 2.70 + 0.32 * (_k / _DK_N)) for _k in range(_DK_N + 1)]
 _dk_prof = [(-_z, _y) for _z, _y in _dk_halb] + [(_z, _y) for _z, _y in reversed(_dk_halb)]
@@ -1287,6 +1307,10 @@ fuehrerstand("west", -1)
 # Triebzug_ heisst, um die Senkung der Schienenoberkante nach unten. Ein Nachlauf
 # statt hunderter geaenderter y-Literale; wer Zugteile anlegt, tut das VOR dieser
 # Zeile, damit sie mitwandern.
+# matrix_world ist erst nach einer Depsgraph-Auswertung aktuell; Objekte, deren Rotation per
+# Property gesetzt wurde (rohr_mit_bogen), haetten sonst eine veraltete Matrix und verlieren
+# beim Zurueckschreiben ihre Drehung (so verlor Triebzug_Dachkabel_seg_1 seine Lage).
+bpy.context.view_layer.update()
 for _o in bpy.data.objects:
     if _o.type == "MESH" and _o.name.startswith("Triebzug_"):
         _o.matrix_world = Matrix.Translation((0, 0, -GLEIS_SENKUNG)) @ _o.matrix_world
@@ -1310,11 +1334,11 @@ for i, tx in enumerate((-6.5, 4)):
 treppe("Buehne_Treppe", 2.9, -5.3, 3.3, richtung_z=-1, breite=0.85)
 # Klappbruecken von der Dacharbeitsbuehne auf das Zugdach — vorher endete die Buehne
 # 1.08 m vor dem Zug und niemand kam hinueber. Die Bruecke faellt von der Plattform
-# (Oberkante 3.30) auf die um GLEIS_SENKUNG abgesenkte Dachkante (2.86); Winkel 0.343 rad, Vorzeichen folgt der
+# (Oberkante 3.30) auf die Dachschulter bei |z| 1.08 (y 2.84 nach GLEIS_SENKUNG); Winkel 0.343 rad, Vorzeichen folgt der
 # Seite, weil pos() die three.js-z-Achse auf Blender -y abbildet.
 for s in (-1, 1):
     for i, bx in enumerate((-5.2, -2.6, 0.4)):
-        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.2, 0.05, bx, 3.08, s * 1.71,
+        kasten(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}", 1.25, 1.26, 0.05, bx, 3.07, s * 1.681,
                m_riffel, fase=0, drehung=(-s * 0.343, 0, 0))
         zylinder(f"Dachbruecke_{'n' if s < 0 else 's'}_{i}_scharnier", 0.05, 1.3, bx, 3.28, s * 2.26,
                  m_stahl, achse="x")
@@ -1323,7 +1347,7 @@ for s in (-1, 1):
 # Hallen-Fahrleitung: Deckenstromschiene ueber dem Gleis, an Dach_Rippe_5 (z 0)
 # abgehaengt. Ohne sie stand der ausgefahrene Stromabnehmer sinnlos in der Luft,
 # und in der Totale las das darueber liegende Druckluftrohr als Fahrdraht. Unterkante
-# 4.20, Schleifleiste endet bei 4.18: 2 cm Luft, kein Durchdringen.
+# 4.06 (4.20 - GLEIS_SENKUNG), Schleifleiste endet bei 4.04: 2 cm Luft, kein Durchdringen.
 kasten("Fahrleitung_Schiene", 21, 0.08, 0.12, -1, 4.26 - GLEIS_SENKUNG, 0, m_stahl, fase=0)
 for i, s in enumerate((-1, 1)):
     kasten(f"Fahrleitung_Horn_{i}", 0.6, 0.08, 0.06, -1 + s * 10.75, 4.31 - GLEIS_SENKUNG, 0, m_stahl, fase=0,
@@ -1344,12 +1368,12 @@ for s in (-1, 1):
         kasten(f"Trommel_Konsole_{seite}_{i}", 0.2, 0.7, 0.12, bx, 2.6, s * 2.35, m_stahl, fase=0)
         zylinder(f"Trommel_{seite}_{i}", 0.22, 0.34, bx, 2.6, s * 1.95, m_orange, achse="z", ecken=32)
         zylinder(f"Trommel_{seite}_{i}_schlauch", 0.03, 1.0, bx, 2.1, s * 1.75, m_gummi)
-    # 0.7 m vom Wagenkasten: 0.2 m waeren im Lichtraum des Fahrzeugs
+    # 0.9 m vom Wagenkasten, frei von der gelben Markierung bei |z| 1.9 (0.2 m waeren im Lichtraum)
     # 0.3 m ostwaerts: bei x -3.5 schnitt der Kopf der Suedstele den Holm von Rollgeruest_2
     for i, gx in enumerate((-5.9, -3.2, -0.5)):
-        kasten(f"Medienstele_{seite}_{i}", 0.22, 0.22, 0.9, gx, 0.45, s * 1.9, m_stahlhell)
-        kasten(f"Medienstele_{seite}_{i}_kopf", 0.26, 0.26, 0.1, gx, 0.95, s * 1.9, m_blau, fase=0.02)
-        zylinder(f"Medienstele_{seite}_{i}_hahn", 0.04, 0.12, gx, 0.75, s * 2.03, m_zug, achse="z")
+        kasten(f"Medienstele_{seite}_{i}", 0.22, 0.22, 0.9, gx, 0.45, s * 2.12, m_stahlhell)
+        kasten(f"Medienstele_{seite}_{i}_kopf", 0.26, 0.26, 0.1, gx, 0.95, s * 2.12, m_blau, fase=0.02)
+        zylinder(f"Medienstele_{seite}_{i}_hahn", 0.04, 0.12, gx, 0.75, s * 2.25, m_zug, achse="z")
 
 # Echter Brueckenkran statt eines einzelnen Traegers im Deckengrau: zwei Kranbahnen
 # auf Konsolen an den Hallenstuetzen, dazwischen eine verfahrbare Bruecke mit Katze,
@@ -1432,7 +1456,7 @@ for i, rz in enumerate((2.45, 3.55)):
     kasten(f"Radsatzlager_schiene_{i}", 3.4, 0.14, 0.12, -0.6, 0.06, rz, m_stahl, fase=0)
 for i, rx in enumerate((-1.7, -0.6, 0.5)):
     radsatz(f"Radsatz_{i}", rx, 3.0)
-warnstreifen("Radsatzlager_kante", 3.5, -0.6, 4.0)
+warnstreifen("Radsatzlager_kante", 3.5, -0.6, 4.0, y_boden=0.0)
 
 # ---- Bodenmarkierungen, Signale, Sicherheit ---------------------------------
 # Markierte Zone als Kenney-Bodendekal (liest sich eindeutig als Markierung)
@@ -1518,8 +1542,8 @@ zylinder("Feuerloescher_west", 0.07, 0.45, -16.42, 1.05, 0, m_zug)
 kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.49, 1.42, 0, m_zug, fase=0)
 
 # Schalterkaesten neben den Personaltueren
-kasten("Schalter_Nord", 0.12, 0.05, 0.18, -3.85, 1.1, -9.79, m_dunkel, fase=0)
-kasten("Schalter_West", 0.05, 0.12, 0.18, -16.79, 1.1, 4.45, m_dunkel, fase=0)
+kasten("Schalter_Nord", 0.12, 0.05, 0.18, -3.85, 1.1, -9.735, m_dunkel, fase=0)
+kasten("Schalter_West", 0.05, 0.12, 0.18, -16.735, 1.1, 4.45, m_dunkel, fase=0)
 
 # Kabelbruecke ueber dem Servicewagen-Schlauch + Stellplatz-Markierung fuer den Stapler
 kasten("Kabelbruecke", 0.9, 0.5, 0.07, 7.4, 0.035, 1.55, m_markierung, fase=0.02)
@@ -1575,7 +1599,7 @@ kasten("Station_1_tuerklinke", 0.06, 0.1, 0.04, -8.40, 1.0, -6.32, m_dunkel, fas
 # der Buerowand die Tiefe eines gebauten Raums.
 for kennung, dz, dy, y, z in (("o", 1.52, 0.06, 2.38, -8.1), ("u", 1.52, 0.06, 1.42, -8.1),
                               ("l", 0.06, 0.9, 1.9, -8.83), ("r", 0.06, 0.9, 1.9, -7.37)):
-    kasten(f"Station_1_fensterrahmen_{kennung}", 0.05, dz, dy, -8.435, y, z, m_relief, fase=0)
+    kasten(f"Station_1_fensterrahmen_{kennung}", 0.09, dz, dy, -8.455, y, z, m_relief, fase=0)
 kasten("Station_1_fensterbank", 0.12, 1.6, 0.04, -8.44, 1.37, -8.1, m_stahlhell, fase=0)
 kasten("Station_1_tuerschwelle", 0.10, 0.9, 0.03, -8.45, 0.015, -6.6, m_dunkel, fase=0)
 # Pinnwand haengt jetzt an der SUEDfront des Bueros, also frontal zur Stationskamera.
@@ -1644,7 +1668,7 @@ kasten("Station_3_bodenplatte", 2.2, 1.6, 0.03, 7, 0.02, -4.0, m_riffel, fase=0)
 # Das Terminal haengt am Nordwand-Kabelkanal: Kabel am Boden nach Norden, ueber den
 # Fussweg mit gelber Kabelbruecke (Stolperkante), an der Wand hoch in den Kanal.
 rohr_mit_bogen("Station_3_kabel", [(7.0, 0.03, -4.55), (7.0, 0.03, -9.7), (7.0, 1.43, -9.76)], 0.02, m_dunkel)
-kasten("Station_3_kabelbruecke", 0.5, 1.2, 0.05, 7.0, 0.06, -7.05, m_markierung, fase=0.015)
+kasten("Station_3_kabelbruecke", 0.5, 1.1, 0.05, 7.0, 0.06, -7.05, m_markierung, fase=0.015)
 bpy.ops.mesh.primitive_plane_add(size=1, location=pos(7, 1.35, -3.95))
 monitor = bpy.context.active_object
 monitor.name = "Monitor_Bildschirm"

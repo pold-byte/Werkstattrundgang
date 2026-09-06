@@ -18,7 +18,9 @@ http.createServer((req, res) => {
     try {
       const { name, data } = JSON.parse(rumpf);
       if (!/^[\w-]+$/.test(name)) throw new Error('unerlaubter Name');
-      fs.writeFileSync(path.join(ZIEL, name + '.png'), Buffer.from(data.split(',')[1], 'base64'));
+      const b64 = (data || '').split(',')[1];
+      if (!b64 || !b64.startsWith('iVBORw0KGgo')) throw new Error('leeres oder kein PNG');
+      fs.writeFileSync(path.join(ZIEL, name + '.png'), Buffer.from(b64, 'base64'));
       console.log('OK ' + name);
       res.end('ok');
     } catch (fehler) {
