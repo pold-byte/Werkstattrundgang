@@ -200,6 +200,7 @@ def _aus_vorlage(name, daten, skalierung, ort, drehung=None):
 
 def _abschliessen(obj, mat, fase):
     """UV-Kachelung setzen und Bevel-Modifier anlegen."""
+    mat = lackvariante(obj.name, mat)
     _kachel_uv(obj, KACHEL.get(mat.name, 2.0))
     if fase > 0:
         mod = obj.modifiers.new("Fase", "BEVEL")
@@ -298,6 +299,7 @@ def lade_asset(datei, name, x, y, z, dreh_y=0.0, ziel_hoehe=None, ziel_breite=No
     anker.location = pos(x, y, z)
     if einfaerbung is not None:
         # Kenney-Fremdfarben (Tuerkis/Lila/Tan/Rosa) auf die Szenen-Palette ziehen
+        einfaerbung = lackvariante(name, einfaerbung)
         for o in meshes:
             for slot in o.material_slots:
                 slot.material = einfaerbung
@@ -343,33 +345,69 @@ GRAU_OBJEKT = (0.72, 0.73, 0.72)      # RAL 7035 Lichtgrau, leicht gedeckt: Masc
 GRAU_DUNKEL = (0.29, 0.30, 0.32)
 STAHL = (0.55, 0.57, 0.60)
 FENSTER = (0.87, 0.91, 0.96)
-BLAU = (0.10, 0.33, 0.56)             # RAL 5010 Enziablau, der Maschinenlack der Werkstatt
-ORANGE = (0.89, 0.35, 0.13)           # RAL 2004 Reinorange, Faesser und Warnkoerper
+BLAU = (0.12, 0.31, 0.50)             # RAL 5010 Enziablau, entsaettigt: 10 Jahre Hallenluft
+BLAU_ALT = (0.22, 0.36, 0.48)         # ausgeblichene Variante fuer jedes dritte Requisit
+ORANGE = (0.82, 0.36, 0.16)           # RAL 2004 Reinorange, entsaettigt
+ORANGE_ALT = (0.80, 0.47, 0.30)       # ausgeblichene Variante fuer jedes dritte Requisit
 MARKIERUNG = (0.95, 0.72, 0.05)       # RAL 1023 Verkehrsgelb, Bodenmarkierung und Rammschutz
 STAHL_HELL = (0.85, 0.86, 0.88)
-GRUEN = (0.12, 0.33, 0.26)            # RAL 6005 Moosgruen, Schweissschutzwaende
+GRUEN = (0.14, 0.32, 0.27)            # RAL 6005 Moosgruen, entsaettigt
 GRUBE = (0.09, 0.10, 0.11)
-ROT_ZUG = (0.72, 0.12, 0.16)
-WEISS_ZUG = (0.90, 0.90, 0.91)
+ROT_ZUG = (0.66, 0.11, 0.15)
+WEISS_ZUG = (0.86, 0.86, 0.87)
 WAND_RELIEF = (0.62, 0.61, 0.58)
 DECKE = (0.84, 0.83, 0.81)
 SOCKEL = (0.44, 0.45, 0.45)           # RAL 7037 Staubgrau: abwaschbarer Wandsockel
 
+# Rauheitstextur fuer Lack- und Sockelmaterialien vorab erzeugen: material_pbr() laedt die
+# PNGs beim Definieren, die Dateien muessen also schon auf der Platte liegen.
+LACK_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_lack_rauheit.png")
+SOCKEL_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_sockel_rauheit.png")
+schreibe_rauheit_png(LACK_RAUHEIT_PNG, groesse=256, basis=0.42, spann=0.18, seed=3, kratzer=0.004)
+schreibe_rauheit_png(SOCKEL_RAUHEIT_PNG, groesse=256, basis=0.6, spann=0.2, seed=9, kratzer=0.01)
+
 # Materialien mit ablesbarer Materialitaet: Beton matt+fleckig (Textur), Stahl
 # metallisch-glaenzend (Metalness, Reflexe kommen aus der Environment-Map im Viewer),
-# Lack seidig, Glas glatt.
-m_objekt = material("Objekt", GRAU_OBJEKT, rauheit=0.7, metall=0.15)
+# Lack seidig mit Rauheitstextur, Glas glatt.
+m_objekt = material_pbr("Objekt", GRAU_OBJEKT, rauheit_png=LACK_RAUHEIT_PNG, metall=0.1, kachel=1.5)
 m_dunkel = material("Dunkel", GRAU_DUNKEL, rauheit=0.5, metall=0.25)
 m_stahl = material("Stahl", STAHL, rauheit=0.45, metall=0.85)
 m_fenster = material("Fenster", FENSTER, rauheit=0.08)
 m_leuchte = material("Leuchte", (0.96, 0.97, 1.0), rauheit=0.6, emission=2.0)
-m_blau = material("Blau", BLAU, rauheit=0.5, metall=0.2)
-m_orange = material("Orange", ORANGE, rauheit=0.5, metall=0.2)
+m_blau = material_pbr("Blau", BLAU, rauheit_png=LACK_RAUHEIT_PNG, metall=0.15, kachel=1.5)
+m_blau_alt = material_pbr("BlauAlt", BLAU_ALT, rauheit_png=SOCKEL_RAUHEIT_PNG, metall=0.05, kachel=1.5)
+m_orange = material_pbr("Orange", ORANGE, rauheit_png=LACK_RAUHEIT_PNG, metall=0.15, kachel=1.5)
+m_orange_alt = material_pbr("OrangeAlt", ORANGE_ALT, rauheit_png=SOCKEL_RAUHEIT_PNG, metall=0.05, kachel=1.5)
 m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.35, metall=0.7)
-m_gruen = material("Gruen", GRUEN, rauheit=0.5, metall=0.2)
+m_gruen = material_pbr("Gruen", GRUEN, rauheit_png=LACK_RAUHEIT_PNG, metall=0.1, kachel=1.5)
 m_grube = material("Grube", GRUBE, rauheit=0.85)
-m_zug = material("Zug", ROT_ZUG, rauheit=0.35, metall=0.3)
-m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.3, metall=0.25)
+m_zug = material("Zug", ROT_ZUG, rauheit=0.42, metall=0.05)
+m_zugweiss = material("ZugWeiss", WEISS_ZUG, rauheit=0.42, metall=0.05)
+
+
+def klarlack(mat, gewicht=0.6, rauheit=0.12):
+    """Zweischichtlack: der glTF-Exporter schreibt KHR_materials_clearcoat, three.js rendert ihn."""
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    bsdf.inputs["Coat Weight"].default_value = gewicht
+    bsdf.inputs["Coat Roughness"].default_value = rauheit
+    return mat
+
+
+klarlack(m_zug)
+klarlack(m_zugweiss)
+
+VARIANTEN = {"Blau": m_blau_alt, "Orange": m_orange_alt}
+VARIANTEN_FAMILIEN = ("Requisite_", "UnterEmpore_", "Kiste_", "Sued_", "Werkbank2_", "Werkstattwagen_", "Empore_Kiste")
+
+
+def lackvariante(name, mat):
+    """Jedes dritte Requisit in Blau/Orange bekommt die ausgeblichene Variante — gleiche
+    Farbe an allen Kisten liest als Spielzeug. Maschinen (Station_*) behalten den RAL-Ton."""
+    if mat.name in VARIANTEN and name.startswith(VARIANTEN_FAMILIEN) and zlib.crc32(name.encode()) % 3 == 0:
+        return VARIANTEN[mat.name]
+    return mat
+
+
 # Dach dunkel absetzen: es lief bisher auf m_stahlhell (0.85) gegen den Kasten (0.90) —
 # fuenf Prozent Unterschied, aus Beamerabstand also gar keine Dachkante. Der Zug hatte
 # damit keine Oberkante und franste oben in die helle Halle aus.
@@ -397,15 +435,11 @@ schreibe_riffelblech_png(RIFFEL_PNG)
 BETON = os.path.join(WURZEL, "blender", "gen_beton")
 GLEISBETON = os.path.join(WURZEL, "blender", "gen_gleisbeton")
 PUTZ = os.path.join(WURZEL, "blender", "gen_putz")
-LACK_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_lack_rauheit.png")
-SOCKEL_RAUHEIT_PNG = os.path.join(WURZEL, "blender", "gen_sockel_rauheit.png")
 DECKE_NORMAL_PNG = os.path.join(WURZEL, "blender", "gen_decke_normal.png")
 # Boden: 10-m-Kachel mit 2 x 2 Platten = 5-m-Plattenraster wie die Dehnfugen (Task 4 des Vorplans)
 schreibe_pbr_set(BETON, groesse=768, basis_rgb=(112, 113, 116), spann=16, seed=7, platten=(2, 0.035), koernung=5, normal_staerke=0.6, rauheit_basis=0.88, rauheit_spann=0.08)
 schreibe_pbr_set(GLEISBETON, groesse=512, basis_rgb=(70, 71, 74), spann=20, seed=11, koernung=7, normal_staerke=0.5, rauheit_basis=0.72, rauheit_spann=0.18)
 schreibe_pbr_set(PUTZ, groesse=512, basis_rgb=(204, 200, 192), spann=9, seed=5, koernung=3, normal_staerke=0.35, rauheit_basis=0.9, rauheit_spann=0.05)
-schreibe_rauheit_png(LACK_RAUHEIT_PNG, groesse=256, basis=0.42, spann=0.18, seed=3, kratzer=0.004)
-schreibe_rauheit_png(SOCKEL_RAUHEIT_PNG, groesse=256, basis=0.6, spann=0.2, seed=9, kratzer=0.01)
 schreibe_rillen_normal_png(DECKE_NORMAL_PNG, groesse=256, periode=32, tiefe=0.6)
 def fass(name, x, z, y_boden, farbe):
     """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
