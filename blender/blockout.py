@@ -425,6 +425,8 @@ def auffangwanne(name, x0, x1, z0, z1):
 
 m_boden = material_mit_textur("Boden", BODEN_PNG, rauheit=0.92, kachel=4.0)
 m_gleiszone = material_mit_textur("Gleiszone", GLEIS_PNG, rauheit=0.92, kachel=3.0)
+m_schotter = material("Schotter", (0.42, 0.41, 0.39), rauheit=0.98)
+m_schwelle = material("Schwelle", (0.36, 0.35, 0.33), rauheit=0.95)
 m_wand = material_mit_textur("Wand", WAND_PNG, rauheit=0.85, kachel=3.0)
 m_riffel = material_mit_textur("Riffelblech", RIFFEL_PNG, rauheit=0.4, metall=0.7, kachel=0.5)
 
@@ -463,8 +465,20 @@ zylinder("Oelfleck_2", 0.33, 0.012, 5.5, 0.012, -1.2, m_oelfleck)
 zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
 
 # ---- Waende mit Fensterbaendern (Nord, West, Sued), Ostwand mit Tor ---------
-# Sockeloeffnungen an den Personaltueren: Aussenkanten der Tuerrahmen je Wandseite
-SOCKEL_OEFFNUNG = {"Nord": (-5.17, -4.03), "West": (4.63, 5.77)}
+# Sockeloeffnungen (Aussenkanten der Tuerrahmen bzw. der Toroeffnung) je Wandseite
+SOCKEL_OEFFNUNG = {"Nord": ((-5.17, -4.03),), "West": ((-1.9, 1.9), (4.63, 5.77))}
+# Toroeffnung 3.6 x 4.2 m in der Westwand, Gleisachse z 0 (Spiegel des Osttors)
+TOR_OEFFNUNG = {"West": (-1.8, 1.8)}
+
+
+def _segmente(a0, b0, oeffnungen):
+    """Teilt [a0, b0] an den (sortierten) Oeffnungen in die verbleibenden Stuecke."""
+    stuecke, a = [], a0
+    for oa, ob in sorted(oeffnungen):
+        stuecke.append((a, oa))
+        a = ob
+    stuecke.append((a, b0))
+    return stuecke
 
 
 def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
@@ -480,7 +494,7 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         _sz = cz + (-0.2 if cz > 0 else 0.2)
         _oe = SOCKEL_OEFFNUNG.get(seite)
         if _oe:
-            for _k, (_a, _b) in enumerate(((cx - laenge / 2, _oe[0]), (_oe[1], cx + laenge / 2))):
+            for _k, (_a, _b) in enumerate(_segmente(cx - laenge / 2, cx + laenge / 2, _oe)):
                 kasten(f"Relief_{seite}_Sockel_{_k}", _b - _a, 0.08, 1.2, (_a + _b) / 2, 0.6, _sz, m_sockel)
         else:
             kasten(f"Relief_{seite}_Sockel", laenge, 0.08, 1.2, cx, 0.6, _sz, m_sockel)
@@ -488,21 +502,38 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
         for i, px in enumerate(range(-15, 16, 3)):
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.28, 0.14, 3.3, px, 1.75, cz + (-0.2 if cz > 0 else 0.2), m_relief)
     else:
-        kasten(f"Wand_{seite}_Unten", 0.3, laenge, 3.5, cx, 1.75, cz, m_wand)
-        kasten(f"Wand_{seite}_Fenster", 0.1, laenge, 1.8, cx - 0.08, 4.4, cz, m_hallenglas)
+        _tor = TOR_OEFFNUNG.get(seite)
+        if _tor:
+            # Toroeffnung: Wand und Fensterband beidseits, Sturz 4.2..5.3 darueber (Wand_Oben bleibt durchgehend)
+            for _k, (_a, _b) in enumerate(_segmente(cz - laenge / 2, cz + laenge / 2, (_tor,))):
+                kasten(f"Wand_{seite}_Unten_{_k}", 0.3, _b - _a, 3.5, cx, 1.75, (_a + _b) / 2, m_wand)
+                kasten(f"Wand_{seite}_Fenster_{_k}", 0.1, _b - _a, 1.8, cx - 0.08, 4.4, (_a + _b) / 2, m_hallenglas)
+            kasten(f"Wand_{seite}_Sturz", 0.3, _tor[1] - _tor[0], 1.1, cx, 4.75, (_tor[0] + _tor[1]) / 2, m_wand)
+        else:
+            kasten(f"Wand_{seite}_Unten", 0.3, laenge, 3.5, cx, 1.75, cz, m_wand)
+            kasten(f"Wand_{seite}_Fenster", 0.1, laenge, 1.8, cx - 0.08, 4.4, cz, m_hallenglas)
         kasten(f"Wand_{seite}_Oben", 0.3, laenge, 0.7, cx, 5.65, cz, m_wand)
         for i, fz in enumerate(range(-8, 9, 4)):
+            if _tor and _tor[0] < fz < _tor[1]:
+                continue
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.3, 0.15, 1.8, cx, 4.4, fz, m_stahl)
         kasten(f"Wand_{seite}_Quersprosse", 0.24, laenge, 0.08, cx, 4.4, cz, m_stahl)
         # Sockeloeffnung an der Personaltuer West laut SOCKEL_OEFFNUNG.
         _oe = SOCKEL_OEFFNUNG.get(seite)
         if _oe:
-            for _k, (_a, _b) in enumerate(((cz - laenge / 2, _oe[0]), (_oe[1], cz + laenge / 2))):
+            for _k, (_a, _b) in enumerate(_segmente(cz - laenge / 2, cz + laenge / 2, _oe)):
                 kasten(f"Relief_{seite}_Sockel_{_k}", 0.08, _b - _a, 1.2, cx + 0.2, 0.6, (_a + _b) / 2, m_sockel)
         else:
             kasten(f"Relief_{seite}_Sockel", 0.08, laenge, 1.2, cx + 0.2, 0.6, cz, m_sockel)
-        kasten(f"Relief_{seite}_Traeger", 0.26, laenge, 0.55, cx + 0.25, 3.55, cz, m_relief)
+        if _tor:
+            # Der Sichtbetontraeger (3.275..3.825) liegt in der 4.2-m-Toroeffnung: beidseits teilen.
+            for _k, (_a, _b) in enumerate(_segmente(cz - laenge / 2, cz + laenge / 2, (_tor,))):
+                kasten(f"Relief_{seite}_Traeger_{_k}", 0.26, _b - _a, 0.55, cx + 0.25, 3.55, (_a + _b) / 2, m_relief)
+        else:
+            kasten(f"Relief_{seite}_Traeger", 0.26, laenge, 0.55, cx + 0.25, 3.55, cz, m_relief)
         for i, pz in enumerate(range(-8, 9, 4)):
+            if _tor and _tor[0] < pz < _tor[1]:
+                continue
             kasten(f"Relief_{seite}_Pilaster_{i}", 0.14, 0.28, 3.3, cx + 0.2, 1.75, pz, m_relief)
 
 
@@ -521,6 +552,14 @@ kasten("Tor_Pfosten_Nord", 0.25, 0.25, 4.4, 16.8, 2.2, -1.9, m_orange)
 kasten("Tor_Pfosten_Sued", 0.25, 0.25, 4.4, 16.8, 2.2, 1.9, m_orange)
 kasten("Tor_Balken", 0.25, 4.3, 0.25, 16.8, 4.35, 0, m_orange)
 
+# Westtor: Spiegel des Osttors; das Blatt ist offen nach Norden geparkt (suedlich steht die Personaltuer West)
+kasten("Tor_West_Pfosten_Nord", 0.25, 0.25, 4.4, -16.8, 2.2, -1.9, m_orange)
+kasten("Tor_West_Pfosten_Sued", 0.25, 0.25, 4.4, -16.8, 2.2, 1.9, m_orange)
+kasten("Tor_West_Balken", 0.25, 4.3, 0.25, -16.8, 4.35, 0, m_orange)
+kasten("Tor_West_Blatt", 0.12, 3.6, 4.2, -17.12, 2.1, -4.1, m_orange, fase=0.03)
+kasten("Tor_West_Blatt_Riegel", 0.14, 3.4, 0.18, -17.11, 2.1, -4.1, m_dunkel, fase=0)
+kasten("Tor_West_Schiene", 0.06, 8.0, 0.08, -17.15, 4.45, -2.2, m_dunkel, fase=0)
+
 # ---- Stahlbau: Stuetzen (I-Profil-Optik), Decke mit Bindern und Oberlichtern ----
 for i, sx in enumerate((-13.6, -6.8, 0, 6.8, 13.6)):
     kasten(f"Stuetze_Nord_{i}", 0.3, 0.3, 6, sx, 3, -9.7, m_stahl)
@@ -528,7 +567,8 @@ for i, sx in enumerate((-13.6, -6.8, 0, 6.8, 13.6)):
     # gelber Anfahrschutz am Stuetzenfuss (Werkstatt-typische Kontur + Farbe)
     kasten(f"Stuetze_Nord_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, -9.7, m_markierung, fase=0.03)
     kasten(f"Stuetze_Sued_{i}_schutz", 0.38, 0.38, 0.55, sx, 0.275, 9.7, m_markierung, fase=0.03)
-for i, sz in enumerate((-6.7, 0, 6.7)):
+# Stuetzen flankieren die Toroeffnung (|z| 1.8): -2.5 / 2.5 statt einer Stuetze in Gleisachse
+for i, sz in enumerate((-6.7, -2.5, 2.5, 6.7)):
     kasten(f"Stuetze_West_{i}", 0.3, 0.3, 6, -16.7, 3, sz, m_stahl)
     kasten(f"Stuetze_West_{i}_schutz", 0.38, 0.38, 0.55, -16.7, 0.275, sz, m_markierung, fase=0.03)
 
@@ -579,13 +619,16 @@ for zi, lz in enumerate((-5.4, -1.8, 1.8, 5.4)):
             zylinder(f"Lichtband_{zi}_{xi}_haenger_{k}", 0.012, 1.04, hx, 5.52, lz, m_dunkel)  # 5.00..6.04
 
 # ---- Empore an der Westwand mit Treppe --------------------------------------
-kasten("Empore_Plattform", 3.0, 10, 0.15, -15.5, 3.05, -5, m_riffel)
-kasten("Empore_Blende", 0.06, 10, 0.22, -14.02, 3.05, -5, m_relief, fase=0)
-for i, ez in enumerate((-9.5, -6.5, -3.5, -0.6)):
+# Plattform z -10..-6.6: suedlich davon laeuft seit dem Zugverband Wagen 2 durch das
+# Westtor; die Treppe (Lauf 4.9 m + 1.5 m Landung) endet bei z -3.08 hinter der
+# Sicherheitslinie (-2.95) statt quer ueber der Gleisachse.
+kasten("Empore_Plattform", 3.0, 3.4, 0.15, -15.5, 3.05, -8.3, m_riffel)
+kasten("Empore_Blende", 0.06, 3.4, 0.22, -14.02, 3.05, -8.3, m_relief, fase=0)
+for i, ez in enumerate((-9.6, -8.2, -6.8)):
     kasten(f"Empore_Stuetze_{i}", 0.2, 0.2, 3.0, -14.2, 1.5, ez, m_stahl)
-for i, gz in enumerate((-9.5, -7.2, -4.9, -2.6, -0.4)):
+for i, gz in enumerate((-9.6, -8.15, -6.7)):
     zylinder(f"Empore_Gelaenderpfosten_{i}", 0.03, 1.0, -14.1, 3.6, gz, m_dunkel)
-zylinder("Empore_Handlauf", 0.035, 9.6, -14.1, 4.1, -5, m_dunkel, achse="z")
+zylinder("Empore_Handlauf", 0.035, 3.0, -14.1, 4.1, -8.15, m_dunkel, achse="z")
 def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
     """Offene Stahltreppe: Trittstufen auf zwei Wangen, dazu ein abgestuetztes Gelaender.
 
@@ -620,11 +663,11 @@ def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
                      gx, hoehe * t + 0.45, z + richtung_z * (lauf / 2 - lauf * t), m_markierung)
 
 
-treppe("Empore_Treppe", -15.5, 1.0, 3.05, richtung_z=1)
+treppe("Empore_Treppe", -15.5, -5.6, 3.05, richtung_z=1)
 kasten("Empore_Kiste_1", 0.6, 0.55, 0.5, -15.9, 3.4, -8.4, m_blau)
 kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange)
-kasten("Empore_Palette", 1.2, 1.0, 0.12, -15.5, 3.19, -2.5, m_objekt, fase=0)
-kasten("Empore_Palette_Kiste", 0.5, 0.45, 0.45, -15.6, 3.48, -2.6, m_wand)
+kasten("Empore_Palette", 1.2, 1.0, 0.12, -16.3, 3.19, -9.3, m_objekt, fase=0)
+kasten("Empore_Palette_Kiste", 0.5, 0.45, 0.45, -16.3, 3.48, -9.3, m_wand)
 # Lagerzone unter der Empore: Wandregal + Faesser
 kasten("UnterEmpore_Wange_1", 0.08, 0.9, 1.9, -16.35, 0.95, -4.6, m_blau)
 kasten("UnterEmpore_Wange_2", 0.08, 0.9, 1.9, -16.35, 0.95, -2.4, m_blau)
@@ -632,8 +675,11 @@ for i, ry in enumerate((0.4, 1.0, 1.6)):
     kasten(f"UnterEmpore_Brett_{i}", 0.08, 2.1, 0.05, -16.35, ry, -3.5, m_dunkel, fase=0)
 for i, (bz, bm) in enumerate(((-4.2, m_orange), (-3.5, m_wand), (-2.8, m_blau))):
     kasten(f"UnterEmpore_Kiste_{i}", 0.4, 0.5, 0.4, -16.3, 0.65, bz, bm, fase=0)
-fass("UnterEmpore_Fass_1", -16.2, -1.3, 0, m_blau)
-fass("UnterEmpore_Fass_2", -15.8, -0.8, 0, m_dunkel)
+# Faesser stehen suedlich des Tors an der Westwand — nicht bei z 3.4/3.9: dort liegt die
+# Requisite_Werkbank (x -17.3..-15.1, z 2.65..3.375). Freie Nische zwischen Werkbank und
+# Kiste_Werkbank (z 4.373): beide Faesser nebeneinander bei z 3.87, je 0.25 m Luft.
+fass("UnterEmpore_Fass_1", -16.2, 3.87, 0, m_blau)
+fass("UnterEmpore_Fass_2", -15.7, 3.87, 0, m_dunkel)
 
 # ---- Gleis + Untersuchungsgrube ---------------------------------------------
 # Flachbodengleis: in einer Instandhaltungshalle liegen die Schienen BUENDIG im
@@ -642,10 +688,19 @@ fass("UnterEmpore_Fass_2", -15.8, -0.8, 0, m_dunkel)
 # auf Schwellen wie auf freier Strecke.
 SCHIENE_OK = 0.012
 GLEIS_SENKUNG = 0.155 - SCHIENE_OK
-kasten("Gleis_Schiene_Nord", 38, 0.15, 0.15, 2, SCHIENE_OK - 0.075, -0.7, m_schiene, fase=0)
-kasten("Gleis_Schiene_Sued", 38, 0.15, 0.15, 2, SCHIENE_OK - 0.075, 0.7, m_schiene, fase=0)
+kasten("Gleis_Schiene_Nord", 62, 0.15, 0.15, -10, SCHIENE_OK - 0.075, -0.7, m_schiene, fase=0)
+kasten("Gleis_Schiene_Sued", 62, 0.15, 0.15, -10, SCHIENE_OK - 0.075, 0.7, m_schiene, fase=0)
 # Vorfeld-Platte hinter dem Tor, damit das Gleis nicht im Nichts endet
 kasten("Tor_Vorfeld", 5.0, 5.0, 0.2, 19.5, -0.1, 0, m_gleiszone, fase=0)
+
+# Vorfeld West: befestigte Flaechen beidseits des Gleises, dazwischen Schotterbett mit
+# Schwellen unter den Schienen; drumherum eine Gelaendeplatte 30 cm tiefer.
+for kennung, vz in (("Nord", -3.475), ("Sued", 3.475)):
+    kasten(f"Tor_Vorfeld_West_{kennung}", 24.0, 5.05, 0.3, -29.0, -0.15, vz, m_gleiszone, fase=0)     # z 0.95..6.0, Oberkante 0.0
+kasten("Tor_Vorfeld_West_Schotter", 24.0, 1.9, 0.14, -29.0, -0.23, 0, m_schotter, fase=0)              # Oberkante -0.16
+for i in range(40):
+    kasten(f"Tor_Vorfeld_West_Schwelle_{i}", 0.26, 2.4, 0.14, -17.5 - i * 0.6, -0.208, 0, m_schwelle, fase=0)  # -0.278..-0.138 = Schienenfuss
+kasten("Tor_Vorfeld_West_Gelaende", 40.0, 40.0, 0.2, -37.0, -0.40, 0, m_boden, fase=0)                  # Oberkante -0.30
 
 # Grube liegt UNTER dem Zug — als ECHTE Vertiefung (Boden abgesenkt, Waende, Licht)
 kasten("Grube_Boden", 7, 2.0, 0.06, -3.5, -0.72, 0, m_grube, fase=0)
@@ -1307,7 +1362,34 @@ def fuehrerstand(kennung, r):
     kasten(f"Triebzug_EKupplung_{kennung}", 0.12, 0.34, 0.16, 0.5 + r * 9.43, 0.70, 0, m_stahlhell, fase=0.02)
 
 fuehrerstand("ost", 1)
-fuehrerstand("west", -1)
+# Nur der Ostkopf: der Verband laeuft nach Westen durch das Tor, dort haengt Wagen 2 an.
+
+# ---- Zugverband: Wagen 2 und 3 als Klone des ersten Wagens (Meshdaten geteilt) ----
+# Kopfteile (_ost/_west), Stromabnehmer, Dachkabel und Dachdurchfuehrung werden nicht
+# geklont. Die Klone heissen Triebzug_W{n}_... und wandern im Nachlauf mit nach unten.
+# 14 m Wagenkasten + 0.6 m Uebergang = 14.6 m Teilung nach Westen.
+WAGEN_TEILUNG = 14.6
+_KEIN_KLON = ("Triebzug_Panto", "Triebzug_Dachkabel", "Triebzug_Dachdurchfuehrung")
+bpy.context.view_layer.update()   # matrix_world frisch (siehe Nachlauf)
+# NICHT _vorlage nennen: so heisst der Meshdaten-Cache von kasten()/zylinder().
+_wagenvorlage = [o for o in bpy.data.objects
+                 if o.type == "MESH" and o.name.startswith("Triebzug_")
+                 and "_ost" not in o.name and "_west" not in o.name
+                 and not o.name.startswith(_KEIN_KLON)]
+for _n in (2, 3):
+    for _o in _wagenvorlage:
+        _k = _o.copy()                                   # neues Objekt, gleiches Mesh
+        _k.name = f"Triebzug_W{_n}_{_o.name[len('Triebzug_'):]}"
+        _o.users_collection[0].objects.link(_k)
+        _k.matrix_world = Matrix.Translation((-WAGEN_TEILUNG * (_n - 1), 0, 0)) @ _o.matrix_world
+print(f"Zugverband: {len(_wagenvorlage)} Teile je Wagen geklont")
+
+# Wagenuebergaenge: Faltenbalg mit Rahmen und Kurzkupplung in beiden Fugen (x -6.8, -21.4)
+for _n, _xj in ((1, ZUG_X - 7.0 - 0.3), (2, ZUG_X - 7.0 - 0.3 - WAGEN_TEILUNG)):
+    kasten(f"Triebzug_Uebergang_{_n}", 0.64, 1.10, 1.80, _xj, 1.85, 0, m_dunkel, fase=0.03)       # 0.95..2.75, 2 cm in beide Stirnwaende
+    kasten(f"Triebzug_Uebergang_{_n}_rahmen", 0.66, 1.20, 0.06, _xj, 2.78, 0, m_stahlhell, fase=0)
+    zylinder(f"Triebzug_Kupplung_{_n}", 0.06, 0.70, _xj, 1.02, 0, m_dunkel, achse="x")
+    kasten(f"Triebzug_Kupplung_{_n}_kopf", 0.20, 0.30, 0.24, _xj, 1.02, 0, m_stahl, fase=0.02)
 
 # Der Zug steht auf der Schiene: mit dem Flachbodengleis rueckt ALLES, was
 # Triebzug_ heisst, um die Senkung der Schienenoberkante nach unten. Ein Nachlauf
@@ -1484,8 +1566,8 @@ for i, (sx, sz) in enumerate(((-9.8, 1.6), (1, -1.6), (10.6, 1.6))):
     kasten(f"Signal_{i}_gruen", 0.13, 0.13, 0.13, sx, 1.32, sz, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor", 0.05, 0.5, 0.3, 16.78, 3.0, -2.6, m_gruen, fase=0)
 kasten("Rettungszeichen_Tor_symbol", 0.06, 0.2, 0.06, 16.76, 3.0, -2.6, m_fenster, fase=0)
-kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.78, 2.3, 2.0, m_gruen, fase=0)
-kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.76, 2.3, 2.0, m_fenster, fase=0)
+kasten("Rettungszeichen_West", 0.05, 0.5, 0.3, -16.78, 2.3, 3.2, m_gruen, fase=0)
+kasten("Rettungszeichen_West_symbol", 0.06, 0.2, 0.06, -16.76, 2.3, 3.2, m_fenster, fase=0)
 kasten("Konsole_1", 0.9, 0.35, 0.06, -13.5, 2.2, -9.7, m_stahlhell, fase=0)
 kasten("Konsole_2", 0.9, 0.35, 0.06, 9.5, 2.4, -9.7, m_stahlhell, fase=0)
 # Kabelkanal + Rohr entlang der Nordwand auf Arbeitshoehe (fuellt die kahle Wandzone).
@@ -1522,12 +1604,6 @@ zylinder("Hallenuhr_rahmen", 0.36, 0.04, 16.82, 5.35, 0, m_dunkel, achse="x")
 kasten("Hallenuhr_zeiger_1", 0.02, 0.03, 0.2, 16.76, 5.42, 0, m_dunkel, fase=0)
 kasten("Hallenuhr_zeiger_2", 0.02, 0.14, 0.03, 16.76, 5.35, 0.08, m_dunkel, fase=0)
 
-# Prellbock am West-Gleisende
-for i, pz in enumerate((-0.5, 0.5)):
-    kasten(f"Prellbock_strebe_{i}", 0.9, 0.12, 0.12, -16.35, 0.35, pz, m_dunkel, fase=0, drehung=(0, 0.55, 0))
-    kasten(f"Prellbock_fuss_{i}", 0.5, 0.2, 0.06, -16.2, 0.03, pz, m_dunkel, fase=0)
-kasten("Prellbock_balken", 0.14, 1.6, 0.4, -15.95, 0.6, 0, m_zug, fase=0.03)
-
 # Erste-Hilfe-Kasten + Fluchtplan neben der Personaltuer Nord
 kasten("ErsteHilfe", 0.35, 0.06, 0.35, -3.7, 1.7, -9.8, m_fenster, fase=0.02)
 kasten("ErsteHilfe_kreuz_1", 0.2, 0.04, 0.06, -3.7, 1.7, -9.76, m_gruen, fase=0)
@@ -1550,8 +1626,8 @@ for i, rx in enumerate((5.0, 8.4)):
 # Feuerloescher auch an Sued- und Westwand
 zylinder("Feuerloescher_sued", 0.07, 0.45, 0, 1.05, 9.46, m_zug)
 kasten("Feuerloescher_sued_schild", 0.2, 0.02, 0.25, 0, 1.42, 9.53, m_zug, fase=0)
-zylinder("Feuerloescher_west", 0.07, 0.45, -16.42, 1.05, 0, m_zug)
-kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.49, 1.42, 0, m_zug, fase=0)
+zylinder("Feuerloescher_west", 0.07, 0.45, -16.42, 1.05, 2.5, m_zug)
+kasten("Feuerloescher_west_schild", 0.02, 0.2, 0.25, -16.49, 1.42, 2.5, m_zug, fase=0)
 
 # Schalterkaesten neben den Personaltueren
 kasten("Schalter_Nord", 0.12, 0.05, 0.18, -3.85, 1.1, -9.735, m_dunkel, fase=0)
@@ -1893,7 +1969,9 @@ for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6)
     lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5, einfaerbung=m_orange)
 lade_asset("factory_box-large.glb", "Kiste_Palette", -6.5, 0.12, -8.6, dreh_y=0.2, ziel_hoehe=0.7)  # Plane-Kiste AUF der Palette
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
-lade_asset("factory_box-small.glb", "Kiste_Empore", -16.2, 3.13, -6.9, dreh_y=0.8, ziel_hoehe=0.45)
+# Kiste ostwaerts und 10 cm nach Norden: an der alten Stelle lag sie 17 mm ueber der
+# gekuerzten Plattformkante (z -6.6) und der Treppenhandlauf (x -16.06..-16.00) lief hindurch.
+lade_asset("factory_box-small.glb", "Kiste_Empore", -15.6, 3.13, -7.0, dreh_y=0.8, ziel_hoehe=0.45)
 
 # ---- Gabelstapler (Eigenbau — unverwechselbare Silhouette, passt zur Palette) ----
 def gabelstapler(name, x, z, dreh_y=0.0, farbe=None):
