@@ -3,14 +3,15 @@
 // Rendert die sieben Jury-Posen plus zwei freie Blickwinkel in 1600x900 und
 // schickt sie an tools/schuss-server.mjs. Braucht die DEV-Globals
 // window.__szene/__kamera/__renderer/__komposition (main.js setzt sie nur im Dev-Modus).
-(async () => {
+// Ergebnis: await window.__renderLauf  →  [{ name, status, ao, bildzeit }]
+window.__renderLauf = (async () => {
   window.__rafOrig = window.__rafOrig || window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = () => 0; // App-Schleife anhalten, sonst ueberschreibt sie die Kamera
-  const s = window.__szene, k = window.__kamera, rn = window.__renderer;
+  const s = window.__szene, k = window.__kamera, rn = window.__renderer, ko = window.__komposition;
   const c = rn.domElement;
   Array.from(document.body.children).forEach((e) => { if (e !== c) e.style.visibility = 'hidden'; });
   rn.setSize(1600, 900, false); // verborgenes Panel meldet sonst 0x0 und toDataURL liefert 'data:,'
-  if (window.__komposition) window.__komposition.setSize(1600, 900);
+  if (ko) ko.setSize(1600, 900);
   k.aspect = 16 / 9; k.fov = 50;
   const posen = [
     ['p_totale', [15, 4.6, 4.5], [-8, 0.5, 0.2]],
@@ -23,11 +24,19 @@
     ['p_hero_bahnsteig', [6, 1.7, -5.5], [-2, 1.5, 0]],
     ['p_hero_kranbahn', [-12, 5.5, 6], [4, 1.5, -1]],
   ];
+  const bericht = [];
   for (const [name, pos, ziel] of posen) {
     k.position.set(...pos); k.updateProjectionMatrix(); k.lookAt(...ziel);
-    (window.__komposition ? window.__komposition.render() : rn.render(s, k));
+    (ko ? ko.render() : rn.render(s, k));
     const antwort = await fetch('http://localhost:5198/', { method: 'POST', body: JSON.stringify({ name, data: c.toDataURL('image/png') }) });
-    console.log(name, antwort.status, await antwort.text());
+    const ao = ko ? ko.aoAktiv : null;
+    const bildzeit = ko ? Number(ko.mittlereBildzeit().toFixed(1)) : null;
+    const text = await antwort.text();
+    console.log(name, antwort.status, text, `ao=${ao}`, `bildzeit=${bildzeit} ms`);
+    bericht.push({ name, status: antwort.status, text, ao, bildzeit });
+    // Ohne AO sind die Bilder nicht mit den uebrigen vergleichbar — Lauf abbrechen.
+    if (ko && !ao) { console.error(`ABBRUCH bei ${name}: AO wurde waehrend des Laufs abgeschaltet (Ueberlastschutz).`); return bericht; }
   }
   console.log('fertig; Seite neu laden, um die App wieder normal zu betreiben');
+  return bericht;
 })();

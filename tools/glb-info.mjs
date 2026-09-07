@@ -1,6 +1,7 @@
 // tools/glb-info.mjs — Materialien, Texturen und Erweiterungen einer .glb ohne Abhaengigkeiten.
 // Aufruf: node tools/glb-info.mjs app/public/szene.glb [--json]
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 const TEXTURFELDER = {
   baseColor: (m) => m.pbrMetallicRoughness?.baseColorTexture?.index,
@@ -14,7 +15,6 @@ export function liesGlbInfo(buffer) {
   if (b.readUInt32LE(0) !== 0x46546c67) throw new Error('keine glb-Datei (Magic fehlt)');
   const jsonLaenge = b.readUInt32LE(12);
   const json = JSON.parse(b.subarray(20, 20 + jsonLaenge).toString('utf8'));
-  const bin = b.subarray(20 + jsonLaenge + 8);
   const views = json.bufferViews || [];
   const images = (json.images || []).map((img, i) => {
     const v = views[img.bufferView];
@@ -38,7 +38,6 @@ export function liesGlbInfo(buffer) {
       alphaMode: m.alphaMode || 'OPAQUE',
     };
   });
-  void bin;
   return { materials, images, extensionsUsed: json.extensionsUsed || [], size: b.length };
 }
 
@@ -55,7 +54,7 @@ function formatiere(info) {
   return zeilen.join('\n');
 }
 
-if (process.argv[1] && import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [pfad, flag] = process.argv.slice(2);
   if (!pfad) { console.error('Aufruf: node tools/glb-info.mjs <datei.glb> [--json]'); process.exit(2); }
   const info = liesGlbInfo(readFileSync(pfad));

@@ -170,6 +170,15 @@ async function start() {
     }
   }
 
+  // Szene und Sonne sind statisch: die 4096er-Schattenkarte einmal rendern, dann
+  // einfrieren. Bisher lief sie je Bild zweimal, weil RenderPass und der Normalpass
+  // der GTAO beide renderer.render() aufrufen.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+  // Erst ab hier ist die Renderlast repraesentativ — alles davor (Platzhalter,
+  // Ladezeit, Shader-Kompilierung) faellt aus dem Messfenster des Ueberlastschutzes.
+  komposition.messungZuruecksetzen();
+
   verbindeVideoTextur(szene, videoTexturEl);
 
   const gespeichert = ladeStand(sessionStorage);

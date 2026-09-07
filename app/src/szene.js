@@ -9,7 +9,7 @@ export function erzeugeRenderer(canvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // weiche Schatten fuer den Iso-Look
   renderer.toneMapping = THREE.ACESFilmicToneMapping; // filmische Abstufung — Materialien lesen sich besser
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 0.95; // knapp unter 1: sonst laufen Dach, Pfetten und Maschinenbank weiss zu
   return renderer;
 }
 
@@ -37,9 +37,15 @@ export function erzeugeSzene(renderer) {
   }
   // Weniger Fuellung, mehr Richtung: die AO (komposition.js) uebernimmt die Fugen,
   // das Hemisphaerenlicht bringt kuehlen Himmel von oben und warmen Bodenrueckschein.
-  szene.add(new THREE.AmbientLight(0xffffff, 0.12));
-  szene.add(new THREE.HemisphereLight(0xdfe6ee, 0x6a6560, 0.7));
-  const sonne = new THREE.DirectionalLight(0xfff1e0, 2.3); // Tageslicht durch Oberlichter, leicht warm
+  // Gegenueber Fassung 2 zurueckgenommen: das hellere Tageslicht hob die mittlere
+  // Leuchtdichte in allen neun Posen um 14–20 Punkte und nahm der Szene 20–27 %
+  // Saettigung — Dach, Pfetten und Kranträger verschmolzen zu einer weissen Flaeche.
+  szene.add(new THREE.AmbientLight(0xffffff, 0.10));
+  szene.add(new THREE.HemisphereLight(0xdfe6ee, 0x6a6560, 0.5));
+  // 1.6 statt 1.9: auch bei 1.9 lagen alle neun Posen noch ueber dem Zielband der
+  // Sichtabnahme, darum bis an die Untergrenze abgesenkt (Bildkontrast bleibt dabei
+  // gleich, Standardabweichung der Totale 39.4 → 39.3).
+  const sonne = new THREE.DirectionalLight(0xfff1e0, 1.6); // Tageslicht durch Oberlichter, leicht warm
   sonne.position.set(10, 24, 6);
   sonne.castShadow = true;
   sonne.shadow.mapSize.set(4096, 4096);
@@ -51,7 +57,7 @@ export function erzeugeSzene(renderer) {
   sonne.shadow.camera.far = 70;
   sonne.shadow.bias = -0.0002;
   sonne.shadow.normalBias = 0.02;
-  sonne.shadow.radius = 3;
+  // kein shadow.radius: unter PCFSoftShadowMap wertet three.js ihn nicht aus.
   szene.add(sonne);
   const fuelllicht = new THREE.DirectionalLight(0xd6e2f5, 0.25); // kuehle Gegenseite, ohne Schatten
   fuelllicht.position.set(-14, 10, -10);
@@ -60,6 +66,8 @@ export function erzeugeSzene(renderer) {
 }
 
 // Vertikaler Himmelsverlauf als Hintergrund: Fenster und Tore zeigen Himmel statt Einheitsgrau.
+// Im Composer-Pfad laeuft der Verlauf durch ACES (OutputPass); Horizont ~#dbdfe2,
+// Zenit ~#c2ccd6 — gewollt, die Praesentation laeuft mit AO.
 export function erzeugeHimmelTextur() {
   const hoehe = 64;
   const daten = new Uint8Array(hoehe * 4);

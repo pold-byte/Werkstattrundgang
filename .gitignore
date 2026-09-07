@@ -3,3 +3,4 @@ node_modules/
 dist/
 app/dist-notfall/
 blender/renders/
+__pycache__/
