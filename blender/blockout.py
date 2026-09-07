@@ -492,7 +492,10 @@ def auffangwanne(name, x0, x1, z0, z1):
         kasten(f"{name}_{k}", dx, dz, 0.05, bx, 0.025, bz, m_markierung, fase=0)
 
 
-m_decal_dunkel = material("DecalDunkel", (0.10, 0.10, 0.10), rauheit=0.5)
+# Fixrunde 1 (Task 3): dunkler + rauer statt (0.10, 0.5) — bei flachem Blickwinkel warf die helle
+# RoomEnvironment sonst einen deutlichen dielektrischen Glanz auf das transparente Decal, der den
+# Fleck heller als den Boden erscheinen liess statt als matten dunklen Fleck.
+m_decal_dunkel = material("DecalDunkel", (0.05, 0.05, 0.05), rauheit=0.9)
 if hasattr(m_decal_dunkel, "blend_method"):          # Blender < 4.2
     m_decal_dunkel.blend_method = "BLEND"
 if hasattr(m_decal_dunkel, "surface_render_method"):  # Blender >= 4.2 (EEVEE Next)
