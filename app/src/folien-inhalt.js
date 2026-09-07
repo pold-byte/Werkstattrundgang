@@ -3,7 +3,9 @@
 // bleiben erhalten; die Gestaltung folgt docs/foliensatz/DESIGN.md.
 //
 // Das Feld 'station' benennt den Ort im Rundgang, an den die Kamera zu dieser
-// Folie faehrt ('totale' fuer die Halleneinstellung).
+// Folie faehrt ('totale' fuer die Halleneinstellung, null fuer "bleib stehen").
+// Die sieben Hauptfolien verteilen sich auf die fuenf Stationen des Rundgangs;
+// Folie 2 und 3 teilen sich das Meisterbuero, bis zwei weitere Stationen da sind.
 //
 // Blocktypen: 'punkte' (Absätze), 'gruppe' (Überschrift + Absätze), 'tabelle'
 // (Kopfzeile + Zeilen), 'fluss' (waagerechte Kette), 'schritte' (nummerierte
@@ -57,7 +59,7 @@ export const folien = [
   },
   {
     nr: 3,
-    station: 'totale',
+    station: 'meisterbuero',
     sektion: '02 Zielsetzung',
     titel: 'Was untersucht wurde',
     kern: 'Sprachmodelle übersetzen Sprache in SQL. Offen war, ob das auf einem fachlich geprägten Kennzahlenschema eine Steuerungsentscheidung trägt.',
@@ -183,7 +185,7 @@ export const folien = [
   },
   {
     nr: 6,
-    station: 'pruefstand',
+    station: 'anzeigetafel',
     sektion: '04 Bewertung',
     titel: 'Wie die Zuverlässigkeit gemessen wurde',
     kern: 'Aufbau wie in veröffentlichten Referenzdatensätzen: je Frage eine manuell geprüfte Referenzabfrage.',
@@ -220,7 +222,7 @@ export const folien = [
   },
   {
     nr: 7,
-    station: 'anzeigetafel',
+    station: 'pruefstand',
     sektion: '05 Ergebnis',
     titel: 'Streuung und Zurechnung der Fehler',
     kern: 'Vier vergleichbare Läufe: 82,8 bis 86,2 Prozent. Die Spannweite von 3,4 Prozentpunkten entspricht genau einer Frage, ohne jede Änderung am System.',
@@ -258,7 +260,7 @@ export const folien = [
   },
   {
     nr: 8,
-    station: 'besprechung',
+    station: null, // Ergänzungsfolie: die Kamera bleibt stehen
     sektion: 'Ergänzende Folie',
     titel: 'Bilanz gegen den Anforderungskatalog',
     breit: [
@@ -285,7 +287,7 @@ export const folien = [
   },
   {
     nr: 9,
-    station: 'besprechung',
+    station: null, // Ergänzungsfolie: die Kamera bleibt stehen
     sektion: 'Ergänzende Folie',
     titel: 'Wirtschaftliche und betriebliche Einordnung',
     spalten: [
@@ -327,7 +329,7 @@ export const folien = [
   },
   {
     nr: 10,
-    station: 'datenraum',
+    station: null, // Ergänzungsfolie: die Kamera bleibt stehen
     sektion: 'Ergänzende Folie',
     titel: 'Datenmodell, Konventionen und Absicherung',
     spalten: [
@@ -368,7 +370,7 @@ export const folien = [
   },
   {
     nr: 11,
-    station: 'pruefstand',
+    station: null, // Ergänzungsfolie: die Kamera bleibt stehen
     sektion: 'Ergänzende Folie',
     titel: 'Importpfad und Grenzen der Untersuchung',
     spalten: [
@@ -403,3 +405,8 @@ export const folien = [
     },
   },
 ];
+
+// Die sieben Hauptfolien laufen im Vortrag; die vier Ergänzungsfolien liegen
+// dahinter und werden mit der Taste f aufgerufen.
+export const hauptfolien = folien.filter((f) => f.nr <= 7);
+export const zusatzfolien = folien.filter((f) => f.nr > 7);

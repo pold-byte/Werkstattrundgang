@@ -10,11 +10,25 @@
 
 ## Folienschau
 
-Der Foliensatz ist die Standardansicht: elf Folien (sieben Haupt-, vier
-Ergänzungsfolien), Inhalt aus `app/src/folien-inhalt.js`, Gestaltung nach
-`docs/foliensatz/DESIGN.md`. Die Folie füllt den Bildschirm bis auf einen Rahmen,
-in dem die Halle gedämpft sichtbar bleibt. Pfeiltasten und Leertaste blättern;
-die Kamera fährt dabei an den Ort, den die Folie im Feld `station` nennt.
-Taste `f` blendet die Folien aus und zeigt Halle und Stationspanel allein,
-`f` erneut holt sie zurück.
+Der Foliensatz ist die Standardansicht. Inhalt aus `app/src/folien-inhalt.js`,
+Gestaltung nach `docs/foliensatz/DESIGN.md`. Die Folie füllt den Bildschirm bis
+auf einen Rahmen, in dem die Halle gedämpft sichtbar bleibt.
+
+Die sieben Hauptfolien laufen mit Leertaste und Pfeiltasten; die Kamera fährt
+dabei an die Station, die im Feld `station` steht:
+
+| Folie | Station |
+|-------|---------|
+| 1 Titel | Totale |
+| 2 Ausgangslage | 1 Meisterbüro |
+| 3 Zielsetzung | 1 Meisterbüro |
+| 4 Gesamtarchitektur | 2 Datenraum |
+| 5 Auswertungspfad | 3 Terminal |
+| 6 Messaufbau | 4 Anzeigetafel |
+| 7 Ergebnis | 5 Prüfstand |
+
+Folie 2 und 3 teilen sich das Meisterbüro, bis zwei weitere Stationen gebaut
+sind. Taste `f` schaltet nach der letzten Hauptfolie auf die vier
+Ergänzungsfolien, ein weiteres `f` zeigt die Halle ohne Folie, das dritte kehrt
+zum Hauptsatz zurück.
 

@@ -106,13 +106,13 @@ function folgeFolie() {
 function fuehreAktionAus(aktion) {
   // Bei offener Folienschau blaettern weiter/zurueck durch die Folien, nicht
   // durch den Rundgang; Taste f zeigt die Halle allein (Spec §6: Escape bleibt frei).
+  if (aktion.typ === 'folien') { folienschau.naechsterSatz(); if (folienschau.istOffen) folgeFolie(); return; }
   if (folienschau.istOffen) {
     if (aktion.typ === 'weiter') { if (folienschau.weiter()) folgeFolie(); return; }
     if (aktion.typ === 'zurueck') { if (folienschau.zurueck()) folgeFolie(); return; }
-    if (aktion.typ === 'folien') { folienschau.schliesse(); return; }
   }
   switch (aktion.typ) {
-    case 'folien': folienschau.oeffne(); break;
+
     case 'weiter': zustand.weiter(); wendeAnsichtAn(); break;
     case 'zurueck': zustand.zurueck(); wendeAnsichtAn(); break;
     case 'totale': zustand.springeZurTotale(); wendeAnsichtAn(); break;
@@ -150,8 +150,9 @@ window.addEventListener('keydown', (ereignis) => {
   const aktion = tasteZuAktion(ereignis.key, daten.stationen);
   if (!aktion) return;
   ereignis.preventDefault();
-  // Die Folienschau liegt vor der Szene: sie blaettert auch waehrend einer Fahrt.
-  if (folienschau.istOffen && ['weiter', 'zurueck', 'folien'].includes(aktion.typ)) {
+  // Die Folienschau liegt vor der Szene: blaettern und umschalten wirken auch
+  // waehrend einer Kamerafahrt, sonst schluckt die Eingabesperre die Taste.
+  if (aktion.typ === 'folien' || (folienschau.istOffen && (aktion.typ === 'weiter' || aktion.typ === 'zurueck'))) {
     fuehreAktionAus(aktion);
     return;
   }

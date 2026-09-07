@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { folien, fusszeile } from '../src/folien-inhalt.js';
+import { folien, hauptfolien, zusatzfolien, fusszeile } from '../src/folien-inhalt.js';
 import { erzeugeFolienschau, berechneMassstab, FOLIE_BREITE, FOLIE_HOEHE } from '../src/folien.js';
 import { tasteZuAktion } from '../src/steuerung.js';
 
@@ -23,12 +23,27 @@ describe('Folieninhalt', () => {
     }
   });
 
-  it('nennt für jede Folie einen Ort, den der Rundgang kennt', async () => {
+  it('teilt sich in sieben Haupt- und vier Ergänzungsfolien', () => {
+    expect(hauptfolien.map((f) => f.nr)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(zusatzfolien.map((f) => f.nr)).toEqual([8, 9, 10, 11]);
+  });
+
+  it('verteilt die Hauptfolien auf die Stationen des Rundgangs', async () => {
     const { default: daten } = await import('../src/stationen.json');
     const orte = new Set(['totale', ...daten.stationen.map((s) => s.id)]);
-    for (const f of folien) {
+    for (const f of hauptfolien) {
       expect(orte.has(f.station), 'Folie ' + f.nr + ': ' + f.station).toBe(true);
     }
+    // Jede Station des Rundgangs kommt vor, und die Reihenfolge geht vorwärts.
+    const imRundgang = daten.stationen.filter((s) => s.im_rundgang !== false).map((s) => s.id);
+    const belegt = hauptfolien.map((f) => f.station).filter((o) => o !== 'totale');
+    for (const id of imRundgang) expect(belegt).toContain(id);
+    const reihenfolge = belegt.map((o) => imRundgang.indexOf(o));
+    expect(reihenfolge).toEqual([...reihenfolge].sort((a, b) => a - b));
+  });
+
+  it('lässt die Kamera bei den Ergänzungsfolien stehen', () => {
+    for (const f of zusatzfolien) expect(f.station).toBeNull();
   });
 
   it('behält die Kennzahlen des Vortrags bei', () => {
@@ -41,7 +56,7 @@ describe('Folieninhalt', () => {
 
 describe('erzeugeFolienschau', () => {
   it('bleibt zunächst verborgen und zeigt beim Öffnen Folie 1', () => {
-    const schau = erzeugeFolienschau(wurzel, folien);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     expect(wurzel.hidden).toBe(true);
     expect(schau.istOffen).toBe(false);
     schau.oeffne();
@@ -53,7 +68,7 @@ describe('erzeugeFolienschau', () => {
   });
 
   it('blättert vorwärts und rückwärts und bleibt an den Enden stehen', () => {
-    const schau = erzeugeFolienschau(wurzel, folien);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     schau.oeffne();
     expect(schau.zurueck()).toBe(false);
     expect(schau.nummer).toBe(1);
@@ -65,7 +80,7 @@ describe('erzeugeFolienschau', () => {
   });
 
   it('springt zu einer Foliennummer und schaltet um', () => {
-    const schau = erzeugeFolienschau(wurzel, folien);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     expect(schau.geheZu(7)).toBe(true);
     expect(schau.geheZu(99)).toBe(false);
     schau.oeffne();
@@ -75,7 +90,7 @@ describe('erzeugeFolienschau', () => {
   });
 
   it('rendert Tabellen mit Kopfzeile und allen Zeilen', () => {
-    const schau = erzeugeFolienschau(wurzel, folien);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     schau.geheZu(8);
     schau.oeffne();
     const tabelle = wurzel.querySelector('.f-tab');
@@ -85,7 +100,7 @@ describe('erzeugeFolienschau', () => {
   });
 
   it('markiert die beiden Modellaufrufe auf der Prozessfolie', () => {
-    const schau = erzeugeFolienschau(wurzel, folien);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     schau.geheZu(5);
     schau.oeffne();
     expect(wurzel.querySelectorAll('.f-schritt')).toHaveLength(6);
@@ -93,9 +108,10 @@ describe('erzeugeFolienschau', () => {
   });
 
   it('verwendet textContent, kein HTML aus den Daten', () => {
-    const schau = erzeugeFolienschau(wurzel, [
-      { nr: 1, titel: '<img src=x>', kern: 'x', spalten: [[{ typ: 'punkte', punkte: ['<b>y</b>'] }]] },
-    ]);
+    const schau = erzeugeFolienschau(wurzel, {
+      haupt: [{ nr: 1, titel: '<img src=x>', kern: 'x', spalten: [[{ typ: 'punkte', punkte: ['<b>y</b>'] }]] }],
+      zusatz: [],
+    });
     schau.oeffne();
     expect(wurzel.querySelector('img')).toBeNull();
     expect(wurzel.querySelector('b')).toBeNull();
@@ -118,5 +134,24 @@ describe('Taste f', () => {
   it('öffnet und schließt die Folienschau', () => {
     expect(tasteZuAktion('f', [])).toEqual({ typ: 'folien' });
     expect(tasteZuAktion('F', [])).toEqual({ typ: 'folien' });
+  });
+});
+
+describe('Taste f schaltet den Satz weiter', () => {
+  it('geht vom Haupt- auf den Zusatzsatz, dann auf die Halle und zurück', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: hauptfolien, zusatz: zusatzfolien });
+    schau.oeffne();
+    expect(schau.nummer).toBe(1);
+    schau.naechsterSatz();
+    expect(schau.modus).toBe('zusatz');
+    expect(schau.nummer).toBe(8);
+    expect(schau.weiter()).toBe(true);
+    expect(schau.nummer).toBe(9);
+    schau.naechsterSatz();
+    expect(schau.istOffen).toBe(false); // Halle ohne Folie
+    schau.naechsterSatz();
+    expect(schau.modus).toBe('haupt');
+    expect(schau.nummer).toBe(1);
+    expect(schau.istOffen).toBe(true);
   });
 });

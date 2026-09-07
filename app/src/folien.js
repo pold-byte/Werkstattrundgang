@@ -3,7 +3,7 @@
 // Inhalt aus folien-inhalt.js. Die Folie wird in fester Größe (13,333 x 7,5 Zoll,
 // also 1280 x 720 px bei 96 dpi) aufgebaut und als Ganzes skaliert, damit alle
 // Größenverhältnisse des Foliensatzes erhalten bleiben.
-import { folien as standardFolien, fusszeile } from './folien-inhalt.js';
+import { hauptfolien, zusatzfolien, fusszeile } from './folien-inhalt.js';
 
 export const FOLIE_BREITE = 1280;
 export const FOLIE_HOEHE = 720;
@@ -97,7 +97,7 @@ function baueBlock(block) {
   }
 }
 
-function baueFolie(folie, gesamt) {
+function baueFolie(folie, gesamt, position, satzname) {
   const knoten = el('article', 'f-folie');
   knoten.setAttribute('aria-label', 'Folie ' + folie.nr);
 
@@ -134,7 +134,8 @@ function baueFolie(folie, gesamt) {
 
   const fuss = el('div', 'f-fuss');
   fuss.append(el('span', 'f-fuss-l', fusszeile));
-  fuss.append(el('span', 'f-fuss-r', folie.nr + ' / ' + gesamt));
+  const zaehler = satzname === 'zusatz' ? 'Ergänzung ' + position + ' / ' + gesamt : position + ' / ' + gesamt;
+  fuss.append(el('span', 'f-fuss-r', zaehler));
   knoten.append(fuss);
   return knoten;
 }
@@ -145,7 +146,13 @@ export function berechneMassstab(breite, hoehe) {
   return Math.min(breite / FOLIE_BREITE, hoehe / FOLIE_HOEHE);
 }
 
-export function erzeugeFolienschau(wurzelEl, daten = standardFolien) {
+// saetze: { haupt, zusatz }. Der Vortrag laeuft auf dem Hauptsatz; die Taste f
+// schaltet weiter auf den Zusatzsatz und danach auf die Halle ohne Folie.
+export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusatz: zusatzfolien }) {
+  const satz = Array.isArray(saetze) ? { haupt: saetze, zusatz: [] } : saetze;
+  const zusatzVorhanden = (satz.zusatz || []).length > 0;
+  let modus = 'haupt';
+  let daten = satz.haupt;
   let index = 0;
   let offen = false;
   const buehne = el('div', 'f-buehne');
@@ -153,7 +160,7 @@ export function erzeugeFolienschau(wurzelEl, daten = standardFolien) {
   wurzelEl.hidden = true;
 
   function zeichne() {
-    const kind = baueFolie(daten[index], daten.length);
+    const kind = baueFolie(daten[index], daten.length, index + 1, modus);
     buehne.replaceChildren(kind);
     passeDichteAn(kind);
     passeAn();
@@ -180,8 +187,15 @@ export function erzeugeFolienschau(wurzelEl, daten = standardFolien) {
     kind.style.transform = 'scale(' + massstab + ')';
   }
 
+  function setzeSatz(name) {
+    modus = name;
+    daten = name === 'zusatz' ? satz.zusatz : satz.haupt;
+    index = 0;
+  }
+
   return {
     get istOffen() { return offen; },
+    get modus() { return modus; },
     get nummer() { return daten[index].nr; },
     get aktuelle() { return daten[index]; },
     oeffne() {
@@ -194,6 +208,13 @@ export function erzeugeFolienschau(wurzelEl, daten = standardFolien) {
       offen = false;
       wurzelEl.hidden = true;
       document.body.classList.remove('folien-offen');
+    },
+    // f schaltet weiter: Hauptsatz, Zusatzfolien, Halle ohne Folie, zurueck zum Hauptsatz.
+    naechsterSatz() {
+      if (modus === 'haupt' && offen && zusatzVorhanden) { setzeSatz('zusatz'); this.oeffne(); }
+      else if (offen) { this.schliesse(); }
+      else { setzeSatz('haupt'); this.oeffne(); }
+      return modus + (offen ? '' : ' (aus)');
     },
     umschalten() { if (offen) this.schliesse(); else this.oeffne(); return offen; },
     weiter() {
