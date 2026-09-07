@@ -20,7 +20,7 @@ seite((s) => {
   h1.textContent = 'Eine Kennzahl — von der Werkstatthalle bis in die Planungsrunde';
   const p = document.createElement('p');
   p.className = 'untertitel';
-  p.textContent = '[PLATZHALTER: Untertitel/Name/Datum]';
+  p.textContent = 'Leopold Heinrich · Projektarbeit T3_2000, DHBW Mannheim · DB Regio AG, Region Mitte';
   s.append(h1, p);
 });
 

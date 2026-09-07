@@ -10,10 +10,14 @@
       "titel": "Wo die Zahl entsteht",
       "kapitel": "Kap. 1.1, 3.1",
       "kamera": { "position": [-5.2, 2.1, -3.2], "blickziel": [-10.2, 1.2, -6.6], "dauer_s": 6 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 1, wird nach Bereitstellung der Quelldateien befüllt]",
-      "belegpunkte": ["[PLATZHALTER 1.1]", "[PLATZHALTER 1.2]", "[PLATZHALTER 1.3]"],
+      "kernaussage": "Nicht der Aufwand ist das Problem, sondern seine Bindung.",
+      "belegpunkte": [
+        "An eine Person: rund drei Stunden je Zyklus, die Logik gewachsen, nicht hinterlegt.",
+        "An einen abgeschlossenen Durchlauf: rund zwei Rückfragen je Planungsdialog bleiben offen.",
+        "An eine ungeprüfte Logik: die Zahl ist von Dritten nicht nachrechenbar."
+      ],
       "anschauungsobjekt": "Pinnwand mit Excel-Ausdrucken",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Folie 2 (01 Ausgangslage). Zahlen sind Schätzungen des betrieblichen Betreuers, Gespräch vom 17.08.2026 (Anhang A)."
     },
     {
       "nr": 2,
@@ -21,10 +25,14 @@
       "titel": "Aus Chaos wird Struktur",
       "kapitel": "Kap. 3.3, 3.5, 4.4",
       "kamera": { "position": [0.5, 2.2, -2.5], "blickziel": [-3, 1, -6], "dauer_s": 5 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 2]",
-      "belegpunkte": ["[PLATZHALTER 2.1]", "[PLATZHALTER 2.2]", "[PLATZHALTER 2.3]"],
+      "kernaussage": "Aus drei Excel-Quellen wird ein Schema mit 25 Tabellen.",
+      "belegpunkte": [
+        "Hierarchie Region, Fahrzeugzentrum, Standort, Teilnetz — Fakten auf unterschiedlicher Körnung.",
+        "Neun fachliche Konventionen schriftlich hinterlegt, etwa Quoten als Verhältnis der Summen.",
+        "Alle drei Quellen feldgleich überführt, je eine manuelle Korrektur — keine inhaltliche."
+      ],
       "anschauungsobjekt": "Regal: ungeordnete Ablage davor, geordnete Struktur darin",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Ergänzungsfolien 10 (Datenmodell, Auswertungskonventionen) und 11 (Importpfad)."
     },
     {
       "nr": 3,
@@ -32,10 +40,14 @@
       "titel": "Fragen statt Formeln",
       "kapitel": "Kap. 3.4, 4.3",
       "kamera": { "position": [9.2, 1.6, -1.6], "blickziel": [6.6, 1.2, -4.4], "dauer_s": 5 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 3]",
-      "belegpunkte": ["[PLATZHALTER 3.1]", "[PLATZHALTER 3.2]", "[PLATZHALTER 3.3]"],
+      "kernaussage": "Das Modell erzeugt die Vorschrift, nicht das Ergebnis.",
+      "belegpunkte": [
+        "Frage in natürlicher Sprache; das Modell sieht Schema und Frage, keinen Datensatz.",
+        "Auf jeden Modellaufruf folgt ein regelbasierter Schritt, der schreibende Anweisungen verwirft.",
+        "Ausgeführt wird nur lesend — technisch ausgeschlossen, nicht per Anweisung."
+      ],
       "anschauungsobjekt": "Bedienterminal mit Monitor (Demo-Video)",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Folie 5 (Verarbeitungsschritte des Auswertungspfads), Folie 4 (Gesamtarchitektur)."
     },
     {
       "nr": 4,
@@ -43,10 +55,14 @@
       "titel": "Ergebnis lesen",
       "kapitel": "Kap. 4.2, 4.5",
       "kamera": { "position": [10.6, 1.9, 2.0], "blickziel": [8.6, 2.0, 5.9], "dauer_s": 5 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 4]",
-      "belegpunkte": ["[PLATZHALTER 4.1]", "[PLATZHALTER 4.2]", "[PLATZHALTER 4.3]"],
+      "kernaussage": "Jede Antwort führt die ausgeführte Abfrage mit.",
+      "belegpunkte": [
+        "Diagrammtyp regelbasiert, Einordnungstext vom Modell.",
+        "Die Zahlen entstehen in der Datenbank, das Ergebnis ist ohne Modellaufruf wiederholbar.",
+        "Die Kennzahlenübersicht entsteht ohne Sprachmodell — ohne Fehlerquote, ohne Streuung."
+      ],
       "anschauungsobjekt": "Anzeigetafel",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Folie 5 (Ausgabe, Folgen für die Belastbarkeit), Ergänzungsfolie 9 (betriebliche Einordnung)."
     },
     {
       "nr": 5,
@@ -54,10 +70,14 @@
       "titel": "Stimmt das auch?",
       "kapitel": "Kap. 5",
       "kamera": { "position": [-1.5, 2.5, 2.5], "blickziel": [2, 1, 6], "dauer_s": 5 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 5]",
-      "belegpunkte": ["[PLATZHALTER 5.1]", "[PLATZHALTER 5.2]", "[PLATZHALTER 5.3]"],
+      "kernaussage": "Ein einzelner Messwert sagt nichts über die Zuverlässigkeit.",
+      "belegpunkte": [
+        "36 Fragen, drei Durchgänge, fünf Läufe, 540 Messsätze; verglichen werden Ergebnistabellen.",
+        "Vier vergleichbare Läufe: 82,8 bis 86,2 Prozent — Spannweite 3,4 Prozentpunkte.",
+        "Kein dauerhafter Fehlschlag lag am Modell, sondern an der eigenen Kennzahlendefinition."
+      ],
       "anschauungsobjekt": "Prüfstand mit Ergebnis-Grafik",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Folie 6 (Aufbau der Messung), Folie 7 (Streuung und Zurechnung der Fehler)."
     },
     {
       "nr": 6,
@@ -66,10 +86,14 @@
       "kapitel": "Kap. 6, 7",
       "im_rundgang": false,
       "kamera": { "position": [-5.5, 2.2, 2.5], "blickziel": [-9, 1, 6], "dauer_s": 6 },
-      "kernaussage": "[PLATZHALTER: Kernaussage Station 6 (Reserve)]",
-      "belegpunkte": ["[PLATZHALTER 6.1]", "[PLATZHALTER 6.2]", "[PLATZHALTER 6.3]"],
+      "kernaussage": "Der Aufwand ist verlagert, nicht beseitigt.",
+      "belegpunkte": [
+        "Von sieben Anforderungen fünf erfüllt, eine nur der Form nach, eine nicht erprobt.",
+        "Jede siebte Antwort ist falsch, ohne dass man es ihr ansieht (Kennzahlenübersicht ausgenommen).",
+        "Eine Entscheidung braucht den bezifferten Aufwand von heute. Den gibt es nicht."
+      ],
       "anschauungsobjekt": "Besprechungstisch (Planungsrunde)",
-      "quelle_kommentar": "[Quelldatei + Abschnitt eintragen]"
+      "quelle_kommentar": "Folie 8 (Bilanz gegen den Anforderungskatalog), Folie 7 (Einschränkung), Ergänzungsfolie 9 (wirtschaftliche und betriebliche Einordnung)."
     }
   ]
 }

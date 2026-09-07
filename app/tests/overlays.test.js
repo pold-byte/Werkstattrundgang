@@ -21,7 +21,9 @@ describe('zeigePanel', () => {
     expect(panel.classList.contains('sichtbar')).toBe(true);
     expect(panel.querySelector('.stationsnummer').textContent).toBe('Station 3');
     expect(panel.querySelector('h2').textContent).toBe('Fragen statt Formeln');
-    expect(panel.querySelector('.kernaussage').textContent).toContain('PLATZHALTER');
+    expect(panel.querySelector('.kernaussage').textContent).toBe(
+      'Das Modell erzeugt die Vorschrift, nicht das Ergebnis.',
+    );
     expect(panel.querySelectorAll('li')).toHaveLength(2);
     expect(panel.querySelector('.kapitel').textContent).toBe('Kap. 3.4, 4.3');
   });
@@ -34,6 +36,21 @@ describe('zeigePanel', () => {
   it('verwendet textContent (kein HTML-Injection über JSON-Inhalte)', () => {
     zeigePanel(panel, { ...station, kernaussage: '<img src=x>' }, 0);
     expect(panel.querySelector('.kernaussage img')).toBeNull();
+  });
+});
+
+describe('Stationsinhalte', () => {
+  it('enthält keine Platzhalter mehr (Inhalte aus dem Foliensatz übernommen)', () => {
+    const text = JSON.stringify(daten);
+    expect(text).not.toContain('PLATZHALTER');
+  });
+
+  it('gibt jeder Station eine Kernaussage und drei Belegpunkte', () => {
+    for (const st of daten.stationen) {
+      expect(st.kernaussage.length).toBeGreaterThan(20);
+      expect(st.belegpunkte).toHaveLength(3);
+      expect(st.quelle_kommentar).toMatch(/[Ff]olie/);
+    }
   });
 });
 

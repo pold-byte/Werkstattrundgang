@@ -53,7 +53,9 @@ html, body {
   z-index: 20;
   width: min(34vw, 660px);
   max-height: 78vh;
-  overflow: hidden;
+  /* Bei 1080p passt jede Station in die 78vh; auf kleineren Fenstern lieber
+     scrollen als Text unbemerkt abschneiden. */
+  overflow-y: auto;
   background: rgba(244, 244, 244, var(--panel-deckkraft));
   border: 1px solid var(--grau-20);
   border-top: 4px solid var(--akzent);
