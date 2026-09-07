@@ -12,25 +12,32 @@
 
 Der Rundgang führt, die Folien folgen. Ablauf mit Leertaste und Pfeiltasten:
 
-1. Überblick über die Werkstatt, keine Folie.
-2. Leertaste: die Kamera fährt zur Station. Während der Fahrt bleibt die Halle frei.
+1. Überblick über die Werkstatt. Die Begrüßungsfolie steht klein in der Ecke,
+   die Halle bleibt vollständig sichtbar.
+2. Leertaste: die Kamera fährt zur Station. Während der Fahrt zeigt der
+   Bildschirm nur die Halle.
 3. Ankunft: die Station ist zu sehen, weiterhin ohne Folie.
-4. Leertaste: die erste Folie der Station wird eingeblendet, darunter bleibt die
-   Halle als Rahmen sichtbar.
+4. Leertaste: die erste Folie der Station füllt den Bildschirm bis auf einen
+   Rahmen, in dem die Halle sichtbar bleibt.
 5. Leertaste: zweite Folie der Station, sonst Fahrt zur nächsten Station.
 
 Zuordnung der sieben Hauptfolien:
 
-| Station | Folien |
-|---------|--------|
-| 1 Meisterbüro | 1 Titel, 2 Ausgangslage |
-| 2 Datenraum | 3 Zielsetzung, 4 Gesamtarchitektur |
+| Ort | Folien |
+|-----|--------|
+| Totale | 1 Titel, klein über der Halle |
+| 1 Meisterbüro | 2 Ausgangslage, 3 Zielsetzung |
+| 2 Datenraum | 4 Gesamtarchitektur |
 | 3 Terminal | 5 Auswertungspfad |
 | 4 Anzeigetafel | 6 Messaufbau |
 | 5 Prüfstand | 7 Ergebnis |
 
-Meisterbüro und Datenraum tragen je zwei Folien, bis zwei weitere Stationen
-gebaut sind; die Zuordnung steht im Feld `station` in `app/src/folien-inhalt.js`.
-Taste `f` blendet die vier Ergänzungsfolien ein, dort blättern Leertaste und
-Pfeiltasten; ein weiteres `f` kehrt in den Rundgang zurück. Gestaltung nach
-`docs/foliensatz/DESIGN.md`.
+Das Meisterbüro trägt zwei Folien, bis zwei weitere Stationen gebaut sind; die
+Zuordnung steht im Feld `station` in `app/src/folien-inhalt.js`. Taste `f`
+blendet die vier Ergänzungsfolien ein, dort blättern Leertaste und Pfeiltasten;
+ein weiteres `f` kehrt in den Rundgang zurück.
+
+Gestaltung, Farben und Zonen sind aus `T2000_Vortrag_7Folien_Dunkel_kompakt.pptx`
+übernommen: Grund `#151A55`, Karten `#1B2060`, Linien `#3A4190`, Akzent
+`#6EEAFF`, Tabellenkopf `#841CA2`, Arial durchgehend. Einzelne Folien lassen
+sich ohne den Rundgang prüfen: `app/folien-vorschau.html?nr=3`.

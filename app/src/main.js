@@ -99,6 +99,12 @@ function zeigeAnkunft(ansicht) {
 function aktualisiereFolie(ansicht) {
   if (folienschau.modus === 'zusatz') return; // Ergaenzungsfolien haben Vorrang
   const liste = folienDerStation.get(ansicht.ort) || [];
+  if (ansicht.ort === 'totale') {
+    // Ueberblick ueber die Werkstatt mit der Begruessungsfolie darueber.
+    if (liste.length) folienschau.zeigeFolie(liste[0].nr);
+    else folienschau.verstecke();
+    return;
+  }
   const wieviel = Math.min(ansicht.belegpunkte, liste.length);
   if (wieviel < 1) folienschau.verstecke();
   else folienschau.zeigeFolie(liste[wieviel - 1].nr);

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Folien - Vorschau</title>
+  <link rel="stylesheet" href="./src/folien.css">
+  <style>
+    body { margin: 0; background: #0a0d2d; overflow: hidden; }
+    #folienschau { position: static !important; padding: 0 !important; background: none !important; display: block !important; }
+    .f-buehne { display: block !important; height: auto !important; }
+    /* Feste Verkleinerung, damit die ganze Folie in ein Fenster passt. */
+    .f-folie { transform: scale(0.6) !important; transform-origin: top left !important; margin: 0 !important; position: static !important; }
+  </style>
+</head>
+<body>
+  <div id="folienschau"></div>
+  <script type="module">
+    import { folien } from './src/folien-inhalt.js';
+    import { erzeugeFolienschau } from './src/folien.js';
+    const wurzel = document.getElementById('folienschau');
+    const nr = Number(new URLSearchParams(location.search).get('nr') || 1);
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
+    schau.geheZu(nr);
+    schau.oeffne();
+    document.body.classList.remove('folien-klein');
+    window.schau = schau;
+  </script>
+</body>
+</html>

@@ -8,6 +8,10 @@ import { hauptfolien, zusatzfolien, fusszeile } from './folien-inhalt.js';
 export const FOLIE_BREITE = 1280;
 export const FOLIE_HOEHE = 720;
 
+// Folien mit dem Merkmal 'klein' stehen als Karte in der Ecke, damit die Halle
+// dahinter vollstaendig sichtbar bleibt. Anteil der Rahmenbreite bzw. -hoehe.
+export const KLEIN_ANTEIL = 0.42;
+
 function el(tag, klasse, text) {
   const knoten = document.createElement(tag);
   if (klasse) knoten.className = klasse;
@@ -68,7 +72,7 @@ function baueBlock(block) {
     case 'fluss': {
       const halter = el('div', 'f-block f-fluss');
       block.glieder.forEach((glied, i) => {
-        if (i > 0) halter.append(el('span', 'f-pfeil', '↓'));
+        if (i > 0) halter.append(el('span', 'f-pfeil')); // Verbindungslinie, kein Pfeilzeichen
         halter.append(el('span', 'f-glied', glied));
       });
       return halter;
@@ -98,15 +102,17 @@ function baueBlock(block) {
 }
 
 function baueFolie(folie, gesamt, position, satzname) {
-  const knoten = el('article', 'f-folie');
+  const titelart = folie.art === 'titel';
+  const knoten = el('article', titelart ? 'f-folie f-titelart' : 'f-folie');
   knoten.setAttribute('aria-label', 'Folie ' + folie.nr);
 
-  const kopf = el('div', 'f-kopf');
-  kopf.append(el('span', 'f-kopf-l', 'DB INTERN / DB INTERNAL'));
-  kopf.append(el('span', 'f-kopf-r', (folie.sektion || 'Projektarbeit T3_2000').toUpperCase()));
+  // Rubrik oben links, im Foliensatz z. B. "02  Zielsetzung"; auf der Titelfolie
+  // steht dort die Einordnung der Arbeit in Versalien.
+  const kopf = el('div', titelart ? 'f-kopf f-kopf-titel' : 'f-kopf');
+  kopf.textContent = titelart ? folie.kopf || '' : folie.sektion || '';
   knoten.append(kopf);
 
-  if (folie.art === 'titel') {
+  if (titelart) {
     const mitte = el('div', 'f-titelfolie');
     mitte.append(el('h1', 'f-haupttitel', folie.titel));
     mitte.append(el('p', 'f-unterzeile', folie.unterzeile));
@@ -162,6 +168,7 @@ export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusa
   function zeichne() {
     const kind = baueFolie(daten[index], daten.length, index + 1, modus);
     buehne.replaceChildren(kind);
+    document.body.classList.toggle('folien-klein', !!daten[index].klein);
     passeDichteAn(kind);
     passeAn();
   }
@@ -182,8 +189,12 @@ export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusa
   function passeAn() {
     const kind = buehne.firstElementChild;
     if (!kind) return;
-    const rahmen = wurzelEl.getBoundingClientRect();
-    const massstab = berechneMassstab(rahmen.width, rahmen.height);
+    // Gemessen wird die Buehne, nicht der Wurzelknoten: dessen Rechteck
+    // schliesst die Polsterung ein, und die Folie wuerde den Rahmen ueberdecken,
+    // in dem die Halle sichtbar bleiben soll.
+    const rahmen = buehne.getBoundingClientRect();
+    const anteil = daten[index].klein ? KLEIN_ANTEIL : 1;
+    const massstab = berechneMassstab(rahmen.width * anteil, rahmen.height * anteil);
     kind.style.transform = 'scale(' + massstab + ')';
   }
 
@@ -208,6 +219,7 @@ export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusa
       offen = false;
       wurzelEl.hidden = true;
       document.body.classList.remove('folien-offen');
+      document.body.classList.remove('folien-klein');
     },
     // Im Rundgang bestimmt der Vortragsschritt, welche Folie zu sehen ist.
     zeigeFolie(nr) {

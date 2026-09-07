@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { folien, hauptfolien, zusatzfolien, fusszeile } from '../src/folien-inhalt.js';
-import { erzeugeFolienschau, berechneMassstab, FOLIE_BREITE, FOLIE_HOEHE } from '../src/folien.js';
+import { erzeugeFolienschau, berechneMassstab, FOLIE_BREITE, FOLIE_HOEHE, KLEIN_ANTEIL } from '../src/folien.js';
 import { tasteZuAktion } from '../src/steuerung.js';
 
 let wurzel;
@@ -28,7 +28,7 @@ describe('Folieninhalt', () => {
     expect(zusatzfolien.map((f) => f.nr)).toEqual([8, 9, 10, 11]);
   });
 
-  it('verteilt die Hauptfolien auf die Stationen des Rundgangs', async () => {
+  it('verteilt die Hauptfolien auf Totale und Stationen, in Reihenfolge des Rundgangs', async () => {
     const { default: daten } = await import('../src/stationen.json');
     const orte = new Set(['totale', ...daten.stationen.map((s) => s.id)]);
     for (const f of hauptfolien) {
@@ -63,7 +63,7 @@ describe('erzeugeFolienschau', () => {
     expect(wurzel.hidden).toBe(false);
     expect(schau.nummer).toBe(1);
     expect(wurzel.querySelector('.f-folie')).not.toBeNull();
-    expect(wurzel.querySelector('.f-kopf').textContent).toContain('DB INTERN / DB INTERNAL');
+    expect(wurzel.querySelector('.f-kopf').textContent).toContain('Projektarbeit T3_2000');
     expect(wurzel.querySelector('.f-fuss').textContent).toContain(fusszeile);
   });
 
@@ -105,6 +105,14 @@ describe('erzeugeFolienschau', () => {
     schau.oeffne();
     expect(wurzel.querySelectorAll('.f-schritt')).toHaveLength(6);
     expect(wurzel.querySelectorAll('.f-schritt.f-modell')).toHaveLength(2);
+  });
+
+  it('setzt die Rubrik des Foliensatzes in den Kopf', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
+    schau.geheZu(3);
+    schau.oeffne();
+    expect(wurzel.querySelector('.f-kopf').textContent).toBe('02 Zielsetzung');
+    expect(wurzel.querySelector('.f-folie').classList.contains('f-titelart')).toBe(false);
   });
 
   it('verwendet textContent, kein HTML aus den Daten', () => {
@@ -163,12 +171,43 @@ describe('Rundgang steuert die Folie', () => {
   });
 });
 
+describe('Kleine Begrüßungsfolie', () => {
+  it('steht als Karte über der Halle und weicht ab Folie 2 der ganzen Fläche', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: hauptfolien, zusatz: zusatzfolien });
+    schau.zeigeFolie(1);
+    expect(document.body.classList.contains('folien-klein')).toBe(true);
+    expect(wurzel.querySelector('.f-folie').classList.contains('f-titelart')).toBe(true);
+    schau.zeigeFolie(2);
+    expect(document.body.classList.contains('folien-klein')).toBe(false);
+    schau.zeigeFolie(1);
+    schau.verstecke();
+    expect(document.body.classList.contains('folien-klein')).toBe(false);
+  });
+
+  it('misst den Maßstab an der Bühne, damit der Rahmen um die Folie frei bleibt', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: hauptfolien, zusatz: [] });
+    // Das Rechteck des Wurzelknotens schliesst die Polsterung ein; nur die
+    // Buehne gibt das Innenmass an, in das die Folie passen muss.
+    wurzel.getBoundingClientRect = () => ({ width: 1600, height: 900 });
+    wurzel.querySelector('.f-buehne').getBoundingClientRect = () => ({ width: 1542, height: 842 });
+    schau.zeigeFolie(2);
+    expect(wurzel.querySelector('.f-folie').style.transform).toBe('scale(' + 842 / FOLIE_HOEHE + ')');
+  });
+
+  it('skaliert sie auf einen Bruchteil des Rahmens', () => {
+    expect(KLEIN_ANTEIL).toBeGreaterThan(0.2);
+    expect(KLEIN_ANTEIL).toBeLessThan(0.6);
+    expect(berechneMassstab(FOLIE_BREITE * KLEIN_ANTEIL, FOLIE_HOEHE * KLEIN_ANTEIL)).toBeCloseTo(KLEIN_ANTEIL);
+  });
+});
+
 describe('Folien je Station', () => {
-  it('gibt Meisterbüro und Datenraum zwei Folien, den übrigen eine', async () => {
+  it('legt die Begrüßungsfolie auf die Totale und verteilt die sechs Inhaltsfolien', async () => {
     const { folienJeStation } = await import('../src/folien-inhalt.js');
     const karte = folienJeStation();
-    expect(karte.get('meisterbuero').map((f) => f.nr)).toEqual([1, 2]);
-    expect(karte.get('datenraum').map((f) => f.nr)).toEqual([3, 4]);
+    expect(karte.get('totale').map((f) => f.nr)).toEqual([1]);
+    expect(karte.get('meisterbuero').map((f) => f.nr)).toEqual([2, 3]);
+    expect(karte.get('datenraum').map((f) => f.nr)).toEqual([4]);
     expect(karte.get('terminal').map((f) => f.nr)).toEqual([5]);
     expect(karte.get('anzeigetafel').map((f) => f.nr)).toEqual([6]);
     expect(karte.get('pruefstand').map((f) => f.nr)).toEqual([7]);
@@ -180,12 +219,14 @@ describe('Folien je Station', () => {
     const { default: daten } = await import('../src/stationen.json');
     const karte = folienJeStation();
     const schritte = baueSchritte(daten.stationen, (st) => (karte.get(st.id) || []).length);
-    // 1 Totale + (1+2) + (1+2) + (1+1) + (1+1) + (1+1) + 1 Rückflug = 14
-    expect(schritte).toHaveLength(14);
+    // 1 Totale + (1+2) + (1+1) + (1+1) + (1+1) + (1+1) + 1 Rückflug = 13
+    expect(schritte).toHaveLength(13);
     expect(schritte[0]).toEqual({ typ: 'totale' });
     expect(schritte[1]).toEqual({ typ: 'fahrt', stationId: 'meisterbuero' });
     expect(schritte[2]).toEqual({ typ: 'belegpunkt', stationId: 'meisterbuero', index: 0 });
     expect(schritte[3]).toEqual({ typ: 'belegpunkt', stationId: 'meisterbuero', index: 1 });
     expect(schritte[4]).toEqual({ typ: 'fahrt', stationId: 'datenraum' });
+    expect(schritte[5]).toEqual({ typ: 'belegpunkt', stationId: 'datenraum', index: 0 });
+    expect(schritte[6]).toEqual({ typ: 'fahrt', stationId: 'terminal' });
   });
 });

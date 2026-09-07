@@ -1,11 +1,13 @@
 // Inhalt des Foliensatzes, übernommen aus T2000_Vortrag_7Folien_Dunkel_kompakt.pptx
 // (elf Folien: sieben Hauptfolien, vier Ergänzungsfolien). Aufbau und Reihenfolge
-// bleiben erhalten; die Gestaltung folgt docs/foliensatz/DESIGN.md.
+// bleiben erhalten; die Gestaltung uebernimmt Farben, Schriftgrade und Zonen
+// des Originals (siehe folien.css).
 //
 // Das Feld 'station' benennt den Ort im Rundgang, an den die Kamera zu dieser
 // Folie faehrt ('totale' fuer die Halleneinstellung, null fuer "bleib stehen").
-// Die sieben Hauptfolien verteilen sich auf die fuenf Stationen des Rundgangs:
-// Meisterbuero und Datenraum tragen je zwei Folien, bis zwei weitere Stationen
+// Folie 1 ist die Begruessungsfolie und liegt auf der Totale: sie steht gleich
+// beim Ueberblick ueber die Werkstatt. Die sechs Inhaltsfolien verteilen sich auf
+// die fuenf Stationen; das Meisterbuero traegt zwei, bis zwei weitere Stationen
 // gebaut sind. Der Rundgang fuehrt: erst die Fahrt, dann auf Tastendruck die Folie.
 //
 // Blocktypen: 'punkte' (Absätze), 'gruppe' (Überschrift + Absätze), 'tabelle'
@@ -19,8 +21,9 @@ export const fusszeile =
 export const folien = [
   {
     nr: 1,
-    station: 'meisterbuero',
+    station: 'totale',
     art: 'titel',
+    klein: true, // Begruessung als Karte ueber der Halle, damit der Ueberblick steht
     kopf: 'Projektarbeit T3_2000 · DHBW Mannheim',
     titel: 'KI-gestützte Datenplattform zur kennzahlenbasierten Instandhaltungssteuerung',
     unterzeile: 'Konzeption, prototypische Umsetzung und Bewertung · DB Regio AG, Region Mitte',
@@ -60,7 +63,7 @@ export const folien = [
   },
   {
     nr: 3,
-    station: 'datenraum',
+    station: 'meisterbuero',
     sektion: '02 Zielsetzung',
     titel: 'Was untersucht wurde',
     kern: 'Sprachmodelle übersetzen Sprache in SQL. Offen war, ob das auf einem fachlich geprägten Kennzahlenschema eine Steuerungsentscheidung trägt.',
@@ -157,7 +160,7 @@ export const folien = [
       },
       {
         typ: 'notiz',
-        text: 'Abb. 2: Verarbeitungsschritte des Auswertungspfads (eigene Darstellung). Doppelrahmen: Sprachmodell. 16 Module, rund 3.000 Zeilen, 25 Tabellen.',
+        text: 'Abb. 2: Verarbeitungsschritte des Auswertungspfads (eigene Darstellung). Hervorgehoben: Sprachmodell. 16 Module, rund 3.000 Zeilen, 25 Tabellen.',
       },
     ],
     spalten: [
