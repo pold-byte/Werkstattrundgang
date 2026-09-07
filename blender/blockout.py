@@ -371,14 +371,14 @@ schreibe_rauheit_png(SOCKEL_RAUHEIT_PNG, groesse=256, basis=0.6, spann=0.2, seed
 # Lack seidig mit Rauheitstextur, Glas glatt.
 m_objekt = material_pbr("Objekt", GRAU_OBJEKT, rauheit_png=LACK_RAUHEIT_PNG, metall=0.1, kachel=1.5)
 m_dunkel = material("Dunkel", GRAU_DUNKEL, rauheit=0.5, metall=0.25)
-m_stahl = material("Stahl", STAHL, rauheit=0.45, metall=0.85)
+m_stahl = material("Stahl", STAHL, rauheit=0.5, metall=0.8)
 m_fenster = material("Fenster", FENSTER, rauheit=0.08)
 m_leuchte = material("Leuchte", (0.96, 0.97, 1.0), rauheit=0.6, emission=2.0)
 m_blau = material_pbr("Blau", BLAU, rauheit_png=LACK_RAUHEIT_PNG, metall=0.15, kachel=1.5)
 m_blau_alt = material_pbr("BlauAlt", BLAU_ALT, rauheit_png=SOCKEL_RAUHEIT_PNG, metall=0.05, kachel=1.5)
 m_orange = material_pbr("Orange", ORANGE, rauheit_png=LACK_RAUHEIT_PNG, metall=0.15, kachel=1.5)
 m_orange_alt = material_pbr("OrangeAlt", ORANGE_ALT, rauheit_png=SOCKEL_RAUHEIT_PNG, metall=0.05, kachel=1.5)
-m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.35, metall=0.7)
+m_stahlhell = material("StahlHell", STAHL_HELL, rauheit=0.42, metall=0.6)
 m_gruen = material_pbr("Gruen", GRUEN, rauheit_png=LACK_RAUHEIT_PNG, metall=0.1, kachel=1.5)
 m_grube = material("Grube", GRUBE, rauheit=0.85)
 m_zug = material("Zug", ROT_ZUG, rauheit=0.42, metall=0.05)
@@ -413,7 +413,8 @@ def lackvariante(name, mat):
 # damit keine Oberkante und franste oben in die helle Halle aus.
 # Hellgrau wie beim Vorbild: ein dunkles Dach laesst den Zug als Regionaltriebwagen
 # lesen. Die Oberkante entsteht jetzt ueber die Dachwoelbung, nicht ueber Farbe.
-m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.5, metall=0.30)
+m_zugdach = material("ZugDach", (0.70, 0.71, 0.73), rauheit=0.42, metall=0.05)
+klarlack(m_zugdach)
 m_relief = material("WandRelief", WAND_RELIEF)
 # Unterflur-Staffelung: Schiene blank gefahren,
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
@@ -426,6 +427,9 @@ m_unterflur = material("Unterflur", (0.16, 0.17, 0.18), rauheit=0.70)
 # Hallenverglasung eigenstaendig, damit sie als Glas liest, ohne die vielen
 # anderen m_fenster-Verwendungen (Leuchten, Zettel, Schilder) mitzuziehen.
 m_hallenglas = material("Hallenglas", (0.78, 0.85, 0.92), rauheit=0.05)
+# Tageslicht fuer Fensterbaender und Oberlichter: leicht emissiv, damit die Halle
+# von aussen belichtet wirkt statt als flaches Glas zu lesen.
+m_tageslicht = material("Tageslicht", (0.90, 0.94, 1.0), rauheit=0.15, emission=1.3)
 # Gruener Betriebsweg — der klassische Werkstattmarker fuer die Fussgaengerspur.
 m_weg = material("Weg", (0.20, 0.42, 0.28), rauheit=0.9)
 m_oelfleck = material("Oelfleck", (0.16, 0.15, 0.14), rauheit=0.35)
@@ -601,7 +605,7 @@ def _segmente(a0, b0, oeffnungen):
 def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
     if entlang_x:
         kasten(f"Wand_{seite}_Unten", laenge, 0.3, 3.5, cx, 1.75, cz, m_wand)
-        kasten(f"Wand_{seite}_Fenster", laenge, 0.1, 1.8, cx, 4.4, cz + (0.08 if cz > 0 else -0.08), m_hallenglas)
+        kasten(f"Wand_{seite}_Fenster", laenge, 0.1, 1.8, cx, 4.4, cz + (0.08 if cz > 0 else -0.08), m_tageslicht)
         kasten(f"Wand_{seite}_Oben", laenge, 0.3, 0.7, cx, 5.65, cz, m_wand)
         for i, fx in enumerate(range(-16, 17, 4)):
             kasten(f"Wand_{seite}_Sprosse_{i}", 0.15, 0.3, 1.8, fx, 4.4, cz, m_stahl)
@@ -624,11 +628,11 @@ def wand_mit_fenster(seite, laenge, cx, cz, entlang_x):
             # Toroeffnung: Wand und Fensterband beidseits, Sturz 4.2..5.3 darueber (Wand_Oben bleibt durchgehend)
             for _k, (_a, _b) in enumerate(_segmente(cz - laenge / 2, cz + laenge / 2, (_tor,))):
                 kasten(f"Wand_{seite}_Unten_{_k}", 0.3, _b - _a, 3.5, cx, 1.75, (_a + _b) / 2, m_wand)
-                kasten(f"Wand_{seite}_Fenster_{_k}", 0.1, _b - _a, 1.8, cx - 0.08, 4.4, (_a + _b) / 2, m_hallenglas)
+                kasten(f"Wand_{seite}_Fenster_{_k}", 0.1, _b - _a, 1.8, cx - 0.08, 4.4, (_a + _b) / 2, m_tageslicht)
             kasten(f"Wand_{seite}_Sturz", 0.3, _tor[1] - _tor[0], 1.1, cx, 4.75, (_tor[0] + _tor[1]) / 2, m_wand)
         else:
             kasten(f"Wand_{seite}_Unten", 0.3, laenge, 3.5, cx, 1.75, cz, m_wand)
-            kasten(f"Wand_{seite}_Fenster", 0.1, laenge, 1.8, cx - 0.08, 4.4, cz, m_hallenglas)
+            kasten(f"Wand_{seite}_Fenster", 0.1, laenge, 1.8, cx - 0.08, 4.4, cz, m_tageslicht)
         kasten(f"Wand_{seite}_Oben", 0.3, laenge, 0.7, cx, 5.65, cz, m_wand)
         for i, fz in enumerate(range(-8, 9, 4)):
             if _tor and _tor[0] < fz < _tor[1]:
@@ -696,7 +700,7 @@ for i in range(11):
     kasten(f"Dach_Rippe_{i}", 34, 0.1, 0.2, 0, 6.14, -9 + i * 1.8, m_relief, fase=0)
 for i, (ox, oz) in enumerate(((-12, -4.6), (-4, -4.6), (4, -4.6), (12, -4.6),
                               (-12, 4.4), (-4, 4.4), (4, 4.4), (12, 4.4))):
-    kasten(f"Dach_Oberlicht_{i}", 2.4, 1.5, 0.06, ox, 6.21, oz, m_fenster, fase=0)
+    kasten(f"Dach_Oberlicht_{i}", 2.4, 1.5, 0.06, ox, 6.21, oz, m_tageslicht, fase=0)
     kasten(f"Dach_Oberlicht_{i}_rahmen", 2.6, 1.7, 0.05, ox, 6.19, oz, m_relief, fase=0)
 
 # ---- Haustechnik unter der Decke: Rohre, Kabeltrasse, Sprinkler, Lueftung ---
