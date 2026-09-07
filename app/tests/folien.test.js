@@ -137,21 +137,55 @@ describe('Taste f', () => {
   });
 });
 
-describe('Taste f schaltet den Satz weiter', () => {
-  it('geht vom Haupt- auf den Zusatzsatz, dann auf die Halle und zurück', () => {
+describe('Rundgang steuert die Folie', () => {
+  it('zeigt eine bestimmte Folie und blendet sie wieder aus', () => {
     const schau = erzeugeFolienschau(wurzel, { haupt: hauptfolien, zusatz: zusatzfolien });
-    schau.oeffne();
-    expect(schau.nummer).toBe(1);
-    schau.naechsterSatz();
+    expect(schau.istOffen).toBe(false); // der Rundgang beginnt ohne Folie
+    expect(schau.zeigeFolie(4)).toBe(true);
+    expect(schau.nummer).toBe(4);
+    expect(wurzel.hidden).toBe(false);
+    schau.verstecke();
+    expect(schau.istOffen).toBe(false);
+    expect(schau.zeigeFolie(99)).toBe(false);
+  });
+
+  it('blendet mit f die Ergänzungsfolien ein und wieder aus', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: hauptfolien, zusatz: zusatzfolien });
+    schau.zeigeFolie(7);
+    expect(schau.zusatzUmschalten()).toBe(true);
     expect(schau.modus).toBe('zusatz');
     expect(schau.nummer).toBe(8);
     expect(schau.weiter()).toBe(true);
     expect(schau.nummer).toBe(9);
-    schau.naechsterSatz();
-    expect(schau.istOffen).toBe(false); // Halle ohne Folie
-    schau.naechsterSatz();
+    expect(schau.zusatzUmschalten()).toBe(false);
     expect(schau.modus).toBe('haupt');
-    expect(schau.nummer).toBe(1);
-    expect(schau.istOffen).toBe(true);
+    expect(schau.istOffen).toBe(false); // der Rundgang übernimmt wieder
+  });
+});
+
+describe('Folien je Station', () => {
+  it('gibt Meisterbüro und Datenraum zwei Folien, den übrigen eine', async () => {
+    const { folienJeStation } = await import('../src/folien-inhalt.js');
+    const karte = folienJeStation();
+    expect(karte.get('meisterbuero').map((f) => f.nr)).toEqual([1, 2]);
+    expect(karte.get('datenraum').map((f) => f.nr)).toEqual([3, 4]);
+    expect(karte.get('terminal').map((f) => f.nr)).toEqual([5]);
+    expect(karte.get('anzeigetafel').map((f) => f.nr)).toEqual([6]);
+    expect(karte.get('pruefstand').map((f) => f.nr)).toEqual([7]);
+  });
+
+  it('baut daraus den Ablauf: erst die Fahrt, dann je Folie ein Schritt', async () => {
+    const { baueSchritte } = await import('../src/schritte.js');
+    const { folienJeStation } = await import('../src/folien-inhalt.js');
+    const { default: daten } = await import('../src/stationen.json');
+    const karte = folienJeStation();
+    const schritte = baueSchritte(daten.stationen, (st) => (karte.get(st.id) || []).length);
+    // 1 Totale + (1+2) + (1+2) + (1+1) + (1+1) + (1+1) + 1 Rückflug = 14
+    expect(schritte).toHaveLength(14);
+    expect(schritte[0]).toEqual({ typ: 'totale' });
+    expect(schritte[1]).toEqual({ typ: 'fahrt', stationId: 'meisterbuero' });
+    expect(schritte[2]).toEqual({ typ: 'belegpunkt', stationId: 'meisterbuero', index: 0 });
+    expect(schritte[3]).toEqual({ typ: 'belegpunkt', stationId: 'meisterbuero', index: 1 });
+    expect(schritte[4]).toEqual({ typ: 'fahrt', stationId: 'datenraum' });
   });
 });

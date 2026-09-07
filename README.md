@@ -10,25 +10,27 @@
 
 ## Folienschau
 
-Der Foliensatz ist die Standardansicht. Inhalt aus `app/src/folien-inhalt.js`,
-Gestaltung nach `docs/foliensatz/DESIGN.md`. Die Folie füllt den Bildschirm bis
-auf einen Rahmen, in dem die Halle gedämpft sichtbar bleibt.
+Der Rundgang führt, die Folien folgen. Ablauf mit Leertaste und Pfeiltasten:
 
-Die sieben Hauptfolien laufen mit Leertaste und Pfeiltasten; die Kamera fährt
-dabei an die Station, die im Feld `station` steht:
+1. Überblick über die Werkstatt, keine Folie.
+2. Leertaste: die Kamera fährt zur Station. Während der Fahrt bleibt die Halle frei.
+3. Ankunft: die Station ist zu sehen, weiterhin ohne Folie.
+4. Leertaste: die erste Folie der Station wird eingeblendet, darunter bleibt die
+   Halle als Rahmen sichtbar.
+5. Leertaste: zweite Folie der Station, sonst Fahrt zur nächsten Station.
 
-| Folie | Station |
-|-------|---------|
-| 1 Titel | Totale |
-| 2 Ausgangslage | 1 Meisterbüro |
-| 3 Zielsetzung | 1 Meisterbüro |
-| 4 Gesamtarchitektur | 2 Datenraum |
-| 5 Auswertungspfad | 3 Terminal |
-| 6 Messaufbau | 4 Anzeigetafel |
-| 7 Ergebnis | 5 Prüfstand |
+Zuordnung der sieben Hauptfolien:
 
-Folie 2 und 3 teilen sich das Meisterbüro, bis zwei weitere Stationen gebaut
-sind. Taste `f` schaltet nach der letzten Hauptfolie auf die vier
-Ergänzungsfolien, ein weiteres `f` zeigt die Halle ohne Folie, das dritte kehrt
-zum Hauptsatz zurück.
+| Station | Folien |
+|---------|--------|
+| 1 Meisterbüro | 1 Titel, 2 Ausgangslage |
+| 2 Datenraum | 3 Zielsetzung, 4 Gesamtarchitektur |
+| 3 Terminal | 5 Auswertungspfad |
+| 4 Anzeigetafel | 6 Messaufbau |
+| 5 Prüfstand | 7 Ergebnis |
 
+Meisterbüro und Datenraum tragen je zwei Folien, bis zwei weitere Stationen
+gebaut sind; die Zuordnung steht im Feld `station` in `app/src/folien-inhalt.js`.
+Taste `f` blendet die vier Ergänzungsfolien ein, dort blättern Leertaste und
+Pfeiltasten; ein weiteres `f` kehrt in den Rundgang zurück. Gestaltung nach
+`docs/foliensatz/DESIGN.md`.

@@ -4,8 +4,9 @@
 //
 // Das Feld 'station' benennt den Ort im Rundgang, an den die Kamera zu dieser
 // Folie faehrt ('totale' fuer die Halleneinstellung, null fuer "bleib stehen").
-// Die sieben Hauptfolien verteilen sich auf die fuenf Stationen des Rundgangs;
-// Folie 2 und 3 teilen sich das Meisterbuero, bis zwei weitere Stationen da sind.
+// Die sieben Hauptfolien verteilen sich auf die fuenf Stationen des Rundgangs:
+// Meisterbuero und Datenraum tragen je zwei Folien, bis zwei weitere Stationen
+// gebaut sind. Der Rundgang fuehrt: erst die Fahrt, dann auf Tastendruck die Folie.
 //
 // Blocktypen: 'punkte' (Absätze), 'gruppe' (Überschrift + Absätze), 'tabelle'
 // (Kopfzeile + Zeilen), 'fluss' (waagerechte Kette), 'schritte' (nummerierte
@@ -18,7 +19,7 @@ export const fusszeile =
 export const folien = [
   {
     nr: 1,
-    station: 'totale',
+    station: 'meisterbuero',
     art: 'titel',
     kopf: 'Projektarbeit T3_2000 · DHBW Mannheim',
     titel: 'KI-gestützte Datenplattform zur kennzahlenbasierten Instandhaltungssteuerung',
@@ -59,7 +60,7 @@ export const folien = [
   },
   {
     nr: 3,
-    station: 'meisterbuero',
+    station: 'datenraum',
     sektion: '02 Zielsetzung',
     titel: 'Was untersucht wurde',
     kern: 'Sprachmodelle übersetzen Sprache in SQL. Offen war, ob das auf einem fachlich geprägten Kennzahlenschema eine Steuerungsentscheidung trägt.',
@@ -410,3 +411,14 @@ export const folien = [
 // dahinter und werden mit der Taste f aufgerufen.
 export const hauptfolien = folien.filter((f) => f.nr <= 7);
 export const zusatzfolien = folien.filter((f) => f.nr > 7);
+
+// Folien je Station, in Folienreihenfolge. Der Rundgang baut daraus seine Schritte.
+export function folienJeStation() {
+  const karte = new Map();
+  for (const f of hauptfolien) {
+    if (!f.station) continue;
+    if (!karte.has(f.station)) karte.set(f.station, []);
+    karte.get(f.station).push(f);
+  }
+  return karte;
+}

@@ -12,6 +12,7 @@ import { aktiviereWaypointWerkzeug } from './waypoint-werkzeug.js';
 import { verbindeVideoTextur } from './videotextur.js';
 import { erzeugeKomposition, leseAoSchalter } from './komposition.js';
 import { erzeugeFolienschau } from './folien.js';
+import { folienJeStation } from './folien-inhalt.js';
 
 const canvas = document.getElementById('buehne');
 const panelEl = document.getElementById('panel');
@@ -24,13 +25,16 @@ const videoTexturEl = document.getElementById('video-textur');
 const folienEl = document.getElementById('folienschau');
 
 const folienschau = erzeugeFolienschau(folienEl);
+const folienDerStation = folienJeStation();
 
 const renderer = erzeugeRenderer(canvas);
 const szene = erzeugeSzene(renderer);
 const kamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
 const komposition = erzeugeKomposition(renderer, szene, kamera, { ao: leseAoSchalter(window.location.search) });
 
-const schritte = baueSchritte(daten.stationen);
+// Je Station so viele Einblendungen, wie sie Folien hat (Meisterbuero und
+// Datenraum haben zwei, die uebrigen eine).
+const schritte = baueSchritte(daten.stationen, (st) => (folienDerStation.get(st.id) || []).length);
 const zustand = new Zustandsmaschine(schritte);
 const sperre = new Eingabesperre();
 
@@ -66,6 +70,7 @@ function wendeAnsichtAn(sofort = false) {
     aktuellerOrt = ansicht.ort;
     versteckePanel(panelEl);
     zeigeTitel(titelEl, false); // Spec §4: während der Fahrt kein neuer Text
+    if (folienschau.modus !== 'zusatz') folienschau.verstecke(); // freie Sicht auf die Halle
     schalteDimmer(dimmerEl, false);
     if (sofort) {
       aktuelleFahrt = null;
@@ -83,33 +88,32 @@ function wendeAnsichtAn(sofort = false) {
 }
 
 function zeigeAnkunft(ansicht) {
-  zeigeTitel(titelEl, ansicht.ort === 'totale'); // Titel erst bei Ankunft (Spec §4)
-  schalteDimmer(dimmerEl, ansicht.ort !== 'totale');
-  if (ansicht.ort === 'totale') {
-    versteckePanel(panelEl);
-    return;
-  }
-  const station = daten.stationen.find((s) => s.id === ansicht.ort);
-  zeigePanel(panelEl, station, ansicht.belegpunkte);
+  schalteDimmer(dimmerEl, false); // die Halle bleibt sichtbar, die Folie deckt sie ab
+  versteckePanel(panelEl);
+  zeigeTitel(titelEl, false);
+  aktualisiereFolie(ansicht);
 }
 
-// Die Kamera fährt an den Ort, den die aufgeschlagene Folie nennt. Das Panel
-// bleibt dabei ausgeblendet (body.folien-offen), sichtbar ist nur der Rahmen.
-function folgeFolie() {
-  const ziel = folienschau.aktuelle.station;
-  if (!ziel || ziel === aktuellerOrt) return;
-  if (ziel === 'totale') zustand.springeZurTotale();
-  else zustand.springeZuStation(ziel);
-  wendeAnsichtAn();
+// Ablauf je Station: erst die Ankunft ohne Folie (die Werkstatt ist zu sehen),
+// dann blendet jeder weitere Schritt die naechste Folie dieser Station ein.
+function aktualisiereFolie(ansicht) {
+  if (folienschau.modus === 'zusatz') return; // Ergaenzungsfolien haben Vorrang
+  const liste = folienDerStation.get(ansicht.ort) || [];
+  const wieviel = Math.min(ansicht.belegpunkte, liste.length);
+  if (wieviel < 1) folienschau.verstecke();
+  else folienschau.zeigeFolie(liste[wieviel - 1].nr);
 }
 
 function fuehreAktionAus(aktion) {
   // Bei offener Folienschau blaettern weiter/zurueck durch die Folien, nicht
   // durch den Rundgang; Taste f zeigt die Halle allein (Spec §6: Escape bleibt frei).
-  if (aktion.typ === 'folien') { folienschau.naechsterSatz(); if (folienschau.istOffen) folgeFolie(); return; }
-  if (folienschau.istOffen) {
-    if (aktion.typ === 'weiter') { if (folienschau.weiter()) folgeFolie(); return; }
-    if (aktion.typ === 'zurueck') { if (folienschau.zurueck()) folgeFolie(); return; }
+  if (aktion.typ === 'folien') {
+    if (!folienschau.zusatzUmschalten()) wendeAnsichtAn(); // zurueck in den Rundgang
+    return;
+  }
+  if (folienschau.modus === 'zusatz') { // Ergaenzungsfolien blaettern eigenstaendig
+    if (aktion.typ === 'weiter') { folienschau.weiter(); return; }
+    if (aktion.typ === 'zurueck') { folienschau.zurueck(); return; }
   }
   switch (aktion.typ) {
 
@@ -152,7 +156,7 @@ window.addEventListener('keydown', (ereignis) => {
   ereignis.preventDefault();
   // Die Folienschau liegt vor der Szene: blaettern und umschalten wirken auch
   // waehrend einer Kamerafahrt, sonst schluckt die Eingabesperre die Taste.
-  if (aktion.typ === 'folien' || (folienschau.istOffen && (aktion.typ === 'weiter' || aktion.typ === 'zurueck'))) {
+  if (aktion.typ === 'folien' || (folienschau.modus === 'zusatz' && (aktion.typ === 'weiter' || aktion.typ === 'zurueck'))) {
     fuehreAktionAus(aktion);
     return;
   }
@@ -221,7 +225,6 @@ async function start() {
   setzeKamera(poseFuerOrt(leiteAnsichtAb(zustand.aktuell, daten.stationen).ort));
   aktuellerOrt = leiteAnsichtAb(zustand.aktuell, daten.stationen).ort;
   wendeAnsichtAn(true);
-  folienschau.oeffne(); // Standardansicht: die Folie vorn, die Halle im Rahmen
   bereit = true;
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
   if (import.meta.env.DEV) Object.assign(window, { __szene: szene, __renderer: renderer, __kamera: kamera, __komposition: komposition }); // Dev-Inspektion (im Build entfernt)

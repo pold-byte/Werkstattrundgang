@@ -14,8 +14,7 @@
 
 /* Waehrend der Folienschau tritt die Rundgangs-Oberflaeche zurueck; im Rahmen
    bleibt nur die gedaempfte Halle zu sehen. */
-body.folien-offen #panel,
-body.folien-offen #titel,
+#panel, #titel { display: none; } /* der Foliensatz ersetzt Panel und Titelbild */
 body.folien-offen #kopfzeile { display: none; }
 
 /* Rahmen: die Halle bleibt ringsum sichtbar, aber gedämpft. */

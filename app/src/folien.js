@@ -209,12 +209,25 @@ export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusa
       wurzelEl.hidden = true;
       document.body.classList.remove('folien-offen');
     },
-    // f schaltet weiter: Hauptsatz, Zusatzfolien, Halle ohne Folie, zurueck zum Hauptsatz.
-    naechsterSatz() {
-      if (modus === 'haupt' && offen && zusatzVorhanden) { setzeSatz('zusatz'); this.oeffne(); }
-      else if (offen) { this.schliesse(); }
-      else { setzeSatz('haupt'); this.oeffne(); }
-      return modus + (offen ? '' : ' (aus)');
+    // Im Rundgang bestimmt der Vortragsschritt, welche Folie zu sehen ist.
+    zeigeFolie(nr) {
+      if (modus !== 'haupt') setzeSatz('haupt');
+      const treffer = satz.haupt.findIndex((f) => f.nr === nr);
+      if (treffer < 0) return false;
+      index = treffer;
+      this.oeffne();
+      return true;
+    },
+    verstecke() {
+      if (offen) this.schliesse();
+    },
+    // f blendet die Ergaenzungsfolien ein und wieder aus.
+    zusatzUmschalten() {
+      if (modus === 'zusatz') { setzeSatz('haupt'); this.schliesse(); return false; }
+      if (!zusatzVorhanden) return false;
+      setzeSatz('zusatz');
+      this.oeffne();
+      return true;
     },
     umschalten() { if (offen) this.schliesse(); else this.oeffne(); return offen; },
     weiter() {
