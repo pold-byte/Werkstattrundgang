@@ -16,6 +16,8 @@ export function tasteZuAktion(key, stationen) {
       return { typ: 'video' };
     case 'b': case 'B':
       return { typ: 'schwarz' };
+    case 'f': case 'F':
+      return { typ: 'folien' };
     default: {
       if (/^[1-9]$/.test(key)) {
         const st = stationen.find((s) => s.nr === Number(key));

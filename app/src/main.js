@@ -11,6 +11,7 @@ import { erzeugeRenderer, erzeugeSzene, bauePlatzhalter, ladeModell, base64ZuArr
 import { aktiviereWaypointWerkzeug } from './waypoint-werkzeug.js';
 import { verbindeVideoTextur } from './videotextur.js';
 import { erzeugeKomposition, leseAoSchalter } from './komposition.js';
+import { erzeugeFolienschau } from './folien.js';
 
 const canvas = document.getElementById('buehne');
 const panelEl = document.getElementById('panel');
@@ -20,6 +21,9 @@ const dimmerEl = document.getElementById('dimmer');
 const videoOverlayEl = document.getElementById('video-overlay');
 const videoGrossEl = document.getElementById('video-gross');
 const videoTexturEl = document.getElementById('video-textur');
+const folienEl = document.getElementById('folienschau');
+
+const folienschau = erzeugeFolienschau(folienEl);
 
 const renderer = erzeugeRenderer(canvas);
 const szene = erzeugeSzene(renderer);
@@ -90,7 +94,15 @@ function zeigeAnkunft(ansicht) {
 }
 
 function fuehreAktionAus(aktion) {
+  // Bei offener Folienschau blaettern weiter/zurueck durch die Folien, nicht
+  // durch den Rundgang; Taste f schliesst wieder (Spec §6: Escape bleibt frei).
+  if (folienschau.istOffen) {
+    if (aktion.typ === 'weiter') { folienschau.weiter(); return; }
+    if (aktion.typ === 'zurueck') { folienschau.zurueck(); return; }
+    if (aktion.typ === 'folien') { folienschau.schliesse(); return; }
+  }
   switch (aktion.typ) {
+    case 'folien': folienschau.oeffne(); break;
     case 'weiter': zustand.weiter(); wendeAnsichtAn(); break;
     case 'zurueck': zustand.zurueck(); wendeAnsichtAn(); break;
     case 'totale': zustand.springeZurTotale(); wendeAnsichtAn(); break;
@@ -138,6 +150,7 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   komposition.setSize(window.innerWidth, window.innerHeight);
+  folienschau.passeAn();
 });
 
 const uhr = new THREE.Clock();

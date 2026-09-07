@@ -1,0 +1,215 @@
+/* Folienschau. Farbrollen, Typografie, Raster und Linien nach
+   docs/foliensatz/DESIGN.md; die Klassennamen folgen der Referenzseite
+   docs/foliensatz/referenz.html. Die Folie ist 1280 x 720 px gross
+   (13,333 x 7,5 Zoll bei 96 dpi) und wird als Ganzes skaliert. */
+:root {
+  --f-papier: #ffffff;
+  --f-tinte: #1a1a1a;
+  --f-tinte-2: #5c5c5c;
+  --f-tinte-3: #8a8a8a;
+  --f-feld: #f0f0ee;
+  --f-haar: #c8c8c8;
+  --f-akzent: #2f5d8a;
+}
+
+/* Waehrend der Folienschau tritt die Rundgangs-Oberflaeche zurueck; im Rahmen
+   bleibt nur die gedaempfte Halle zu sehen. */
+body.folien-offen #panel,
+body.folien-offen #titel,
+body.folien-offen #kopfzeile { display: none; }
+
+/* Rahmen: die Halle bleibt ringsum sichtbar, aber gedämpft. */
+#folienschau {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.2vmin;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.f-buehne {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.f-folie {
+  position: relative;
+  flex: none;
+  width: 1280px;
+  height: 720px;
+  background: var(--f-papier);
+  color: var(--f-tinte);
+  font-family: Arial, Helvetica, sans-serif;
+  transform-origin: center center;
+  --f-dicht: 1;
+}
+
+/* Feste Zonen (DESIGN.md Abschnitt 3), Aussenrand 0,60 Zoll. */
+.f-kopf, .f-titel, .f-kern, .f-inhalt, .f-fuss, .f-titelfolie {
+  position: absolute;
+  left: 0.6in;
+  width: 12.13in;
+  box-sizing: border-box;
+}
+
+.f-kopf {
+  top: 0.3in;
+  height: 0.2in;
+  font-size: 10pt;
+  color: var(--f-tinte-3);
+  letter-spacing: 0.04em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.f-titel {
+  top: 0.85in;
+  margin: 0;
+  font-size: 28pt;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.f-kern {
+  top: 1.45in;
+  width: 10.6in;
+  margin: 0;
+  font-size: 20pt;
+  line-height: 1.3;
+}
+
+.f-inhalt {
+  top: 2.55in;
+  height: 4.15in;
+  overflow: hidden;
+  font-size: calc(16pt * var(--f-dicht));
+  line-height: 1.4;
+}
+
+.f-fuss {
+  top: 7in;
+  height: 0.2in;
+  font-size: 10pt;
+  color: var(--f-tinte-2);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3in;
+}
+
+.f-fuss-l { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.f-fuss-r { flex: none; }
+
+/* Ohne Kernaussage beginnt der Inhalt weiter oben. */
+.f-folie:not(:has(.f-kern)) .f-inhalt { top: 1.55in; height: 5.15in; }
+
+/* Titelfolie */
+.f-titelfolie {
+  top: 2.1in;
+  height: 4in;
+}
+.f-haupttitel {
+  margin: 0 0 0.3in 0;
+  font-size: 34pt;
+  font-weight: bold;
+  line-height: 1.15;
+  max-width: 10.5in;
+}
+.f-unterzeile { margin: 0 0 0.9in 0; font-size: 16pt; color: var(--f-tinte-2); }
+.f-name { margin: 0 0 0.2in 0; font-size: 20pt; }
+.f-meta { margin: 0 0 0.1in 0; font-size: 12pt; color: var(--f-tinte-2); }
+
+/* Inhaltsblöcke */
+.f-spalten { display: flex; gap: 0.45in; align-items: flex-start; }
+.f-spalte { flex: 1 1 0; min-width: 0; }
+.f-block + .f-block { margin-top: 0.3in; }
+.f-spalten + .f-block, .f-block + .f-spalten { margin-top: 0.3in; }
+
+.f-blocktitel {
+  font-size: calc(16pt * var(--f-dicht));
+  font-weight: bold;
+  margin-bottom: 0.15in;
+  padding-bottom: 0.07in;
+  border-bottom: 0.75pt solid var(--f-haar);
+}
+
+.f-punkte p { margin: 0 0 0.2in 0; }
+.f-punkte p:last-child { margin-bottom: 0; }
+
+.f-notiz {
+  font-size: calc(12pt * var(--f-dicht));
+  line-height: 1.3;
+  color: var(--f-tinte-2);
+}
+
+.f-kasten {
+  border-left: 3pt solid var(--f-akzent);
+  background: var(--f-feld);
+  padding: 0.16in 0.2in;
+  font-size: calc(16pt * var(--f-dicht));
+  line-height: 1.35;
+}
+.f-marke { font-weight: bold; }
+
+/* Tabellen: Kopfzeile mit Haarlinie, Zeilen ohne Zebra. */
+.f-tab { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.f-tab th {
+  font-size: calc(12pt * var(--f-dicht));
+  font-weight: bold;
+  text-align: left;
+  padding: 0 0.16in 0.07in 0;
+  border-bottom: 0.75pt solid var(--f-tinte);
+}
+.f-tab td {
+  vertical-align: top;
+  padding: 0.1in 0.16in 0.1in 0;
+  border-bottom: 0.75pt solid var(--f-haar);
+  font-size: calc(14pt * var(--f-dicht));
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+.f-tab tr:last-child td { border-bottom: none; }
+.f-tab .f-erst { font-weight: bold; }
+.f-tab-zahlen .f-zahl {
+  font-family: Consolas, "Courier New", monospace;
+  text-align: right;
+  font-weight: normal;
+}
+
+/* Kette des Ist-Ablaufs: senkrecht, damit sie in einer Spalte nicht umbricht. */
+.f-fluss { display: flex; flex-direction: column; align-items: flex-start; gap: 0.06in; }
+.f-glied {
+  border: 1.5pt solid var(--f-tinte);
+  padding: 0.12in 0.16in;
+  font-size: calc(14pt * var(--f-dicht));
+  line-height: 1.25;
+}
+.f-pfeil { color: var(--f-tinte-2); font-size: calc(14pt * var(--f-dicht)); line-height: 1; margin-left: 0.22in; }
+
+/* Verarbeitungsschritte; Modellaufrufe als Doppelrahmen, nicht als Farbe. */
+.f-schritte { display: flex; flex-wrap: wrap; gap: 0.16in; }
+.f-schritt {
+  flex: 1 1 3in;
+  border: 0.75pt solid var(--f-haar);
+  padding: 0.1in 0.14in;
+  display: flex;
+  flex-direction: column;
+  gap: 0.03in;
+}
+.f-schritt.f-modell {
+  border: 1.5pt solid var(--f-akzent);
+  outline: 0.75pt solid var(--f-akzent);
+  outline-offset: 0.05in;
+}
+.f-schrittnr {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: calc(11pt * var(--f-dicht));
+  color: var(--f-tinte-2);
+}
+.f-schrittname { font-size: calc(14pt * var(--f-dicht)); font-weight: bold; line-height: 1.2; }
+.f-schritttext { font-size: calc(12pt * var(--f-dicht)); color: var(--f-tinte-2); line-height: 1.25; }
