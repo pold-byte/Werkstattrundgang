@@ -41,3 +41,17 @@ Gestaltung, Farben und Zonen sind aus `T2000_Vortrag_7Folien_Dunkel_kompakt.pptx
 übernommen: Grund `#151A55`, Karten `#1B2060`, Linien `#3A4190`, Akzent
 `#6EEAFF`, Tabellenkopf `#841CA2`, Arial durchgehend. Einzelne Folien lassen
 sich ohne den Rundgang prüfen: `app/folien-vorschau.html?nr=3`.
+
+Die Abbildungen des Vortrags:
+
+| Folie | Abbildung | Herkunft |
+|-------|-----------|----------|
+| 4 | Gesamtarchitektur | `app/public/folien/abb1-gesamtarchitektur.png`, entpackt aus `ppt/media/image-4-2.png` |
+| 7 | Anteil korrekter Durchgänge | als Säulendiagramm nachgebaut, Werte aus `ppt/charts/chart1.xml` |
+
+Die Titelfolie des Foliensatzes trägt links eine Illustration. Im Rundgang
+ersetzt die Werkstatthalle selbst diese Fläche, deshalb ist sie nicht übernommen.
+
+Alles in `app/public/folien/` bettet `tools/baue-notfall.mjs` als `data:`-URL in
+`notfall.html` ein. Die Notfall-Fassung ist eine einzelne Datei ohne Nachbarn;
+ohne diesen Umweg stünde dort am Prüfungstag ein leerer Rahmen.

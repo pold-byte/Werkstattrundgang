@@ -107,6 +107,43 @@ describe('erzeugeFolienschau', () => {
     expect(wurzel.querySelectorAll('.f-schritt.f-modell')).toHaveLength(2);
   });
 
+  it('baut die Abbildung der Architekturfolie mit Massangabe und Unterschrift ein', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
+    schau.geheZu(4);
+    schau.oeffne();
+    const bild = wurzel.querySelector('.f-bild img');
+    expect(bild).not.toBeNull();
+    expect(bild.getAttribute('src')).toBe('./folien/abb1-gesamtarchitektur.png');
+    // Ohne Massangabe reserviert der Browser keine Hoehe, und der
+    // Dichteausgleich misst eine Folie ohne Abbildung.
+    expect(bild.getAttribute('width')).toBe('2040');
+    expect(bild.getAttribute('height')).toBe('1860');
+    expect(bild.getAttribute('alt').length).toBeGreaterThan(20);
+    expect(wurzel.querySelector('.f-bildunterschrift').textContent).toContain('Abb. 1');
+  });
+
+  it('zeichnet die fünf Messläufe als Säulen über dem Wertebereich des Foliensatzes', () => {
+    const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
+    schau.geheZu(7);
+    schau.oeffne();
+    const staebe = [...wurzel.querySelectorAll('.f-stab')];
+    expect(staebe).toHaveLength(5);
+    // Wertebereich 60 bis 95: Lauf 01 mit 77,0 steht bei (77-60)/35 = 48,57 %.
+    expect(staebe[0].style.height).toBe(((77 - 60) / 35) * 100 + '%');
+    expect(staebe[2].style.height).toBe(((86.2 - 60) / 35) * 100 + '%');
+    expect(staebe[0].classList.contains('f-stab-gedaempft')).toBe(true);
+    expect(staebe[1].classList.contains('f-stab-gedaempft')).toBe(false);
+    const werte = [...wurzel.querySelectorAll('.f-saeulenwert')];
+    expect(werte.map((e) => e.textContent)).toEqual(['77,0%', '82,8%', '86,2%', '85,1%', '83,9%']);
+    // Die Zahl sitzt auf ihrem Stab. Stünde sie am Kopf der Spalte, läge sie bei
+    // allen fünf Säulen auf derselben Linie und wäre von der Säule abgelöst.
+    werte.forEach((e, i) => expect(e.style.bottom).toBe(staebe[i].style.height));
+    expect(new Set(werte.map((e) => e.style.bottom)).size).toBe(5);
+    expect([...wurzel.querySelectorAll('.f-saeulenname')].map((e) => e.textContent)).toEqual([
+      'Lauf 01', 'Lauf 02', 'Lauf 03', 'Lauf 04', 'Lauf 05',
+    ]);
+  });
+
   it('setzt die Rubrik des Foliensatzes in den Kopf', () => {
     const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     schau.geheZu(3);

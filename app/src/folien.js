@@ -1,9 +1,10 @@
 // Folienschau über der 3D-Szene: die Folie füllt den Bildschirm bis auf einen
-// Rahmen, in dem die Halle sichtbar bleibt. Gestaltung nach docs/foliensatz/DESIGN.md,
-// Inhalt aus folien-inhalt.js. Die Folie wird in fester Größe (13,333 x 7,5 Zoll,
+// Rahmen, in dem die Halle sichtbar bleibt. Gestaltung nach folien.css (Farben
+// und Zonen aus dem Vortragsfoliensatz), Inhalt aus folien-inhalt.js. Die Folie wird in fester Größe (13,333 x 7,5 Zoll,
 // also 1280 x 720 px bei 96 dpi) aufgebaut und als Ganzes skaliert, damit alle
 // Größenverhältnisse des Foliensatzes erhalten bleiben.
 import { hauptfolien, zusatzfolien, fusszeile } from './folien-inhalt.js';
+import { bilderBase64 } from './generiert/folien-bilder.js';
 
 export const FOLIE_BREITE = 1280;
 export const FOLIE_HOEHE = 720;
@@ -88,12 +89,60 @@ function baueBlock(block) {
       }
       return halter;
     }
+    case 'bild': {
+      const halter = el('figure', 'f-block f-bild');
+      const bild = el('img');
+      // Die Notfall-Fassung ist eine einzelne HTML-Datei ohne Nachbardateien;
+      // dort liegt die Abbildung als data:-URL vor.
+      bild.src = bilderBase64[block.quelle] || block.quelle;
+      bild.alt = block.alt || '';
+      // Mit den Originalmassen steht die Hoehe schon vor dem Laden fest; sonst
+      // misst der Dichteausgleich an einer Folie ohne Abbildung.
+      if (block.breite && block.hoehe) {
+        bild.width = block.breite;
+        bild.height = block.hoehe;
+      }
+      halter.append(bild);
+      if (block.unterschrift) halter.append(el('figcaption', 'f-bildunterschrift', block.unterschrift));
+      return halter;
+    }
+    // Saeulendiagramm wie im Foliensatz: der Wertebereich beginnt nicht bei
+    // null, sonst verschwinden die Unterschiede zwischen den Laeufen.
+    case 'balken': {
+      const halter = el('div', 'f-block f-balken');
+      const unten = block.von ?? 0;
+      const oben = block.bis ?? Math.max(...block.werte.map((w) => w.wert));
+      const spanne = oben - unten || 1; // kein leerer Wertebereich, sonst NaN
+      const saeulen = el('div', 'f-saeulen');
+      const namen = el('div', 'f-namen');
+      for (const wert of block.werte) {
+        const saeule = el('div', 'f-saeule');
+        const feld = el('div', 'f-stabfeld');
+        const stab = el('div', wert.gedaempft ? 'f-stab f-stab-gedaempft' : 'f-stab');
+        const anteil = Math.max(0, Math.min(100, ((wert.wert - unten) / spanne) * 100));
+        stab.style.height = anteil + '%';
+        // Die Zahl sitzt auf dem Stab, nicht am Kopf der Spalte: sie muss der
+        // Saeulenhoehe folgen, sonst loest sie sich als eigene Zeile davon ab.
+        const beschriftung = el('span', 'f-saeulenwert', wert.wert.toFixed(1).replace('.', ',') + '%');
+        beschriftung.style.bottom = anteil + '%';
+        feld.append(stab);
+        feld.append(beschriftung);
+        saeule.append(feld);
+        saeulen.append(saeule);
+        namen.append(el('span', 'f-saeulenname', wert.name));
+      }
+      halter.append(saeulen);
+      halter.append(namen);
+      return halter;
+    }
     case 'kasten': {
       const halter = el('div', 'f-block f-kasten');
       if (block.marke) halter.append(el('span', 'f-marke', block.marke + ': '));
       halter.append(document.createTextNode(block.text));
       return halter;
     }
+    case 'aussage': // herausgehobener Satz, im Foliensatz 12,5 pt fett ohne Rahmen
+      return el('p', 'f-block f-aussage', block.text);
     case 'notiz':
       return el('div', 'f-block f-notiz', block.text);
     default:
@@ -171,6 +220,15 @@ export function erzeugeFolienschau(wurzelEl, saetze = { haupt: hauptfolien, zusa
     document.body.classList.toggle('folien-klein', !!daten[index].klein);
     passeDichteAn(kind);
     passeAn();
+    // Sicherheitsnetz, falls eine Abbildung ohne Massangabe nachlaedt.
+    for (const bild of kind.querySelectorAll('img')) {
+      if (bild.complete) continue;
+      bild.addEventListener('load', () => {
+        if (buehne.firstElementChild !== kind) return; // Folie ist inzwischen weitergeschaltet
+        passeDichteAn(kind);
+        passeAn();
+      }, { once: true });
+    }
   }
 
   // Dichte Folien (grosse Tabellen) bekommen eine kleinere Schriftstufe, damit

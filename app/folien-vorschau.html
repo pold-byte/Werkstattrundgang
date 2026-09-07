@@ -5,11 +5,12 @@
   <title>Folien - Vorschau</title>
   <link rel="stylesheet" href="./src/folien.css">
   <style>
+    /* Prueft eine einzelne Folie ohne den Rundgang: gleiche Groessenlogik wie
+       im Vortrag, nur ohne die gedaempfte Halle dahinter.
+       Aufruf: folien-vorschau.html?nr=4 */
     body { margin: 0; background: #0a0d2d; overflow: hidden; }
-    #folienschau { position: static !important; padding: 0 !important; background: none !important; display: block !important; }
-    .f-buehne { display: block !important; height: auto !important; }
-    /* Feste Verkleinerung, damit die ganze Folie in ein Fenster passt. */
-    .f-folie { transform: scale(0.6) !important; transform-origin: top left !important; margin: 0 !important; position: static !important; }
+    #folienschau { background: none !important; }
+    .f-folie { box-shadow: 0 0 0 1px #3a4190; }
   </style>
 </head>
 <body>
@@ -22,7 +23,9 @@
     const schau = erzeugeFolienschau(wurzel, { haupt: folien, zusatz: [] });
     schau.geheZu(nr);
     schau.oeffne();
-    document.body.classList.remove('folien-klein');
+    document.body.classList.remove('folien-klein'); // auch die Titelfolie in voller Groesse
+    schau.passeAn();
+    window.addEventListener('resize', () => schau.passeAn());
     window.schau = schau;
   </script>
 </body>

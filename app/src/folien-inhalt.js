@@ -12,8 +12,9 @@
 //
 // Blocktypen: 'punkte' (Absätze), 'gruppe' (Überschrift + Absätze), 'tabelle'
 // (Kopfzeile + Zeilen), 'fluss' (waagerechte Kette), 'schritte' (nummerierte
-// Verarbeitungsschritte), 'kasten' (hervorgehobene Feststellung), 'notiz'
-// (Bildunterschrift oder Quellenangabe).
+// Verarbeitungsschritte), 'bild' (Abbildung mit Unterschrift), 'balken'
+// (Säulendiagramm), 'aussage' (herausgehobener Satz ohne Rahmen), 'kasten'
+// (hervorgehobene Feststellung), 'notiz' (Bildunterschrift oder Quellenangabe).
 
 export const fusszeile =
   'Leopold Heinrich  ·  KI-gestützte Datenplattform zur kennzahlenbasierten Instandhaltungssteuerung  ·  DHBW Mannheim, T3_2000';
@@ -107,8 +108,19 @@ export const folien = [
     station: 'datenraum',
     sektion: '03 Prototyp',
     titel: 'Gesamtarchitektur des Prototyps',
-    kern: 'Zwei Funktionsstränge, ein Schema.',
+    // Wie im Foliensatz ohne Kernaussage: die Abbildung beginnt direkt unter
+    // der Titellinie und fuellt die linke Spalte.
     spalten: [
+      [
+        {
+          typ: 'bild',
+          quelle: './folien/abb1-gesamtarchitektur.png',
+          breite: 2040,
+          hoehe: 1860,
+          alt: 'Ablaufschema: links der Importpfad von den Excel-Quellen über Mapping-Spezifikation, Wächter und Anwendung in den Arbeitsstand, rechts der Auswertungspfad von der Frage über SQL-Erzeugung, Guardrails, Diagrammwahl und Einordnungstext zu Diagramm und Text; in der Mitte die beiden Datenbanken.',
+          unterschrift: 'Abb. 1: Gesamtarchitektur des Prototyps (eigene Darstellung, Abschnitt 3.2 der Arbeit).',
+        },
+      ],
       [
         {
           typ: 'gruppe',
@@ -126,8 +138,6 @@ export const folien = [
             'Ein Endpunktwechsel betrifft nur diese Funktion (A-7).',
           ],
         },
-      ],
-      [
         {
           typ: 'gruppe',
           titel: 'Jeder Modellaufruf hat einen deterministischen Nachfolger',
@@ -136,7 +146,6 @@ export const folien = [
             'Das Modell liefert die Vorschrift, die Ausführung ist regelbasiert.',
           ],
         },
-        { typ: 'notiz', text: 'Abb. 1: Gesamtarchitektur des Prototyps (eigene Darstellung, Abschnitt 3.2 der Arbeit).' },
       ],
     ],
   },
@@ -229,18 +238,33 @@ export const folien = [
     station: 'pruefstand',
     sektion: '05 Ergebnis',
     titel: 'Streuung und Zurechnung der Fehler',
-    kern: 'Vier vergleichbare Läufe: 82,8 bis 86,2 Prozent. Die Spannweite von 3,4 Prozentpunkten entspricht genau einer Frage, ohne jede Änderung am System.',
+    // Wie im Foliensatz ohne Kernaussage: das Diagramm beginnt direkt unter der
+    // Titellinie, die Befunde stehen als Absätze in den Spalten.
     spalten: [
       [
         {
-          typ: 'punkte',
-          punkte: [
-            '27 von 29 Fragen sind über zwölf Durchgänge geschlossen richtig oder geschlossen falsch.',
-            'In keinem Fall ist die erzeugte Abfrage strukturell fehlerhaft.',
-            'Kein dauerhafter Fehlschlag ging auf die Fähigkeit des Modells zurück. Der begrenzende Faktor ist die Schärfe der eigenen Kennzahlendefinition.',
+          // Werte aus dem Foliensatz; der Wertebereich beginnt wie dort bei 60,
+          // sonst sind die Unterschiede zwischen den Laeufen nicht zu sehen.
+          typ: 'balken',
+          von: 60,
+          bis: 95,
+          werte: [
+            { name: 'Lauf 01', wert: 77, gedaempft: true },
+            { name: 'Lauf 02', wert: 82.8 },
+            { name: 'Lauf 03', wert: 86.2 },
+            { name: 'Lauf 04', wert: 85.1 },
+            { name: 'Lauf 05', wert: 83.9 },
           ],
         },
         { typ: 'notiz', text: 'Abb. 3: Anteil korrekter Durchgänge je Messlauf. Grau: Lauf 01, frühere Katalogfassung.' },
+        {
+          typ: 'punkte',
+          punkte: [
+            'Vier vergleichbare Läufe: 82,8 bis 86,2 Prozent.',
+            'Spannweite 3,4 Prozentpunkte, genau eine Frage, ohne jede Änderung am System.',
+            '27 von 29 Fragen sind über zwölf Durchgänge geschlossen richtig oder geschlossen falsch.',
+          ],
+        },
       ],
       [
         {
@@ -253,6 +277,11 @@ export const folien = [
             ['Schemabeschreibung', 'Begriff in falscher Spalte gesucht, Schemabeschreibung ohne Wertebereiche.'],
             ['Vergleichsverfahren', 'Abfrage einwandfrei. Scheitert an Spaltenreihenfolge und Rundung.'],
           ],
+        },
+        { typ: 'notiz', text: 'In keinem Fall ist die erzeugte Abfrage strukturell fehlerhaft.' },
+        {
+          typ: 'aussage',
+          text: 'Kein dauerhafter Fehlschlag ging auf die Fähigkeit des Modells zurück. Der begrenzende Faktor ist die Schärfe der eigenen Kennzahlendefinition.',
         },
       ],
     ],
