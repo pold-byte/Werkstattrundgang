@@ -437,8 +437,8 @@ GLEISBETON = os.path.join(WURZEL, "blender", "gen_gleisbeton")
 PUTZ = os.path.join(WURZEL, "blender", "gen_putz")
 DECKE_NORMAL_PNG = os.path.join(WURZEL, "blender", "gen_decke_normal.png")
 # Boden: 10-m-Kachel mit 2 x 2 Platten = 5-m-Plattenraster wie die Dehnfugen (Task 4 des Vorplans)
-schreibe_pbr_set(BETON, groesse=768, basis_rgb=(112, 113, 116), spann=16, seed=7, platten=(2, 0.035), koernung=5, normal_staerke=0.6, rauheit_basis=0.88, rauheit_spann=0.08)
-schreibe_pbr_set(GLEISBETON, groesse=512, basis_rgb=(70, 71, 74), spann=20, seed=11, koernung=7, normal_staerke=0.5, rauheit_basis=0.72, rauheit_spann=0.18)
+schreibe_pbr_set(BETON, groesse=640, basis_rgb=(112, 113, 116), spann=16, seed=7, platten=(2, 0.035), koernung=5, normal_staerke=0.6, rauheit_basis=0.88, rauheit_spann=0.08)
+schreibe_pbr_set(GLEISBETON, groesse=384, basis_rgb=(70, 71, 74), spann=20, seed=11, koernung=7, normal_staerke=0.5, rauheit_basis=0.72, rauheit_spann=0.18)
 schreibe_pbr_set(PUTZ, groesse=512, basis_rgb=(204, 200, 192), spann=9, seed=5, koernung=3, normal_staerke=0.35, rauheit_basis=0.9, rauheit_spann=0.05)
 schreibe_rillen_normal_png(DECKE_NORMAL_PNG, groesse=256, periode=32, tiefe=0.6)
 def fass(name, x, z, y_boden, farbe):
@@ -447,6 +447,36 @@ def fass(name, x, z, y_boden, farbe):
     zylinder(f"{name}_ring_oben", 0.245, 0.04, x, y_boden + 0.46, z, m_stahl, ecken=32)
     zylinder(f"{name}_ring_unten", 0.245, 0.04, x, y_boden + 0.16, z, m_stahl, ecken=32)
     zylinder(f"{name}_deckel", 0.2, 0.03, x, y_boden + 0.63, z, m_stahlhell, ecken=32)
+    # Detail: mittlere Sicke und Spundschraube — ein glatter Zylinder liest als Dose
+    # (Budget-Ruling Fixrunde 1, Schritt 1: _spund_klein entfernt, 12 Objekte gespart)
+    zylinder(f"{name}_ring_mitte", 0.237, 0.03, x, y_boden + 0.31, z, m_stahl, ecken=32)
+    zylinder(f"{name}_spund", 0.03, 0.02, x + 0.12, y_boden + 0.655, z, m_stahl, ecken=16)
+
+
+def palette(name, x, z, y_boden, dreh_y=0.0):
+    """Euro-Palette in Holzoptik: drei Deckbretter, drei Kloetze je Seite, zwei Laengstraeger. Huelle 1.2 x 1.0 x 0.144."""
+    mat = m_objekt
+    dr = (0, 0, -dreh_y) if dreh_y else None  # Hochachse = Blender z, Vorzeichen wie bei fahrspur()
+    for i, bz in enumerate((-0.4, 0.0, 0.4)):
+        kasten(f"{name}_brett_{i}", 1.2, 0.14, 0.022, x, y_boden + 0.133, z + bz, mat, fase=0.003, drehung=dr)
+    for i, bx in enumerate((-0.5, 0.0, 0.5)):
+        kasten(f"{name}_klotz_{i}", 0.145, 1.0, 0.078, x + bx, y_boden + 0.083, z, mat, fase=0.003, drehung=dr)
+    for i, bz in enumerate((-0.43, 0.43)):
+        kasten(f"{name}_traeger_{i}", 1.2, 0.1, 0.044, x, y_boden + 0.022, z + bz, mat, fase=0.003, drehung=dr)
+
+
+def schlauch(name, x, z, y_boden, radius=0.02, windungen=2, spule=0.35, mat=None):
+    """Liegende Schlauchrolle (Druckluft) aus Torus-Ringen plus losem Ende — Kleinkram, den jede Werkstatt hat."""
+    mat = mat or m_dunkel
+    for i in range(windungen):
+        bpy.ops.mesh.primitive_torus_add(major_radius=spule, minor_radius=radius, major_segments=32,
+                                         minor_segments=8, location=pos(x, y_boden + radius + i * 2 * radius, z))
+        o = bpy.context.active_object
+        o.name = f"{name}_ring_{i}"
+        ring_mat = lackvariante(o.name, mat)
+        o.data.materials.append(ring_mat)
+    # Budget-Ruling Fixrunde 1, Schritt 2: gerader Zylinder statt rohr_mit_bogen (kein Knick, keine Kugel)
+    zylinder(f"{name}_ende", radius, 0.8, x + spule + 0.4, y_boden + radius, z, mat, achse="x")
 
 
 def auffangwanne(name, x0, x1, z0, z1):
@@ -753,8 +783,8 @@ def treppe(name, x, z, hoehe, richtung_z=1, breite=1.0, mat=None):
 treppe("Empore_Treppe", -15.5, -5.6, 3.05, richtung_z=1)
 kasten("Empore_Kiste_1", 0.6, 0.55, 0.5, -15.9, 3.4, -8.4, m_blau)
 kasten("Empore_Kiste_2", 0.45, 0.4, 0.4, -15.3, 3.33, -7.9, m_orange)
-kasten("Empore_Palette", 1.2, 1.0, 0.12, -16.3, 3.19, -9.3, m_objekt, fase=0)
-kasten("Empore_Palette_Kiste", 0.5, 0.45, 0.45, -16.3, 3.48, -9.3, m_wand)
+palette("Empore_Palette", -16.3, -9.3, 3.13)
+kasten("Empore_Palette_Kiste", 0.5, 0.45, 0.45, -16.3, 3.499, -9.3, m_wand)
 # Lagerzone unter der Empore: Wandregal + Faesser
 kasten("UnterEmpore_Wange_1", 0.08, 0.9, 1.9, -16.35, 0.95, -4.6, m_blau)
 kasten("UnterEmpore_Wange_2", 0.08, 0.9, 1.9, -16.35, 0.95, -2.4, m_blau)
@@ -1736,8 +1766,9 @@ for i, fx in enumerate((-6.8, 0, 6.8)):
 for i, (sx, sm) in enumerate(((11.8, m_objekt), (12.7, m_blau))):
     kasten(f"Sued_Schrank_{i}", 0.8, 0.4, 1.8, sx, 0.9, 9.4, sm)
     kasten(f"Sued_Schrank_{i}_sockel", 0.84, 0.44, 0.12, sx, 0.06, 9.4, m_dunkel, fase=0)
-kasten("Sued_Palette", 1.2, 1.0, 0.12, 14.2, 0.06, 8.9, m_objekt, fase=0)
-kasten("Sued_Palette_Kiste", 0.55, 0.5, 0.5, 14.1, 0.37, 8.95, m_wand)
+palette("Sued_Palette", 14.2, 8.9, 0.0)
+# Kiste sitzt auf der Palette: Oberkante wanderte von 0.12 auf 0.144, Kiste-Mitte +0.024 mitgezogen
+kasten("Sued_Palette_Kiste", 0.55, 0.5, 0.5, 14.1, 0.394, 8.95, m_wand)
 fass("Sued_Fass_1", 10.7, 9.3, 0, m_blau)
 fass("Sued_Fass_2", 10.2, 9.5, 0, m_orange)
 auffangwanne("Sued_wanne_a", 9.85, 11.05, 8.95, 9.85)
@@ -2027,7 +2058,7 @@ kasten("Station_6_whiteboard_fuss_2", 0.08, 0.08, 1.2, -10.5, 0.6, 8.2, m_dunkel
 # ---- Requisiten --------------------------------------------------------------
 for i, (fx, fz, fm) in enumerate(((-15.6, -8.2, m_blau), (-15.0, -8.5, m_dunkel), (-15.3, -7.6, m_orange))):
     fass(f"Requisite_Fass_{i}", fx, fz, 0, fm)
-kasten("Requisite_Palette", 1.2, 1.0, 0.12, -6.5, 0.06, -8.6, m_objekt, fase=0)
+palette("Requisite_Palette", -6.5, -8.6, 0.0)
 kasten("Requisite_Werkbank", 2.2, 0.7, 0.85, -16.2, 0.43, 3, m_stahl)
 kasten("Requisite_Werkbank_Platte", 2.2, 0.75, 0.08, -16.2, 0.9, 3, m_dunkel)
 kasten("Requisite_Werkzeugtafel", 0.06, 1.8, 1.0, -16.85, 1.7, 3, m_dunkel, fase=0)
@@ -2044,6 +2075,16 @@ for i, (sx, sm) in enumerate(((13.5, m_objekt), (14.4, m_blau))):
     for j, gy in enumerate((0.8, 1.1)):
         kasten(f"Requisite_Schrank_{i}_griff_{j}", 0.12, 0.05, 0.04, sx - 0.12, gy, -9.38, m_dunkel, fase=0)
 kasten("Requisite_Leiter", 0.5, 0.08, 2.4, 15.5, 1.2, -9.7, m_orange, fase=0)
+schlauch("Schlauchrolle_1", 3.9, 6.9, 0.0)          # neben dem Pruefstand
+# Besprechungsecke: 0.5 m nordwaerts (z 4.1 -> 3.6) verschoben, sonst haette das lose
+# Ende auf Station_6_teppich gelegen (--alle-Vorabpruefung).
+schlauch("Schlauchrolle_2", -10.6, 3.6, 0.0)        # Besprechungsecke, an der Suedwand
+# Nordost-Ecke: 0.5 m suedwaerts (z -8.2 -> -7.7) verschoben, sonst haette die Rolle
+# mitten in Oel_Fass_2/3 und Oel_Wanne gelegen (--alle-Vorabpruefung).
+schlauch("Schlauchrolle_3", 12.6, -7.7, 0.0, mat=m_orange)  # Druckluft, Nordost
+# 0.5 m nordwaerts (z 4.3..4.9 -> 3.8..4.4) verschoben, sonst haette der erste Abschnitt
+# Muelleimer_2 durchquert (--alle-Vorabpruefung).
+rohr_mit_bogen("Bodenkabel_Pruefstand", [(1.9, 0.02, 3.8), (3.2, 0.02, 4.4), (4.4, 0.02, 4.1)], 0.014, m_dunkel)
 
 # ---- Kenney-Industriemodelle: Maschinenpark, Ventil, Tor, Kleinteile --------
 lade_asset("factory_machine.glb", "Maschine_Nord_1", 5.0, 0, -9.2, ziel_hoehe=1.8, einfaerbung=m_blau)
@@ -2056,7 +2097,7 @@ kasten("Tor_Blatt_Riegel", 0.14, 3.4, 0.18, 17.11, 2.1, 4.1, m_dunkel, fase=0)
 kasten("Tor_Schiene", 0.06, 8.0, 0.08, 17.15, 4.45, 2.2, m_dunkel, fase=0)
 for i, (cx, cz) in enumerate(((-8.2, 1.55), (-12, 1.5), (-15.6, 1.5), (5.8, 2.6))):
     lade_asset("factory_cone.glb", f"Pylone_{i}", cx, 0, cz, ziel_hoehe=0.5, einfaerbung=m_orange)
-lade_asset("factory_box-large.glb", "Kiste_Palette", -6.5, 0.12, -8.6, dreh_y=0.2, ziel_hoehe=0.7)  # Plane-Kiste AUF der Palette
+lade_asset("factory_box-large.glb", "Kiste_Palette", -6.5, 0.144, -8.6, dreh_y=0.2, ziel_hoehe=0.7)  # Plane-Kiste AUF der Palette
 lade_asset("factory_box-long.glb", "Kiste_Werkbank", -15.9, 0, 4.6, ziel_hoehe=0.5)
 # Kiste ostwaerts und 10 cm nach Norden: an der alten Stelle lag sie 17 mm ueber der
 # gekuerzten Plattformkante (z -6.6) und der Treppenhandlauf (x -16.06..-16.00) lief hindurch.
