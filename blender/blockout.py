@@ -17,6 +17,7 @@ Objektnamen folgen dem Vertrag Station_<nr>_<id> bzw. Monitor_Bildschirm.
 import bpy
 import os
 import math
+import re
 import zlib
 from mathutils import Euler, Matrix, Vector
 
@@ -86,6 +87,8 @@ def material_pbr(name, farbe, albedo=None, rauheit_png=None, normal_png=None,
                  rauheit=0.85, metall=0.0, kachel=2.0, normal_staerke=1.0):
     """Principled BSDF mit optionalen Texturen in der Verdrahtung, die der glTF-Exporter
     als baseColorTexture / metallicRoughnessTexture (G-Kanal) / normalTexture erkennt."""
+    if rauheit_png and rauheit != 0.85:
+        raise ValueError("rauheit wird von rauheit_png ueberschrieben")
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
@@ -349,14 +352,16 @@ BLAU = (0.12, 0.31, 0.50)             # RAL 5010 Enziablau, entsaettigt: 10 Jahr
 BLAU_ALT = (0.22, 0.36, 0.48)         # ausgeblichene Variante fuer jedes dritte Requisit
 ORANGE = (0.82, 0.36, 0.16)           # RAL 2004 Reinorange, entsaettigt
 ORANGE_ALT = (0.80, 0.47, 0.30)       # ausgeblichene Variante fuer jedes dritte Requisit
-MARKIERUNG = (0.95, 0.72, 0.05)       # RAL 1023 Verkehrsgelb, Bodenmarkierung und Rammschutz
-STAHL_HELL = (0.85, 0.86, 0.88)
+MARKIERUNG = (0.86, 0.66, 0.08)       # RAL 1023 Verkehrsgelb, gedeckt: Bodenmarkierung und Rammschutz
+# Stahl heller Sorte gedeckt (vorher 0.85/0.86/0.88): unter dem Tageslicht der Fassung 3
+# lief die Maschinenbank mit Decke und Wand zu einer weissen Flaeche zusammen.
+STAHL_HELL = (0.74, 0.75, 0.77)
 GRUEN = (0.14, 0.32, 0.27)            # RAL 6005 Moosgruen, entsaettigt
 GRUBE = (0.09, 0.10, 0.11)
 ROT_ZUG = (0.66, 0.11, 0.15)
 WEISS_ZUG = (0.86, 0.86, 0.87)
 WAND_RELIEF = (0.62, 0.61, 0.58)
-DECKE = (0.84, 0.83, 0.81)
+DECKE = (0.72, 0.71, 0.69)            # gedeckt (vorher 0.84/0.83/0.81), siehe STAHL_HELL
 SOCKEL = (0.44, 0.45, 0.45)           # RAL 7037 Staubgrau: abwaschbarer Wandsockel
 
 # Rauheitstextur fuer Lack- und Sockelmaterialien vorab erzeugen: material_pbr() laedt die
@@ -397,13 +402,25 @@ klarlack(m_zug)
 klarlack(m_zugweiss)
 
 VARIANTEN = {"Blau": m_blau_alt, "Orange": m_orange_alt}
-VARIANTEN_FAMILIEN = ("Requisite_", "UnterEmpore_", "Kiste_", "Sued_", "Werkbank2_", "Werkstattwagen_", "Empore_Kiste")
+# "Station_6_stuhl" ist Mobiliar, keine Maschine: vier identisch blaue Stuehle um einen Tisch
+# lesen als Spielzeug. Die Regel "Station_* behaelt den RAL-Ton" gilt weiter fuer Maschinen
+# und Anlagen (Station_5_aufbau, Maschine_*), nicht fuer Moebel.
+VARIANTEN_FAMILIEN = ("Requisite_", "UnterEmpore_", "Sued_", "Werkbank2_", "Werkstattwagen_",
+                      "Empore_Kiste", "Station_6_stuhl")
+# Ausnahme zum Stammhash unten: hier zaehlt die Endziffer eigenstaendige Stuecke
+# (vier Stuehle = vier Wuerfe), nicht Teile EINES Stuecks.
+EIGENSTAENDIGE_NUMMERN = ("Station_6_stuhl",)
 
 
 def lackvariante(name, mat):
     """Jedes dritte Requisit in Blau/Orange bekommt die ausgeblichene Variante — gleiche
-    Farbe an allen Kisten liest als Spielzeug. Maschinen (Station_*) behalten den RAL-Ton."""
-    if mat.name in VARIANTEN and name.startswith(VARIANTEN_FAMILIEN) and zlib.crc32(name.encode()) % 3 == 0:
+    Farbe an allen Kisten liest als Spielzeug. Maschinen (Station_*) behalten den RAL-Ton.
+
+    Gehasht wird der Namensstamm ohne laufende Nummer: mehrteilige Requisiten
+    (UnterEmpore_Wange_1/_2) bekommen sonst je Teil eine eigene Wuerfelentscheidung
+    und stehen halb ausgeblichen da."""
+    stamm = name if name.startswith(EIGENSTAENDIGE_NUMMERN) else re.sub(r"_\d+$", "", name)
+    if mat.name in VARIANTEN and name.startswith(VARIANTEN_FAMILIEN) and zlib.crc32(stamm.encode()) % 3 == 0:
         return VARIANTEN[mat.name]
     return mat
 
@@ -419,20 +436,33 @@ m_relief = material("WandRelief", WAND_RELIEF)
 # Unterflur-Staffelung: Schiene blank gefahren,
 # Gummi tief und matt, Unterflurtechnik dunkel-seidig. Vorher war alles m_dunkel/m_stahl,
 # dadurch verschmolzen Rad, Rahmen und Schiene zu einem grauen Block.
+# m_schiene traegt nur noch die Kranbahnschiene unter dem Hallendach; das Gleis am Boden
+# ist in Kopf (blank) und Fuss (Flugrost) aufgeteilt.
 m_schiene = material("Schiene", (0.62, 0.58, 0.52), rauheit=0.30, metall=0.35)
 m_schienenkopf = material("Schienenkopf", (0.66, 0.64, 0.60), rauheit=0.22, metall=0.9)   # blank gefahren
 m_schienenfuss = material("Schienenfuss", (0.30, 0.21, 0.16), rauheit=0.95, metall=0.1)  # Flugrost an Steg und Fuss
 m_gummi = material("Gummi", (0.085, 0.085, 0.095), rauheit=0.95)
 m_unterflur = material("Unterflur", (0.16, 0.17, 0.18), rauheit=0.70)
-# Hallenverglasung eigenstaendig, damit sie als Glas liest, ohne die vielen
-# anderen m_fenster-Verwendungen (Leuchten, Zettel, Schilder) mitzuziehen.
+# Glas mit Durchblick — seit die Fensterbaender auf m_tageslicht laufen, traegt
+# m_hallenglas nur noch das Buerofenster der Meisterbude (Station_1_buerofenster).
 m_hallenglas = material("Hallenglas", (0.78, 0.85, 0.92), rauheit=0.05)
 # Tageslicht fuer Fensterbaender und Oberlichter: leicht emissiv, damit die Halle
-# von aussen belichtet wirkt statt als flaches Glas zu lesen.
-m_tageslicht = material("Tageslicht", (0.90, 0.94, 1.0), rauheit=0.15, emission=1.3)
+# von aussen belichtet wirkt statt als flaches Glas zu lesen. Emission von 1.3 auf 0.4
+# zurueckgenommen und der Ton nach Blau gezogen: bei 1.3 mass jede Scheibe konstant
+# 237,238,239 — ein weisser Leuchtkasten ohne Himmelsverlauf, der die Kanten ausbrannte.
+m_tageslicht = material("Tageslicht", (0.82, 0.88, 1.00), rauheit=0.15, emission=0.4)
 # Gruener Betriebsweg — der klassische Werkstattmarker fuer die Fussgaengerspur.
-m_weg = material("Weg", (0.20, 0.42, 0.28), rauheit=0.9)
-m_oelfleck = material("Oelfleck", (0.16, 0.15, 0.14), rauheit=0.35)
+# Mit Rauheitstextur: als glatte Farbflaeche mass er in drei Posen konstant 183,211,191
+# und war die groesste strukturlose Flaeche der Szene.
+m_weg = material_pbr("Weg", (0.20, 0.42, 0.28), rauheit_png=SOCKEL_RAUHEIT_PNG, kachel=2.0)
+m_teppich = material_pbr("Teppich", (0.27, 0.29, 0.31), rauheit_png=SOCKEL_RAUHEIT_PNG, kachel=2.0)
+# Fixwelle 2: Basis und Rauheit wie die neuen Decals — unter dem helleren Licht las
+# 0.16 mit Rauheit 0.35 als beiger Fleck statt als Oel.
+m_oelfleck = material("Oelfleck", (0.05, 0.05, 0.05), rauheit=0.9)
+# Gummi/Kunststoff schwarz und matt: Schlaeuche, Bodenkabel und Bodenfugen liefen auf
+# m_dunkel (Metalness 0.25) und fingen im Streifwinkel ein Chromglanzlicht.
+m_kabel = material("Kabel", (0.06, 0.06, 0.07), rauheit=0.9)
+m_holz = material("Holz", (0.55, 0.45, 0.32), rauheit=0.9)
 
 RIFFEL_PNG = os.path.join(WURZEL, "blender", "gen_riffelblech.png")
 schreibe_riffelblech_png(RIFFEL_PNG)
@@ -440,45 +470,47 @@ BETON = os.path.join(WURZEL, "blender", "gen_beton")
 GLEISBETON = os.path.join(WURZEL, "blender", "gen_gleisbeton")
 PUTZ = os.path.join(WURZEL, "blender", "gen_putz")
 DECKE_NORMAL_PNG = os.path.join(WURZEL, "blender", "gen_decke_normal.png")
-# Boden: 10-m-Kachel mit 2 x 2 Platten = 5-m-Plattenraster wie die Dehnfugen (Task 4 des Vorplans)
+# Boden: 10-m-Kachel mit 2 x 2 Platten = 5-m-Plattenraster in x wie die Querfugen
+# (die Laengsfugen bei z +-4/+-7 liegen nicht auf der Texturnaht)
 schreibe_pbr_set(BETON, groesse=640, basis_rgb=(112, 113, 116), spann=16, seed=7, platten=(2, 0.035), koernung=5, normal_staerke=0.6, rauheit_basis=0.88, rauheit_spann=0.08)
 schreibe_pbr_set(GLEISBETON, groesse=384, basis_rgb=(70, 71, 74), spann=20, seed=11, koernung=7, normal_staerke=0.5, rauheit_basis=0.72, rauheit_spann=0.18)
-schreibe_pbr_set(PUTZ, groesse=512, basis_rgb=(204, 200, 192), spann=9, seed=5, koernung=3, normal_staerke=0.35, rauheit_basis=0.9, rauheit_spann=0.05)
+# Putz gedeckt (vorher 204/200/192): die Wandflaechen sind die groessten Flaechen im Bild
+# und hoben unter dem Tageslicht der Fassung 3 die mittlere Leuchtdichte jeder Pose an.
+schreibe_pbr_set(PUTZ, groesse=512, basis_rgb=(186, 182, 174), spann=9, seed=5, koernung=3, normal_staerke=0.35, rauheit_basis=0.9, rauheit_spann=0.05)
 schreibe_rillen_normal_png(DECKE_NORMAL_PNG, groesse=256, periode=32, tiefe=0.6)
 def fass(name, x, z, y_boden, farbe):
-    """Oelfass mit zwei Sickenringen und hellem Deckel — mehr Kontur pro Objekt."""
+    """Oelfass mit drei Sickenringen, Deckel und Spund — mehr Kontur pro Objekt."""
     zylinder(f"{name}", 0.23, 0.62, x, y_boden + 0.31, z, farbe, ecken=32)
     zylinder(f"{name}_ring_oben", 0.245, 0.04, x, y_boden + 0.46, z, m_stahl, ecken=32)
     zylinder(f"{name}_ring_unten", 0.245, 0.04, x, y_boden + 0.16, z, m_stahl, ecken=32)
     zylinder(f"{name}_deckel", 0.2, 0.03, x, y_boden + 0.63, z, m_stahlhell, ecken=32)
     # Detail: mittlere Sicke und Spundschraube — ein glatter Zylinder liest als Dose
-    # (Budget-Ruling Fixrunde 1, Schritt 1: _spund_klein entfernt, 12 Objekte gespart)
+    # (Budget-Ruling Fixrunde 1, Schritt 1: _spund_klein entfernt, 16 Objekte gespart)
     zylinder(f"{name}_ring_mitte", 0.237, 0.03, x, y_boden + 0.31, z, m_stahl, ecken=32)
     zylinder(f"{name}_spund", 0.03, 0.02, x + 0.12, y_boden + 0.655, z, m_stahl, ecken=16)
 
 
-def palette(name, x, z, y_boden, dreh_y=0.0):
-    """Euro-Palette in Holzoptik: drei Deckbretter, drei Kloetze je Seite, zwei Laengstraeger. Huelle 1.2 x 1.0 x 0.144."""
-    mat = m_objekt
-    dr = (0, 0, -dreh_y) if dreh_y else None  # Hochachse = Blender z, Vorzeichen wie bei fahrspur()
+def palette(name, x, z, y_boden):
+    """Euro-Palette in Holzoptik: drei Deckbretter, drei durchgehende Kloetze, zwei Laengstraeger. Huelle 1.2 x 1.0 x 0.144."""
+    mat = m_holz
     for i, bz in enumerate((-0.4, 0.0, 0.4)):
-        kasten(f"{name}_brett_{i}", 1.2, 0.14, 0.022, x, y_boden + 0.133, z + bz, mat, fase=0.003, drehung=dr)
+        kasten(f"{name}_brett_{i}", 1.2, 0.14, 0.022, x, y_boden + 0.133, z + bz, mat, fase=0.003)
     for i, bx in enumerate((-0.5, 0.0, 0.5)):
-        kasten(f"{name}_klotz_{i}", 0.145, 1.0, 0.078, x + bx, y_boden + 0.083, z, mat, fase=0.003, drehung=dr)
+        kasten(f"{name}_klotz_{i}", 0.145, 1.0, 0.078, x + bx, y_boden + 0.083, z, mat, fase=0.003)
     for i, bz in enumerate((-0.43, 0.43)):
-        kasten(f"{name}_traeger_{i}", 1.2, 0.1, 0.044, x, y_boden + 0.022, z + bz, mat, fase=0.003, drehung=dr)
+        kasten(f"{name}_traeger_{i}", 1.2, 0.1, 0.044, x, y_boden + 0.022, z + bz, mat, fase=0.003)
 
 
-def schlauch(name, x, z, y_boden, radius=0.02, windungen=2, spule=0.35, mat=None):
+def schlauch(name, x, z, y_boden, radius=0.028, windungen=2, spule=0.35, mat=None):
     """Liegende Schlauchrolle (Druckluft) aus Torus-Ringen plus losem Ende — Kleinkram, den jede Werkstatt hat."""
-    mat = mat or m_dunkel
+    mat = mat or m_kabel
     for i in range(windungen):
         bpy.ops.mesh.primitive_torus_add(major_radius=spule, minor_radius=radius, major_segments=32,
                                          minor_segments=8, location=pos(x, y_boden + radius + i * 2 * radius, z))
         o = bpy.context.active_object
         o.name = f"{name}_ring_{i}"
-        ring_mat = lackvariante(o.name, mat)
-        o.data.materials.append(ring_mat)
+        _kachel_uv(o, KACHEL.get(mat.name, 2.0))
+        o.data.materials.append(mat)
     # Budget-Ruling Fixrunde 1, Schritt 2: gerader Zylinder statt rohr_mit_bogen (kein Knick, keine Kugel)
     zylinder(f"{name}_ende", radius, 0.8, x + spule + 0.4, y_boden + radius, z, mat, achse="x")
 
@@ -504,7 +536,8 @@ if hasattr(m_decal_dunkel, "surface_render_method"):  # Blender >= 4.2 (EEVEE Ne
 
 def _decal_material(alpha):
     """Eigene Materialkopie je Deckkraft, damit der Exporter alphaMode BLEND mit baseColor-Alpha schreibt."""
-    name = f"DecalDunkel_{int(alpha * 100)}"
+    alpha = round(alpha, 2)  # Schluessel und Wert aus derselben Rundung, sonst zwei Materialien pro Deckkraft
+    name = f"DecalDunkel_{round(alpha * 100)}"
     mat = bpy.data.materials.get(name)
     if mat is None:
         mat = m_decal_dunkel.copy()
@@ -514,20 +547,31 @@ def _decal_material(alpha):
 
 
 def decal_ellipse(name, x, z, rx, rz, alpha=0.6, y_boden=0.0):
-    """Flacher Fleck 2 mm ueber der Unterlage (Oel, Wasser, Abrieb)."""
-    zylinder(name, 1.0, 0.002, x, y_boden + 0.002, z, _decal_material(alpha), ecken=28)
-    o = bpy.data.objects[name]
-    o.scale = (rx, rz, o.scale.z)
+    """Flacher Fleck 1 mm ueber der Unterlage (Oel, Wasser, Abrieb) mit auslaufendem Hof.
+
+    Der Hof (Radien x 1.35, knapp halbe Deckkraft) liegt eine halbe Scheibendicke tiefer
+    als der Kern: koplanar wuerden beide z-fighten. 48 statt 28 Ecken, sonst zeigt der
+    Rand aus Stationsentfernung gerade Facetten; die Kante laeuft jetzt ueber mehrere
+    Pixel aus statt als Einzelpixelsprung zu lesen."""
+    for teil, faktor, a, dy, dicke in ((name, 1.0, alpha, 0.002, 0.002),
+                                       (f"{name}_hof", 1.35, alpha * 0.45, 0.001, 0.001)):
+        zylinder(teil, 1.0, dicke, x, y_boden + dy, z, _decal_material(a), ecken=48)
+        o = bpy.data.objects[teil]
+        o.scale = (rx * faktor, rz * faktor, o.scale.z)
 
 
 def fahrspur(name, x0, z0, x1, z1, breite=0.24, alpha=0.32, y_boden=0.0):
-    """Zwei dunkle Reifenspuren (Spurweite 0.9 m) entlang der Strecke (x0,z0)->(x1,z1)."""
+    """Zwei dunkle Reifenspuren (Spurweite 0.9 m) entlang der Strecke (x0,z0)->(x1,z1).
+
+    Mitte auf y_boden + 0.002, Unterkante also 1 mm ueber der Unterlage wie bei
+    decal_ellipse: bei y_boden + 0.001 lag die Unterseite exakt auf dem Boden und
+    z-fightete als Baenderung durch das Bild."""
     dx, dz = x1 - x0, z1 - z0
     laenge = (dx * dx + dz * dz) ** 0.5
     winkel = math.atan2(dz, dx)
     for i, off in enumerate((-0.45, 0.45)):
         ox, oz = -math.sin(winkel) * off, math.cos(winkel) * off
-        kasten(f"{name}_{i}", laenge, breite, 0.002, (x0 + x1) / 2 + ox, y_boden + 0.001, (z0 + z1) / 2 + oz,
+        kasten(f"{name}_{i}", laenge, breite, 0.002, (x0 + x1) / 2 + ox, y_boden + 0.002, (z0 + z1) / 2 + oz,
                _decal_material(alpha), fase=0, drehung=(0, 0, -winkel))
 
 
@@ -538,8 +582,10 @@ m_schwelle = material("Schwelle", (0.36, 0.35, 0.33), rauheit=0.95)
 m_wand = material_pbr("Wand", (1, 1, 1), albedo=PUTZ + "_albedo.png", rauheit_png=PUTZ + "_rauheit.png", normal_png=PUTZ + "_normal.png", kachel=3.0, normal_staerke=0.35)
 m_sockel = material_pbr("Sockel", SOCKEL, rauheit_png=SOCKEL_RAUHEIT_PNG, kachel=2.0)
 # Verkehrsgelb leicht gedeckt; die Kratzer aus der Rauheitstextur lesen als Abrieb auf der Markierung.
-m_markierung = material_pbr("Markierung", (0.86, 0.66, 0.08), rauheit_png=LACK_RAUHEIT_PNG, metall=0.05, kachel=1.0)
-m_decke = material_pbr("Decke", DECKE, normal_png=DECKE_NORMAL_PNG, rauheit=0.6, metall=0.2, kachel=1.0, normal_staerke=0.8)
+m_markierung = material_pbr("Markierung", MARKIERUNG, rauheit_png=LACK_RAUHEIT_PNG, metall=0.05, kachel=1.0)
+# normal_staerke 0.8 -> 1.2: mit der weicheren AO und dem Tageslicht verschwanden die
+# Trapezblechrippen der Decke aus dem Bild.
+m_decke = material_pbr("Decke", DECKE, normal_png=DECKE_NORMAL_PNG, rauheit=0.6, metall=0.2, kachel=1.0, normal_staerke=1.2)
 m_riffel = material_mit_textur("Riffelblech", RIFFEL_PNG, rauheit=0.4, metall=0.7, kachel=0.5)
 
 # ---- Halle: Boden, Gleiszone, Markierungen ----------------------------------
@@ -558,9 +604,11 @@ kasten("Halle_Markierung_Sued", 30, 0.12, 0.02, 0, 0.012, 1.9, m_markierung, fas
 # gelbe Sicherheitslinie 1.15 m neben der Gleiszone: der Boden liest sonst als eine Betonflaeche.
 for i, fx in enumerate((-15.0, -10.0, -5.0, 5.0, 10.0, 15.0)):
     for seite, z0, z1 in (("n", -9.85, -1.9), ("s", 1.9, 9.85)):
-        kasten(f"Bodenfuge_x_{i}_{seite}", 0.02, z1 - z0, 0.002, fx, 0.001, (z0 + z1) / 2, m_dunkel, fase=0)
+        kasten(f"Bodenfuge_x_{i}_{seite}", 0.02, z1 - z0, 0.002, fx, 0.001, (z0 + z1) / 2, m_kabel, fase=0)
 for i, fz in enumerate((-7.0, -4.0, 4.0, 7.0)):
-    kasten(f"Bodenfuge_z_{i}", 34.0, 0.02, 0.002, 0, 0.001, fz, m_dunkel, fase=0)
+    # m_kabel statt m_dunkel: mit Metalness 0.25 fing die Fuge im Streifwinkel das
+    # Glanzlicht und las hell statt dunkel.
+    kasten(f"Bodenfuge_z_{i}", 34.0, 0.02, 0.002, 0, 0.001, fz, m_kabel, fase=0)
 # Sicherheitslinie 1.15 m neben der Gleiszone, frei von den Buehnenfuessen (|z| 2.57..2.83);
 # die Suedlinie setzt am Radsatzlager (x -2.3..1.1) aus wie eine Markierung um ein festes Regal.
 kasten("Sicherheitsabstand_nord", 30.0, 0.10, 0.002, 0, 0.001, -2.95, m_markierung, fase=0)
@@ -579,9 +627,11 @@ zylinder("Oelfleck_3", 0.3, 0.012, -9.5, 0.006, 2.6, m_oelfleck)
 # vom Stellplatz zur Palette und zum Osttor, Abrieb auf dem Fussweg vor der Buerotuer.
 # z um 0.5 m von 5.6 auf 5.1 verschoben (Brief-Regel: Endpunkte bis 0.5 m verschieben, wenn
 # eine Spur ein stehendes Objekt trifft) — bei 5.6 lag die gesamte Ellipse unter
-# Station_5_pruefstand (100% Durchdringung im Pruefer); bei 5.1 ragt sie zu zwei Dritteln
-# davor auf den offenen Boden und ist damit im Render ueberhaupt erst sichtbar.
-decal_ellipse("Oelfleck_4", 1.4, 5.1, 0.45, 0.30, alpha=0.55)
+# Station_5_pruefstand (100% Durchdringung im Pruefer); bei 5.1 ragte sie zu zwei Dritteln
+# davor auf den offenen Boden. Mit dem Hof (Radien x 1.35) griff der Fleck wieder 0.31 m
+# unter die Plattform und der Pruefer meldete ein zwoelftes Paar — daher weitere 0.15 m
+# nordwaerts auf 4.95 (Rest der Brief-Regel: bis 0.5 m verschieben).
+decal_ellipse("Oelfleck_4", 1.4, 4.95, 0.45, 0.30, alpha=0.55)
 decal_ellipse("Oelfleck_5", -9.4, 3.1, 0.32, 0.22, alpha=0.5)
 decal_ellipse("Oelfleck_6", 13.6, 8.2, 0.38, 0.26, alpha=0.5)
 fahrspur("Fahrspur_Stapler", -11.4, -3.6, -9.0, -3.6)   # gerade Spur vor der Buerofront, frei von Buero, Schreibtisch, Sicherheitslinie und Stapler
@@ -1099,9 +1149,6 @@ def fuehrerstand(kennung, r):
     halber Hoehe, und im Grundriss ist die Stirn breit und stumpf — eine Ellipse mit
     kurzer x-Halbachse, kein Halbkreis, der zwangslaeufig spitz zulaeuft.
     """
-    import math as _m
-
-
     # Stuetzstellen (Hoehe y, vordere Halbbreite, vorderster Punkt in WELT-x).
     _TAB = ((0.60, 0.82, 10.02),  # Kinn — die Spitze faellt SENKRECHT zum Boden
             (0.74, 0.95, 10.09),
@@ -1164,7 +1211,7 @@ def fuehrerstand(kennung, r):
         if j <= _TAPER - 1:
             return 0, j / _TAPER, 1.0
         if j <= _TAPER + _BOGEN:
-            return 1, _m.pi / 2 - _m.pi * (j - _TAPER) / _BOGEN, 0.0
+            return 1, math.pi / 2 - math.pi * (j - _TAPER) / _BOGEN, 0.0
         return 0, (_P - 1 - j) / _TAPER, -1.0
 
     def _punkt(j, y):
@@ -1185,8 +1232,8 @@ def fuehrerstand(kennung, r):
             _z = _kb + (_hw - _kb) * _g * _g * (3 - 2 * _g)
             return _RUECK + (_xc - _RUECK) * _p, _vz * _z
         _nn = _n(y)
-        _cs = _m.cos(_p) ** (2.0 / _nn)
-        _sn = _m.copysign(abs(_m.sin(_p)) ** (2.0 / _nn), _m.sin(_p))
+        _cs = math.cos(_p) ** (2.0 / _nn)
+        _sn = math.copysign(abs(math.sin(_p)) ** (2.0 / _nn), math.sin(_p))
         return _xc + _a * _cs, _hw * _sn
 
     # ---- Farbgrenzen sind NETZKANTEN, keine Auswahl auf waagerechten Ringen ----
@@ -1429,7 +1476,7 @@ def fuehrerstand(kennung, r):
     # die Buchstabenplaetze tauschen ueber r. In-Ebene-Versatz dv wird ueber die
     # Neigung umgerechnet: dy = dv*cos(0.925), du = -dv*sin(0.925).
     _LOGO_W = 0.925
-    _lsin, _lcos = _m.sin(_LOGO_W), _m.cos(_LOGO_W)
+    _lsin, _lcos = math.sin(_LOGO_W), math.cos(_LOGO_W)
     kasten(f"Triebzug_Logo_{kennung}", 0.016, 0.46, 0.30, 0.5 + r * 8.609, 1.88, 0,
            m_zug, fase=0.007, drehung=(0, -r * _LOGO_W, 0))
 
@@ -1926,8 +1973,10 @@ kasten("Station_4_kiste_2", 0.5, 0.45, 0.45, 11.65, 0.345, 8.65, m_orange)
 # Platte 0.4 m tiefer gemacht (1.2 -> 1.6), damit die Rollenboecke neben den Rollen
 # Platz auf der Platte haben statt in ihnen zu stecken.
 kasten("Station_5_pruefstand", 2.8, 1.6, 0.5, 2, 0.25, 6, m_stahl)
-kasten("Station_5_warnkante_west", 0.08, 1.64, 0.52, 0.64, 0.26, 6, m_markierung, fase=0)
-kasten("Station_5_warnkante_ost", 0.08, 1.64, 0.52, 3.36, 0.26, 6, m_markierung, fase=0)
+# Rammschutz 8 mm VOR die Sockelflaeche (x 0.600 / 3.400) gelegt: koplanar zeigte die
+# Sockelfront im Render ein Schachbrett aus Z-Fighting-Pixeln.
+kasten("Station_5_warnkante_west", 0.08, 1.64, 0.52, 0.632, 0.26, 6, m_markierung, fase=0)
+kasten("Station_5_warnkante_ost", 0.08, 1.64, 0.52, 3.368, 0.26, 6, m_markierung, fase=0)
 kasten("Station_5_aufbau", 1.4, 0.9, 0.9, 1.6, 0.95, 6, m_blau)
 kasten("Station_5_aufbau_blende", 1.44, 0.06, 0.3, 1.6, 1.25, 5.55, m_dunkel, fase=0)
 zylinder("Station_5_drehknopf", 0.06, 0.06, 1.3, 1.0, 5.52, m_orange, achse="z")
@@ -2052,7 +2101,7 @@ zylinder("Station_6_becher_1", 0.04, 0.1, -7.2, 0.905, 5.15, m_fenster)
 zylinder("Station_6_becher_2", 0.04, 0.1, -8.7, 0.905, 5.3, m_blau)
 for i, om in enumerate((m_blau, m_orange, m_gruen)):
     kasten(f"Station_6_ordner_{i}", 0.08, 0.28, 0.32, -11.8 + i * 0.3, 0.96, 7, om, fase=0)
-kasten("Station_6_teppich", 3.4, 2.8, 0.02, -9, 0.015, 6, m_gleiszone, fase=0)
+kasten("Station_6_teppich", 3.4, 2.8, 0.02, -9, 0.015, 6, m_teppich, fase=0)
 for i, (my, mm) in enumerate(((1.85, m_blau), (1.7, m_zug), (1.55, m_gruen))):
     kasten(f"Station_6_marker_{i}", 0.5 - i * 0.12, 0.02, 0.05, -11.3, my, 8.16, mm, fase=0)
 lade_asset("furniture_pottedPlant.glb", "Station_6_pflanze", -12.5, 0, 8.4, ziel_hoehe=1.1)
@@ -2082,7 +2131,10 @@ for i, (sx, sm) in enumerate(((13.5, m_objekt), (14.4, m_blau))):
     for j, gy in enumerate((0.8, 1.1)):
         kasten(f"Requisite_Schrank_{i}_griff_{j}", 0.12, 0.05, 0.04, sx - 0.12, gy, -9.38, m_dunkel, fase=0)
 kasten("Requisite_Leiter", 0.5, 0.08, 2.4, 15.5, 1.2, -9.7, m_orange, fase=0)
-schlauch("Schlauchrolle_1", 3.9, 6.9, 0.0)          # neben dem Pruefstand
+# Von (3.9, 6.9) nach vorn auf den freien Boden geholt: hinter der Pruefstand-Plattform
+# war die Rolle aus keiner der neun Posen zu sehen. Kreis und gerades Ende gegen
+# frage_szene.py -- --alle geprueft (frei bis auf die 2 mm hohe Bodenfuge bei x 5.0).
+schlauch("Schlauchrolle_1", 4.6, 4.6, 0.0)          # vor der Pruefstand-Plattform
 # Besprechungsecke: 0.5 m nordwaerts (z 4.1 -> 3.6) verschoben, sonst haette das lose
 # Ende auf Station_6_teppich gelegen (--alle-Vorabpruefung).
 schlauch("Schlauchrolle_2", -10.6, 3.6, 0.0)        # Besprechungsecke, an der Suedwand
@@ -2091,7 +2143,11 @@ schlauch("Schlauchrolle_2", -10.6, 3.6, 0.0)        # Besprechungsecke, an der S
 schlauch("Schlauchrolle_3", 12.6, -7.7, 0.0, mat=m_orange)  # Druckluft, Nordost
 # 0.5 m nordwaerts (z 4.3..4.9 -> 3.8..4.4) verschoben, sonst haette der erste Abschnitt
 # Muelleimer_2 durchquert (--alle-Vorabpruefung).
-rohr_mit_bogen("Bodenkabel_Pruefstand", [(1.9, 0.02, 3.8), (3.2, 0.02, 4.4), (4.4, 0.02, 4.1)], 0.014, m_dunkel)
+# Radius 0.02 (= y der Stuetzpunkte: das Kabel LIEGT auf dem Boden) und ein
+# Zwischenpunkt je Knick, damit der Strang nicht im rechten Winkel abbiegt.
+rohr_mit_bogen("Bodenkabel_Pruefstand",
+               [(1.9, 0.02, 3.8), (2.6, 0.02, 4.25), (3.2, 0.02, 4.4), (3.9, 0.02, 4.3), (4.4, 0.02, 4.1)],
+               0.02, m_kabel)
 
 # ---- Kenney-Industriemodelle: Maschinenpark, Ventil, Tor, Kleinteile --------
 lade_asset("factory_machine.glb", "Maschine_Nord_1", 5.0, 0, -9.2, ziel_hoehe=1.8, einfaerbung=m_blau)
@@ -2114,7 +2170,6 @@ lade_asset("factory_box-small.glb", "Kiste_Empore", -15.6, 3.13, -7.0, dreh_y=0.
 def gabelstapler(name, x, z, dreh_y=0.0, farbe=None):
     """Klassischer Stapler, Fahrtrichtung +x (Mast und Gabeln vorn)."""
     farbe = farbe or m_markierung
-    import math
     c, s = math.cos(dreh_y), math.sin(dreh_y)
 
     def p(dx, dz):

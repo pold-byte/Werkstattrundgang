@@ -19,6 +19,8 @@ def png_speichern(pfad, breite, hoehe, zeilen):
 
 
 def _gitter(g, rnd):
+    # (g+1)^2 Knoten: Zeile/Spalte g werden seit der periodischen Fassung nicht gelesen,
+    # bleiben aber Teil des Zufallsstroms — verkleinern wuerde jede gen_*.png aendern.
     return [[rnd.random() for _ in range(g + 1)] for _ in range(g + 1)]
 
 
@@ -99,7 +101,8 @@ def schreibe_pbr_set(basispfad, groesse=512, basis_rgb=(120, 122, 125), spann=18
             n = feld[j * 2][i * 2]
             r = rauheit_basis + (n - 0.5) * 2 * rauheit_spann + (fein[j * 2][i * 2] - 0.5) * 0.06
             g = max(0, min(255, int(r * 255)))
-            zr += bytes((g, g, g))
+            # B = 255: glTF nimmt den Blaukanal als Metallic-Maske; so bleibt metallicFactor unveraendert
+            zr += bytes((g, g, 255))
             # Normal aus dem Hoehenfeld (zentrale Differenz), periodisch
             hx = feld[j * 2][(i * 2 + 2) % groesse] - feld[j * 2][(i * 2 - 2) % groesse]
             hy = feld[(j * 2 + 2) % groesse][i * 2] - feld[(j * 2 - 2) % groesse][i * 2]
@@ -137,6 +140,7 @@ def schreibe_rauheit_png(pfad, groesse=256, basis=0.5, spann=0.25, seed=3, kratz
             if kratzer and rnd.random() < kratzer:
                 r += 0.35
             g = max(0, min(255, int(r * 255)))
-            zeile += bytes((g, g, g))
+            # B = 255: glTF nimmt den Blaukanal als Metallic-Maske; so bleibt metallicFactor unveraendert
+            zeile += bytes((g, g, 255))
         zeilen += zeile
     png_speichern(pfad, groesse, groesse, zeilen)

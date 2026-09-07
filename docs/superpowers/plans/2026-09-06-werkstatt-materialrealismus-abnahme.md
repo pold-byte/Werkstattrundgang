@@ -71,6 +71,10 @@ Messungen wurde Pixel-Ratio auf 1 zurückgesetzt und die Fenstergröße auf das 
 Drosselungs-Fall (verstecktes Panel) trat nicht auf, daher war der `gl.finish()`-Ersatzbenchmark nicht
 nötig.
 
+Alle Bildzeiten wurden auf dem Entwicklungsrechner im Automations-Browser-Pane gemessen (Tab per
+tabs_select nach vorn geholt; `document.visibilityState` wie notiert), nicht auf dem
+Präsentationsrechner; die Messung dort steht aus und ist vor der Verteidigung nachzuholen.
+
 ## 2. Renders und Posen-Vergleich
 
 Alle neun Posen über `tools/render-posen.js` gerendert (`p_totale`, `p_meisterbuero`, `p_datenraum`,
@@ -89,7 +93,7 @@ mit Pillow). Referenz für die sieben Ausgangsbefunde ist der Abschnitt "Ausgang
 | p_anzeigetafel | gleich | 66.8 % (geringster Wert der neun Posen) | 6 (Fässer mit Sicken, linker Bildrand) | Wand hinter der Tafel wirkt durch das neue Tageslicht eher flacher/heller als vorher, nicht strukturierter; Tafelgestell, grüner Spind und orange Kiste bleiben Einheitsfarbe |
 | p_pruefstand | besser | 71.4 % | 2 (deutlich schärfer abgegrenzter Kontaktschatten unter dem Prüfstand-Sockel — die klarste Verbesserung der neun Posen) | Prüfstand-Gehäuse selbst bleibt einfarbig Blau/Orange, Hintergrundwand bleibt flach; das 5-m-Plattenraster des Bodens (`blockout.py:444`) liegt in dieser Kameraposition so, dass bei Nachprüfung (Zoom-Crops) keine Fugenlinie im sichtbaren Bodenbereich zu erkennen war — Befund 1 ist hier trotz insgesamt reduziertem Wolken-Rauschen nicht überzeugend als "klar sichtbar" belegt |
 | p_besprechung | gleich | 71.6 % | 1 (Boden-Fliesenraster minimal deutlicher) | Alle vier Stühle exakt im selben gesättigten Blauton nebeneinander — verletzt das Fertig-Kriterium "keine gesättigte Einheitsfarbe an mehr als zwei benachbarten Requisiten"; Wand und Pressenverkleidung bleiben flach |
-| p_hero_bahnsteig | besser | 83.2 % | 1 (Bodenfugen), 3/4 (Zugkarosserie wirkt durch Klarlack/Rauheit weniger reinweiß-glänzend als vorher) | Handlauf-Gelb, Rohrleitungen Blau/Rot und Signalsäule (Rot/Gelb/Grün) bleiben satte Einheitsfarben |
+| p_hero_bahnsteig | besser | 83.2 % | 1 (Bodenfugen), 1/4 (Zugkarosserie wirkt durch Klarlack/Rauheit weniger reinweiß-glänzend als vorher) | Handlauf-Gelb, Rohrleitungen Blau/Rot und Signalsäule (Rot/Gelb/Grün) bleiben satte Einheitsfarben |
 | p_hero_kranbahn | besser | 81.9 % | 1 (Bodenfugen) | Gabelstapler-Orange, grüner Spind, blaue Kiste bleiben gesättigte Einheitsfarben; Kranbahn-Lauffläche und Hintergrundwand bleiben flach |
 
 Ergebnis: 7 von 9 Posen "besser", 2 von 9 "gleich" (`p_anzeigetafel`, `p_besprechung`), keine
@@ -135,9 +139,107 @@ Einheitsfarbe, und mehrere Wandflächen (`p_anzeigetafel`, `p_besprechung`, Hint
   Stichproben-Zooms (`p_datenraum`, `p_pruefstand`); ob wirklich jedes Objekt in jeder Jury-Pose einen
   Kontaktschatten zeigt (Kriterium aus dem Plan), wurde nicht Objekt für Objekt verifiziert.
 
+## Nachtrag Fixwelle
+
+Nach dem Endreview liefen zwei Fixwellen: A (Viewer, Commit `fe56264`) und B (Szene und Doku, dieser
+Commit). Die Zahlen unten ersetzen die Messwerte aus Abschnitt 1 und 2, wo sie sich überschneiden.
+
+### Viewer (Fixwelle A)
+
+- **Kantenglättung.** Der `EffectComposer` rendert jetzt in ein eigenes `WebGLRenderTarget` mit
+  4-fachem MSAA (`app/src/komposition.js`); das Default-Target war nicht multisampled, dadurch
+  treppten im AO-Pfad alle Kanten. Anteil harter Einzelpixelstufen in `p_totale` 1.403 % → 0.696 %
+  (Referenz `_v2vorher` 0.611 %).
+- **Überlastschutz misst Renderkosten.** `messe()` misst nicht mehr den Abstand zwischen zwei
+  `render()`-Aufrufen, sondern die Dauer des Renderaufrufs selbst; Ausreißer über dem Vierfachen der
+  Abschaltschwelle werden verworfen, das erste volle Messfenster ist Aufwärmen, und
+  `visibilitychange` leert das Fenster. Ein Tab-Wechsel oder ein verdecktes Fenster schaltet AO damit
+  nicht mehr dauerhaft ab — der in Abschnitt 1 beschriebene Fall („ein einzelnes langsames erstes
+  Messfenster schaltet AO für die Sitzung ab") ist damit erledigt.
+- **Neue Bildzeiten (1920×1080).** Ebenfalls auf dem Entwicklungsrechner im Automations-Browser-Pane
+  gemessen (Tab per tabs_select nach vorn geholt, `document.visibilityState` blieb `hidden`, deshalb
+  400 direkte `komposition.render()`-Aufrufe nach 20 Aufwärmbildern statt der App-Schleife), **nicht**
+  auf dem Präsentationsrechner; die Messung dort steht aus und ist vor der Verteidigung nachzuholen.
+
+  | Konfiguration | Puffer | `mittlereBildzeit()` | `gl.finish()`-Benchmark |
+  |---|---|---|---|
+  | AO + MSAA, DPR 1 | 1920×1080 | 13.39 / 12.52 ms | 11.61 / 11.65 ms |
+  | AO + MSAA, DPR 2 | 3840×2160 | 11.76 ms | 11.80 ms |
+  | ohne AO (`?ao=0`), DPR 1 | 1920×1080 | 6.89 ms | 5.96 ms |
+  | ohne AO (`?ao=0`), DPR 2 | 3840×2160 | 6.40 ms | 6.35 ms |
+
+  `aoAktiv` blieb in allen Läufen `true`. Damit bleibt `samples: 4`.
+
+### Szene (Fixwelle B)
+
+- **S1 Ölflecken.** `m_oelfleck` von (0.16, 0.15, 0.14)/Rauheit 0.35 auf (0.05, 0.05, 0.05)/Rauheit
+  0.9 — dieselben Werte wie die Decals; unter dem helleren Licht las der alte Wert als beiger Fleck.
+- **S2/V10/V11 Gummi statt Chrom.** Neues Material `Kabel` (0.06, 0.06, 0.07, Rauheit 0.9,
+  Metalness 0) für Schlauchrollen, Bodenkabel und Bodenfugen; Schlauchradius 0.02 → 0.028,
+  Kabelradius 0.014 → 0.02, Kabel mit Zwischenpunkten statt rechtem Winkel.
+- **S3 Schlauchrolle_1** von (3.9, 6.9) auf (4.6, 4.6) vor die Prüfstand-Plattform — vorher aus
+  keiner der neun Posen sichtbar.
+- **S4/V9 Lackvarianten.** `lackvariante()` hasht den Namensstamm ohne laufende Nummer, damit
+  mehrteilige Requisiten (UnterEmpore_Wange_1/_2) einen Ton bekommen; `Station_6_stuhl` ist neu in
+  `VARIANTEN_FAMILIEN` (Möbel, keine Maschine) und von der Stammregel ausgenommen, weil dort die
+  Endziffer eigenständige Stücke zählt: zwei der vier Stühle stehen jetzt in `BlauAlt`.
+- **S6 Paletten** laufen auf ein eigenes Holzmaterial (0.55, 0.45, 0.32) statt auf Maschinengrau.
+- **S8 Metalness.** Die Rauheits-PNGs schreiben im Blaukanal jetzt 255 statt der Rauheit; glTF liest
+  `metallic = metallicFactor × B`, die Lackmaterialien rendern damit wieder mit ihren 0.15 statt mit
+  ≈ 0.06.
+- **V4 Fensterglas** auf (0.82, 0.88, 1.00) mit Emission 0.4 statt (0.90, 0.94, 1.0) mit 1.3.
+- **V5 Z-Fighting** am Rammschutz des Prüfstands: `Station_5_warnkante_west/ost` 8 mm vor die
+  Sockelfläche.
+- **V6 Ölfleck-Hof**, **V7 Reifenspuren 1 mm über dem Boden**, **V8 Fußweg und Teppich mit
+  Rauheitstextur**, **V12 Deckenprofil `normal_staerke` 0.8 → 1.2**.
+- **Materialhelligkeit (Controller-Ruling).** Decke (0.84 → 0.72), Wandputz (204 → 186) und
+  `STAHL_HELL` (0.85 → 0.74): mit Licht allein war das Leuchtdichteband nicht erreichbar.
+
+### Leuchtdichte je Pose (1600×900, gegen `p_*_v2vorher.png`)
+
+| Pose | L vorher | L neu | ΔL | Std vorher | Std neu | harte Kanten vorher → neu |
+|---|---|---|---|---|---|---|
+| p_totale | 142.10 | 147.76 | +5.66 | 39.58 | 39.01 | 0.611 % → 0.696 % |
+| p_meisterbuero | 155.61 | 159.44 | +3.83 | 36.76 | 35.60 | 0.134 % → 0.163 % |
+| p_datenraum | 141.63 | 148.14 | +6.51 | 37.53 | 34.88 | 0.162 % → 0.174 % |
+| p_terminal | 145.03 | 154.92 | +9.88 | 38.64 | 34.62 | 0.232 % → 0.239 % |
+| p_anzeigetafel | 121.08 | 124.37 | +3.29 | 33.86 | 36.73 | 0.143 % → 0.335 % |
+| p_pruefstand | 123.49 | 125.73 | +2.24 | 29.02 | 28.07 | 0.124 % → 0.158 % |
+| p_besprechung | 133.22 | 136.80 | +3.57 | 32.89 | 30.23 | 0.092 % → 0.130 % |
+| p_hero_bahnsteig | 119.06 | 127.02 | +7.96 | 40.71 | 39.91 | 0.410 % → 0.562 % |
+| p_hero_kranbahn | 146.20 | 152.18 | +5.98 | 38.93 | 39.23 | 0.452 % → 0.545 % |
+
+Die mittlere Leuchtdichte liegt damit in allen neun Posen innerhalb des Zielbands (≤ Referenz + 10);
+die Standardabweichung bleibt in sieben Posen unter dem Referenzwert (offener Punkt, siehe unten).
+
+### Klarstellung zur Greek-Regel
+
+Die Regel „keine lesbaren Ziffern, Buchstaben oder Logos in der Szene" gilt unverändert für alle
+Requisiten, Anschriften und Texturen (die prozeduralen `gen_*.png` enthalten keine Schrift). Laut
+Spec gibt es genau zwei Ausnahmen: das **DB-Logo am Zugkopf** und die **sechs Stationsziffern** auf
+den abgehängten Schildern (`Schild_<nr>_ziffer_v/h`), die zur Orientierung im Rundgang gehören. Alles
+andere — Messprotokolle, Datenkatalog-Poster, Warnschilder, Anzeigetafel — bleibt gegreekt (Balken
+statt Schrift).
+
+### Offen nach Fixwelle B
+
+- **Standardabweichung der Leuchtdichte.** Ziel war „≥ Referenzwert je Pose"; erreicht in
+  `p_anzeigetafel` (+2.87) und `p_hero_kranbahn` (+0.29), verfehlt in den übrigen sieben (bis −4.02
+  in `p_terminal`). Ein Gegentest mit den Untergrenzen des Rulings (Decke 0.62, Putz 170,
+  `STAHL_HELL` 0.68) brachte drei statt zwei Posen über die Marke, verschlechterte aber vier andere;
+  die Ursache liegt nicht in den drei Materialwerten, sondern darin, dass die hellsten Ausreißer
+  (Fensterbänder, Decke) durch V4 und das Ruling näher an den Bildmittelwert gerückt sind.
+- **Fensterband-Helligkeit.** Kriterium war < 175; gemessen auf der exakten Materialmaske
+  207.1 (vorher im Planstand 231.1, `_v2vorher` 175.0). Unter 175 kommt das Band nur mit Emission
+  ≈ 0 (gemessen 168.5), also ohne den Tageslicht-Effekt. Farbe (B − R = 9.2 ≥ 6) und Struktur
+  (Std 4.03 > 2) sind erfüllt.
+- **Kontaktverdunklung am Terminalsockel** bleibt geparkt (Controller-Ruling): GTAO liefert sie auf
+  dieser Kameraentfernung nicht, ohne die dunklen Bänder am Dachstoß zurückzuholen.
+
 ## Referenzen
 
 - Vorher-Renders: `blender/renders/p_*_v2vorher.png` (nicht versioniert, Snapshot 2026-09-06 22:05).
 - Nachher-Renders für dieses Protokoll: `blender/renders/p_*.png`, erzeugt 2026-09-07 09:56 auf HEAD
-  `8ea0588` mit `tools/render-posen.js`.
+  `8ea0588` mit `tools/render-posen.js`; die Renders des Nachtrags wurden 2026-09-07 20:44 nach
+  Fixwelle B mit denselben neun Posen erzeugt und überschreiben dieselben Dateien.
 - Ausgangsbefund und Global Constraints: `docs/superpowers/plans/2026-09-06-werkstatt-materialrealismus.md`.

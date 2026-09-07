@@ -8,7 +8,7 @@ zwischen den Markern AABB-ANFANG und AABB-ENDE. '--alle' druckt alle Meshes;
 das ist der Vorher/Nachher-Dump fuer Regressionsdiffs.
 
 Aufruf:
-  blender --background --python blender/frage_szene.py -- Gleis_Schiene_Nord Triebzug_DG_0_
+  blender --background --python blender/frage_szene.py -- Gleis_Schiene_Nord_ Triebzug_DG_0_
   blender --background --python blender/frage_szene.py -- --alle > /tmp/vorher.txt
 """
 import bpy

@@ -21,7 +21,6 @@ function baueComposer(renderer, szene, kamera) {
   const composer = new EffectComposer(renderer, ziel);
   composer.addPass(new RenderPass(szene, kamera));
   const gtao = new GTAOPass(szene, kamera, groesse.x, groesse.y);
-  gtao.output = GTAOPass.OUTPUT.Default;
   // Werkstattmassstab: Fugen und Fussleisten sollen dunkel werden, nicht ganze Waende.
   // Weicher abgestimmt als in Fassung 2: groesserer Radius, kleinere Staerke und ein
   // breiterer Denoise-Kern — die harten Baender am Dach/Pfetten-Stoss und an den
