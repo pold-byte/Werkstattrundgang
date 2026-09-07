@@ -10,9 +10,11 @@
 
 ## Folienschau
 
-Taste `f` blendet den Foliensatz über die Szene: elf Folien (sieben Haupt-, vier
+Der Foliensatz ist die Standardansicht: elf Folien (sieben Haupt-, vier
 Ergänzungsfolien), Inhalt aus `app/src/folien-inhalt.js`, Gestaltung nach
-`docs/foliensatz/DESIGN.md`. Pfeiltasten und Leertaste blättern, `f` schließt
-wieder. Die Folie füllt den Bildschirm bis auf einen Rahmen, in dem die Halle
-gedämpft sichtbar bleibt.
+`docs/foliensatz/DESIGN.md`. Die Folie füllt den Bildschirm bis auf einen Rahmen,
+in dem die Halle gedämpft sichtbar bleibt. Pfeiltasten und Leertaste blättern;
+die Kamera fährt dabei an den Ort, den die Folie im Feld `station` nennt.
+Taste `f` blendet die Folien aus und zeigt Halle und Stationspanel allein,
+`f` erneut holt sie zurück.
 

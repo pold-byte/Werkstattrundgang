@@ -183,6 +183,7 @@ export function erzeugeFolienschau(wurzelEl, daten = standardFolien) {
   return {
     get istOffen() { return offen; },
     get nummer() { return daten[index].nr; },
+    get aktuelle() { return daten[index]; },
     oeffne() {
       offen = true;
       wurzelEl.hidden = false;

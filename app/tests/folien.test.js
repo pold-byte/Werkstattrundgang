@@ -23,6 +23,14 @@ describe('Folieninhalt', () => {
     }
   });
 
+  it('nennt für jede Folie einen Ort, den der Rundgang kennt', async () => {
+    const { default: daten } = await import('../src/stationen.json');
+    const orte = new Set(['totale', ...daten.stationen.map((s) => s.id)]);
+    for (const f of folien) {
+      expect(orte.has(f.station), 'Folie ' + f.nr + ': ' + f.station).toBe(true);
+    }
+  });
+
   it('behält die Kennzahlen des Vortrags bei', () => {
     const text = JSON.stringify(folien);
     for (const wert of ['82,8', '86,2', '3,4 Prozentpunkte', '540 Messsätze', '25 Tabellen', '12,27 $']) {

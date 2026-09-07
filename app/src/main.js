@@ -93,12 +93,22 @@ function zeigeAnkunft(ansicht) {
   zeigePanel(panelEl, station, ansicht.belegpunkte);
 }
 
+// Die Kamera fährt an den Ort, den die aufgeschlagene Folie nennt. Das Panel
+// bleibt dabei ausgeblendet (body.folien-offen), sichtbar ist nur der Rahmen.
+function folgeFolie() {
+  const ziel = folienschau.aktuelle.station;
+  if (!ziel || ziel === aktuellerOrt) return;
+  if (ziel === 'totale') zustand.springeZurTotale();
+  else zustand.springeZuStation(ziel);
+  wendeAnsichtAn();
+}
+
 function fuehreAktionAus(aktion) {
   // Bei offener Folienschau blaettern weiter/zurueck durch die Folien, nicht
-  // durch den Rundgang; Taste f schliesst wieder (Spec §6: Escape bleibt frei).
+  // durch den Rundgang; Taste f zeigt die Halle allein (Spec §6: Escape bleibt frei).
   if (folienschau.istOffen) {
-    if (aktion.typ === 'weiter') { folienschau.weiter(); return; }
-    if (aktion.typ === 'zurueck') { folienschau.zurueck(); return; }
+    if (aktion.typ === 'weiter') { if (folienschau.weiter()) folgeFolie(); return; }
+    if (aktion.typ === 'zurueck') { if (folienschau.zurueck()) folgeFolie(); return; }
     if (aktion.typ === 'folien') { folienschau.schliesse(); return; }
   }
   switch (aktion.typ) {
@@ -140,6 +150,11 @@ window.addEventListener('keydown', (ereignis) => {
   const aktion = tasteZuAktion(ereignis.key, daten.stationen);
   if (!aktion) return;
   ereignis.preventDefault();
+  // Die Folienschau liegt vor der Szene: sie blaettert auch waehrend einer Fahrt.
+  if (folienschau.istOffen && ['weiter', 'zurueck', 'folien'].includes(aktion.typ)) {
+    fuehreAktionAus(aktion);
+    return;
+  }
   const freigegeben = sperre.verarbeite(aktion);
   if (freigegeben) fuehreAktionAus(freigegeben);
 });
@@ -205,6 +220,7 @@ async function start() {
   setzeKamera(poseFuerOrt(leiteAnsichtAb(zustand.aktuell, daten.stationen).ort));
   aktuellerOrt = leiteAnsichtAb(zustand.aktuell, daten.stationen).ort;
   wendeAnsichtAn(true);
+  folienschau.oeffne(); // Standardansicht: die Folie vorn, die Halle im Rahmen
   bereit = true;
   orbitAktiv = aktiviereWaypointWerkzeug(kamera, renderer, szene);
   if (import.meta.env.DEV) Object.assign(window, { __szene: szene, __renderer: renderer, __kamera: kamera, __komposition: komposition }); // Dev-Inspektion (im Build entfernt)

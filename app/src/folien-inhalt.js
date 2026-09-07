@@ -2,6 +2,9 @@
 // (elf Folien: sieben Hauptfolien, vier Ergänzungsfolien). Aufbau und Reihenfolge
 // bleiben erhalten; die Gestaltung folgt docs/foliensatz/DESIGN.md.
 //
+// Das Feld 'station' benennt den Ort im Rundgang, an den die Kamera zu dieser
+// Folie faehrt ('totale' fuer die Halleneinstellung).
+//
 // Blocktypen: 'punkte' (Absätze), 'gruppe' (Überschrift + Absätze), 'tabelle'
 // (Kopfzeile + Zeilen), 'fluss' (waagerechte Kette), 'schritte' (nummerierte
 // Verarbeitungsschritte), 'kasten' (hervorgehobene Feststellung), 'notiz'
@@ -13,6 +16,7 @@ export const fusszeile =
 export const folien = [
   {
     nr: 1,
+    station: 'totale',
     art: 'titel',
     kopf: 'Projektarbeit T3_2000 · DHBW Mannheim',
     titel: 'KI-gestützte Datenplattform zur kennzahlenbasierten Instandhaltungssteuerung',
@@ -22,6 +26,7 @@ export const folien = [
   },
   {
     nr: 2,
+    station: 'meisterbuero',
     sektion: '01 Ausgangslage',
     titel: 'Warum das Thema entstanden ist',
     kern: 'SAP-Export, Weiterverarbeitung in dezentralen Excel-Dateien. Nicht der Aufwand ist das Problem, sondern seine Bindung.',
@@ -52,6 +57,7 @@ export const folien = [
   },
   {
     nr: 3,
+    station: 'totale',
     sektion: '02 Zielsetzung',
     titel: 'Was untersucht wurde',
     kern: 'Sprachmodelle übersetzen Sprache in SQL. Offen war, ob das auf einem fachlich geprägten Kennzahlenschema eine Steuerungsentscheidung trägt.',
@@ -92,6 +98,7 @@ export const folien = [
   },
   {
     nr: 4,
+    station: 'datenraum',
     sektion: '03 Prototyp',
     titel: 'Gesamtarchitektur des Prototyps',
     kern: 'Zwei Funktionsstränge, ein Schema.',
@@ -129,6 +136,7 @@ export const folien = [
   },
   {
     nr: 5,
+    station: 'terminal',
     sektion: '03 Prototyp',
     titel: 'Das Modell erzeugt die Vorschrift, nicht das Ergebnis',
     kern: 'Fragen über eine Weboberfläche. Das Modell wirkt an zwei Stellen, über eine einzige Funktion.',
@@ -175,6 +183,7 @@ export const folien = [
   },
   {
     nr: 6,
+    station: 'pruefstand',
     sektion: '04 Bewertung',
     titel: 'Wie die Zuverlässigkeit gemessen wurde',
     kern: 'Aufbau wie in veröffentlichten Referenzdatensätzen: je Frage eine manuell geprüfte Referenzabfrage.',
@@ -211,6 +220,7 @@ export const folien = [
   },
   {
     nr: 7,
+    station: 'anzeigetafel',
     sektion: '05 Ergebnis',
     titel: 'Streuung und Zurechnung der Fehler',
     kern: 'Vier vergleichbare Läufe: 82,8 bis 86,2 Prozent. Die Spannweite von 3,4 Prozentpunkten entspricht genau einer Frage, ohne jede Änderung am System.',
@@ -248,6 +258,7 @@ export const folien = [
   },
   {
     nr: 8,
+    station: 'besprechung',
     sektion: 'Ergänzende Folie',
     titel: 'Bilanz gegen den Anforderungskatalog',
     breit: [
@@ -274,6 +285,7 @@ export const folien = [
   },
   {
     nr: 9,
+    station: 'besprechung',
     sektion: 'Ergänzende Folie',
     titel: 'Wirtschaftliche und betriebliche Einordnung',
     spalten: [
@@ -315,6 +327,7 @@ export const folien = [
   },
   {
     nr: 10,
+    station: 'datenraum',
     sektion: 'Ergänzende Folie',
     titel: 'Datenmodell, Konventionen und Absicherung',
     spalten: [
@@ -355,6 +368,7 @@ export const folien = [
   },
   {
     nr: 11,
+    station: 'pruefstand',
     sektion: 'Ergänzende Folie',
     titel: 'Importpfad und Grenzen der Untersuchung',
     spalten: [
